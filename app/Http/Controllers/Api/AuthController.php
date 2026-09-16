@@ -319,7 +319,6 @@ public function login(LoginRequest $request)
         'OTP sent successfully to your email for password reset.'
     );
 }
-
 public function verifyResetOtp(VerifyResetOtpRequest $request)
 {
     $user = User::where('email', $request->email)->first();
@@ -339,48 +338,37 @@ public function verifyResetOtp(VerifyResetOtpRequest $request)
         );
     }
 
-    $resetToken = Str::random(64);
-
-  $verificationCode->reset_token = $resetToken;
-   $verificationCode->save();
+    $verificationCode->verified_at = now();
+    $verificationCode->save();
 
     return ApiResponse::send(
-    true,
-    200,
-    'OTP verified successfully. You can now reset your password.',
-    [
-        'reset_token' => $resetToken,
-    ]
-);
+        true,
+        200,
+        'OTP verified successfully. You can now reset your password.'
+    );
 }
 public function resetPassword(Request $request)
 {
     $request->validate([
-        'reset_token' => 'required|string',
+        'email' => 'required|email|exists:users,email',
         'password' => 'required|string|min:8|confirmed',
     ]);
 
-    $verificationCode = VerificationCode::where('reset_token', $request->reset_token)
+    $user = User::where('email', $request->email)->first();
+
+    $verificationCode = VerificationCode::where('user_id', $user->id)
         ->where('type', 'password_reset')
-        ->where('expires_at', '>', now())
+        ->whereNotNull('verified_at')
         ->whereNull('used_at')
+        ->where('expires_at', '>', now())
+        ->latest('verified_at')
         ->first();
 
     if (!$verificationCode) {
         return ApiResponse::send(
             false,
             422,
-            'Invalid or expired reset token.'
-        );
-    }
-
-    $user = User::find($verificationCode->user_id);
-
-    if (!$user) {
-        return ApiResponse::send(
-            false,
-            404,
-            'User not found.'
+            'OTP verification required or expired.'
         );
     }
 
