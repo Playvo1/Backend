@@ -26,7 +26,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"name\": \"te\",\r\n    \"email\":\"*******@gmail.com \",\r\n    \"phone\":\"223556566\",\r\n    \"password\":\"12345678\",\r\n    \"password_confirmation\":\"12345678\"\r\n}",
+              "raw": "{\r\n    \"name\": \"te\",\r\n    \"email\":\"******@gmail.com \",\r\n    \"phone\":\"05971003855\",\r\n    \"password\":\"12345678\",\r\n    \"password_confirmation\":\"12345678\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -64,7 +64,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"*******@gmail.com\"\r\n}",
+              "raw": "{\r\n    \"email\":\"******@gmail.com\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -101,7 +101,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"*******@gmail.com\",\r\n    \"otp_code\": \"189260 \"\r\n}",
+              "raw": "{\r\n    \"email\": \"******@gmail.com\",\r\n    \"otp_code\": \"992242 \"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -256,7 +256,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \" *******@gmail.com\"\r\n}",
+              "raw": "{\r\n    \"email\": \" ******@gmail.com\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -293,7 +293,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"******@gmail.com\",\r\n    \"otp_code\": \"685983\"\r\n}",
+              "raw": "{\r\n    \"email\": \"******@gmail.com\",\r\n    \"otp_code\": \"155455\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -330,7 +330,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"reset_token\": \"TczJ70XNh3wvY6PnMIlQe0rv5M6afbwWL0ptL88DC6qRNBFCfiWhix2XpdvvORa5\",\r\n    \"password\": \"12345666\",\r\n    \"password_confirmation\": \"12345666\"\r\n}",
+              "raw": "{\r\n \"email\": \"******@gmail.com\",\r\n\r\n    \"password\": \"12345666\",\r\n    \"password_confirmation\": \"12345666\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"

@@ -19,6 +19,16 @@ use Google\Client as GoogleClient;
 use Illuminate\Support\Str;
 class AuthController extends Controller
 {
+   private function apiResponse(bool $success, int $statusCode, string $message, mixed $data = null, mixed $errors = null)
+{
+    return response()->json([
+        'success' => $success,
+        'data' => $data,
+        'message' => $message,
+        'errors' => $errors,
+    ], $statusCode);
+}
+
    public function registerPlayer(RegisterRequest $request)
 {
     return $this->register($request, 'player');
@@ -30,7 +40,7 @@ public function register(RegisterRequest $request, string $role)
     $existingUser = User::where('email', $request->email)->first();
 
     if ($existingUser) {
-        return ApiResponse::send(
+        return $this->apiResponse(
             false,
             422,
             'Email is already registered'
@@ -50,10 +60,14 @@ public function register(RegisterRequest $request, string $role)
     // إعطاء المستخدم Role
     $user->assignRole($role);
 
-    return ApiResponse::send(
+    return $this->apiResponse(
         true,
         200,
-        'Registration successful. Please verify your email.'
+        'Account created, verification code sent',
+        [
+            'user_id' => $user->id,
+            'email' => $user->email,
+        ]
     );
 
 }
@@ -67,7 +81,7 @@ public function googleAuth(googleAuthRequest $request)
     $payload = $client->verifyIdToken($request->id_token);
 
     if (!$payload) {
-        return ApiResponse::send(
+        return $this->apiResponse(
             false,
             401,
             'Invalid Google token.'
@@ -113,13 +127,18 @@ public function googleAuth(googleAuthRequest $request)
     // إنشاء Sanctum token
     $token = $user->createToken('auth_token')->plainTextToken;
 
-    return ApiResponse::send(
+    return $this->apiResponse(
         true,
         200,
-        'Google authentication successful.',
+        'Logged in',
         [
             'token' => $token,
-            'user' => $user,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'roles' => $user->getRoleNames(),
+            ],
         ]
     );
 }
@@ -175,7 +194,7 @@ public function sendOtp(Request $request)
         ->first();
 
     if (!$verificationCode) {
-        return ApiResponse::send(
+        return $this->apiResponse(
             false,
             422,
             'Invalid or expired OTP.'
@@ -188,10 +207,13 @@ public function sendOtp(Request $request)
     $verificationCode->used_at = now();
     $verificationCode->save();
 
-    return ApiResponse::send(
+    return $this->apiResponse(
         true,
         200,
-        'Email verified successfully.'
+        'Email verified',
+        [
+            'email_verified_at' => $user->email_verified_at,
+        ]
     );
 }
 
@@ -201,10 +223,10 @@ public function login(LoginRequest $request)
 
     // Check if account is currently locked
     if ($user && $user->locked_until && now()->lessThan($user->locked_until)) {
-        return ApiResponse::send(
+        return $this->apiResponse(
             false,
             423,
-            'Your account is temporarily locked. Please try again later.'
+            'Account locked, try again later'
         );
     }
 
@@ -228,15 +250,15 @@ public function login(LoginRequest $request)
                     'locked_until' => now()->addMinutes(15),
                 ]);
 
-                return ApiResponse::send(
+                return $this->apiResponse(
                     false,
                     423,
-                    'Your account has been temporarily locked for 15 minutes.'
+                    'Account locked, try again in 15 minutes'
                 );
             }
         }
 
-        return ApiResponse::send(
+        return $this->apiResponse(
             false,
             401,
             'Invalid credentials.'
@@ -245,7 +267,7 @@ public function login(LoginRequest $request)
 
     // Check account status
     if ($user->status !== 'active') {
-        return ApiResponse::send(
+        return $this->apiResponse(
             false,
             403,
             'Your account is not active.'
@@ -254,7 +276,7 @@ public function login(LoginRequest $request)
 
     // Check email verification
     if (!$user->email_verified_at) {
-        return ApiResponse::send(
+        return $this->apiResponse(
             false,
             403,
             'Please verify your email before logging in.'
@@ -270,13 +292,18 @@ public function login(LoginRequest $request)
     // Create authentication token
     $token = $user->createToken('auth_token')->plainTextToken;
 
-    return ApiResponse::send(
+    return $this->apiResponse(
         true,
         200,
-        'Login successful.',
+        'Logged in',
         [
-            'access_token' => $token,
-            'token_type' => 'Bearer'
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'roles' => $user->getRoleNames(),
+            ],
         ]
     );
 
@@ -285,10 +312,10 @@ public function login(LoginRequest $request)
     {
         $request->user()->currentAccessToken()->delete();
 
-        return ApiResponse::send(
+        return $this->apiResponse(
             true,
             200,
-            'Logout successful.'
+            'Logged out'
         );
     }
    public function forgotPassword(Request $request)
@@ -313,10 +340,10 @@ public function login(LoginRequest $request)
         new OtpMail($otp)
     );
 
-    return ApiResponse::send(
+    return $this->apiResponse(
         true,
         200,
-        'OTP sent successfully to your email for password reset.'
+        'If this email exists, a reset code was sent'
     );
 }
 public function verifyResetOtp(VerifyResetOtpRequest $request)
@@ -365,7 +392,7 @@ public function resetPassword(Request $request)
         ->first();
 
     if (!$verificationCode) {
-        return ApiResponse::send(
+        return $this->apiResponse(
             false,
             422,
             'OTP verification required o                                                                                    r expired.'
@@ -378,10 +405,10 @@ public function resetPassword(Request $request)
     $verificationCode->used_at = now();
     $verificationCode->save();
 
-    return ApiResponse::send(
+    return $this->apiResponse(
         true,
         200,
-        'Password reset successful.'
+        'Password updated'
     );
 }
 }

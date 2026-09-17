@@ -9,26 +9,23 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-    public function up(): void
-    {
-        Schema::table('users', function (Blueprint $table) {
-            $table->enum('status', [
-                'active',
-                'locked',
-                'unverified',
-            ])->default('active')->change();
-        });
-    }
+  public function up(): void
+{
+    Schema::table('users', function (Blueprint $table) {
+        $table->enum('status', [
+            'active',
+            'locked',
+            'unverified',
+        ])->default('active')->change();
+    });
+}
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
-    {
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('status')
-                ->default('active')
-                ->change();
-        });
-    }
+{
+    Schema::table('users', function (Blueprint $table) {
+        $table->string('status')
+            ->default('active')
+            ->change();
+    });
+}
 };
