@@ -368,7 +368,7 @@ public function resetPassword(Request $request)
         return ApiResponse::send(
             false,
             422,
-            'OTP verification required or expired.'
+            'OTP verification required o                                                                                    r expired.'
         );
     }
 
