@@ -34,12 +34,13 @@
               }
             },
             "url": {
-              "raw": "{{playvo}}/api/auth/register/player",
+              "raw": "{{playvo}}/api/v1/auth/register/player",
               "host": [
                 "{{playvo}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "auth",
                 "register",
                 "player"
@@ -72,12 +73,13 @@
               }
             },
             "url": {
-              "raw": "{{playvo}}/api/auth/send-otp",
+              "raw": "{{playvo}}/api/v1/auth/send-otp",
               "host": [
                 "{{playvo}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "auth",
                 "send-otp"
               ]
@@ -109,12 +111,13 @@
               }
             },
             "url": {
-              "raw": "{{playvo}}/api/auth/verify-otp",
+              "raw": "{{playvo}}/api/v1/auth/verify-otp",
               "host": [
                 "{{playvo}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "auth",
                 "verify-otp"
               ]
@@ -146,12 +149,13 @@
               }
             },
             "url": {
-              "raw": "{{playvo}}/api/auth/login",
+              "raw": "{{playvo}}/api/v1/auth/login",
               "host": [
                 "{{playvo}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "auth",
                 "login"
               ]
@@ -180,12 +184,13 @@
               }
             ],
             "url": {
-              "raw": "{{playvo}}/api/auth/logout",
+              "raw": "{{playvo}}/api/v1/auth/logout",
               "host": [
                 "{{playvo}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "auth",
                 "logout"
               ]
@@ -222,12 +227,13 @@
               }
             },
             "url": {
-              "raw": "{{playvo}}/api/auth/google",
+              "raw": "{{playvo}}/api/v1/auth/google",
               "host": [
                 "{{playvo}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "auth",
                 "google"
               ]
@@ -264,12 +270,13 @@
               }
             },
             "url": {
-              "raw": "{{playvo}}/api/auth/forgot-password",
+              "raw": "{{playvo}}/api/v1/auth/forgot-password",
               "host": [
                 "{{playvo}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "auth",
                 "forgot-password"
               ]
@@ -301,12 +308,13 @@
               }
             },
             "url": {
-              "raw": "{{playvo}}/api/auth/verify-reset-otp",
+              "raw": "{{playvo}}/api/v1/auth/verify-reset-otp",
               "host": [
                 "{{playvo}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "auth",
                 "verify-reset-otp"
               ]
@@ -338,12 +346,13 @@
               }
             },
             "url": {
-              "raw": "{{playvo}}/api/auth/reset-password",
+              "raw": "{{playvo}}/api/v1/auth/reset-password",
               "host": [
                 "{{playvo}}"
               ],
               "path": [
                 "api",
+                "v1",
                 "auth",
                 "reset-password"
               ]
