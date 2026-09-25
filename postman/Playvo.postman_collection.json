@@ -103,7 +103,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"******@gmail.com\",\r\n    \"otp_code\": \"992242 \"\r\n}",
+              "raw": "{\r\n    \"email\": \"hatem407910314@gmail.com\",\r\n    \"otp_code\": \"851625 \"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -141,7 +141,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"******@gmail.com\",\r\n    \"password\": \"12345666\"\r\n}",
+              "raw": "{\r\n    \"email\": \"h***@gmail.com\",\r\n    \"password\": \"hatem1234\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -355,6 +355,159 @@
                 "v1",
                 "auth",
                 "reset-password"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Venues",
+      "item": [
+        {
+          "name": "venue",
+          "request": {
+            "auth": {
+              "type": "noauth"
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/venues/1?city_id=&sport_id=&date=&hour=&page=",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "venues",
+                "1"
+              ],
+              "query": [
+                {
+                  "key": "city_id",
+                  "value": ""
+                },
+                {
+                  "key": "sport_id",
+                  "value": ""
+                },
+                {
+                  "key": "date",
+                  "value": ""
+                },
+                {
+                  "key": "hour",
+                  "value": ""
+                },
+                {
+                  "key": "page",
+                  "value": ""
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bookings",
+      "item": [
+        {
+          "name": "bookingvenue",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"time_slot_id\": 2,\r\n    \"captain_name\": \"Hatem Shbeir\",\r\n    \"captain_role\": \"Captain\",\r\n    \"captain_phone\": \"970597103855\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{playvo}}/api/v1/bookings",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "uploadPaymentReceipt",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "receipt",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{playvo}}/api/v1/bookings/18/payment-receipt",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "18",
+                "payment-receipt"
               ]
             }
           },

@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class PaymentReceipt extends Model
 {
+    protected $guarded = [];
+
+
     /**
      * The booking this payment receipt was submitted for.
      */
