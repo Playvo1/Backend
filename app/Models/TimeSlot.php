@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class TimeSlot extends Model
 {
+    protected $guarded = [];
     /**
      * The venue this time slot belongs to.
      */

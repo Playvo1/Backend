@@ -22,12 +22,12 @@ return new class extends Migration
     /**
      * Reverse the migrations.
      */
-    public function down(): void
-    {
-        Schema::table('venues', function (Blueprint $table) {
-            $table->string('status')
-                ->default('pending')
-                ->change();
-        });
-    }
+   public function down(): void
+{
+    Schema::table('venues', function (Blueprint $table) {
+        $table->string('status')
+            ->default('pending')
+            ->change();
+    });
+}
 };
