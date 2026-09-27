@@ -9,6 +9,10 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Booking extends Model
 {
+    protected $guarded = [];
+    protected $casts = [
+    'hold_expires_at' => 'datetime',
+];
     /**
      * The time slot this booking reserves.
      */

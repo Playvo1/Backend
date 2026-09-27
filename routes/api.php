@@ -3,7 +3,8 @@
 use App\Http\Controllers\Api\AuthController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-
+use App\Http\Controllers\Api\VenueController;
+use App\Http\Controllers\Api\BookingController;
 Route::prefix('v1')->group(function () {
 
     Route::post('auth/register/player', [AuthController::class, 'registerPlayer']);
@@ -18,5 +19,11 @@ Route::prefix('v1')->group(function () {
     Route::post('auth/verify-reset-otp', [AuthController::class, 'verifyResetOtp']);
     Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
 
-
+ Route::get('venues', [VenueController::class, 'index']);
+ Route::get('/venues/{id}', [VenueController::class, 'show']);
+  Route::get('/venues/{id}/time-slots', [VenueController::class, 'timeSlots']);
+  Route::post('/bookings', [BookingController::class, 'store'])
+    ->middleware('auth:sanctum');
+    Route::post('/bookings/{id}/payment-receipt', [BookingController::class, 'uploadPaymentReceipt'])
+    ->middleware('auth:sanctum');
 });
