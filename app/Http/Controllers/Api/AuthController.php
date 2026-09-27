@@ -394,24 +394,27 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => 'required|email|exists:users,email',
+            'code' => 'required|digits:6',
             'password' => 'required|string|min:8|confirmed',
         ]);
 
         $user = User::where('email', $request->email)->first();
 
+        // The code itself must be presented here. Only checking that *some* verified
+        // code exists for this email would let anyone who knows the email reset the
+        // password in the window after the real owner verifies.
         $verificationCode = VerificationCode::where('user_id', $user->id)
             ->where('type', 'password_reset')
-            ->whereNotNull('verified_at')
+            ->where('code', $request->code)
             ->whereNull('used_at')
             ->where('expires_at', '>', now())
-            ->latest('verified_at')
             ->first();
 
         if (! $verificationCode) {
             return $this->apiResponse(
                 false,
                 422,
-                'OTP verification required or expired.'
+                'Invalid or expired code.'
             );
         }
 
