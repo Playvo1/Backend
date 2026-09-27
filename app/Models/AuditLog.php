@@ -9,6 +9,18 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class AuditLog extends Model
 {
     /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
+    protected $fillable = [
+        'admin_user_id',
+        'action',
+        'target_type',
+        'target_id',
+    ];
+
+    /**
      * The admin user who performed this action.
      */
     public function adminUser(): BelongsTo

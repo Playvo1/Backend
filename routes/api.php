@@ -1,7 +1,7 @@
 <?php
 
+use App\Http\Controllers\Api\AdminAccountController;
 use App\Http\Controllers\Api\AuthController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -18,5 +18,11 @@ Route::prefix('v1')->group(function () {
     Route::post('auth/verify-reset-otp', [AuthController::class, 'verifyResetOtp']);
     Route::post('auth/reset-password', [AuthController::class, 'resetPassword']);
 
+    Route::prefix('admin')
+        ->middleware(['auth:sanctum', 'role:admin'])
+        ->group(function () {
+            Route::post('venue-owners', [AdminAccountController::class, 'createVenueOwner']);
+            Route::post('admins', [AdminAccountController::class, 'createAdmin']);
+        });
 
 });
