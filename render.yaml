@@ -5,7 +5,8 @@ services:
     name: playvo-backend
     runtime: docker
     plan: free
-    branch: main
+    # Deploys the branch the Blueprint was created from; switch to main in
+    # Settings → Build & Deploy once this setup is merged.
     autoDeploy: true
     healthCheckPath: /up
     envVars:
