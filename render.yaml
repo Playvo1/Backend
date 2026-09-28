@@ -1,0 +1,76 @@
+# Render Blueprint — staging API. Setup steps: DEPLOY.md
+# Values marked "sync: false" are secrets: Render asks for them when the Blueprint is created.
+services:
+  - type: web
+    name: playvo-backend
+    runtime: docker
+    plan: free
+    branch: main
+    autoDeploy: true
+    healthCheckPath: /up
+    envVars:
+      - key: APP_NAME
+        value: Playvo
+      - key: APP_ENV
+        value: production
+      - key: APP_DEBUG
+        value: "false"
+      - key: APP_KEY
+        sync: false
+      - key: LOG_CHANNEL
+        value: stderr
+      - key: LOG_LEVEL
+        value: info
+
+      # Database: Aiven for MySQL (SSL required; CA uploaded as the secret file ca.pem)
+      - key: DB_CONNECTION
+        value: mysql
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        sync: false
+      - key: DB_DATABASE
+        value: defaultdb
+      - key: DB_USERNAME
+        value: avnadmin
+      - key: DB_PASSWORD
+        sync: false
+      - key: MYSQL_ATTR_SSL_CA
+        value: /etc/secrets/ca.pem
+
+      - key: SESSION_DRIVER
+        value: database
+      - key: CACHE_STORE
+        value: database
+      - key: QUEUE_CONNECTION
+        value: sync
+      - key: FILESYSTEM_DISK
+        value: local
+
+      # Mail: Mailtrap Email Sandbox (emails land in the team's Mailtrap inbox, not real users)
+      - key: MAIL_MAILER
+        value: smtp
+      - key: MAIL_HOST
+        value: sandbox.smtp.mailtrap.io
+      - key: MAIL_PORT
+        value: "2525"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: MAIL_FROM_ADDRESS
+        value: no-reply@playvo.app
+      - key: MAIL_FROM_NAME
+        value: Playvo
+
+      # First admin account, created on start if it doesn't exist yet
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_PASSWORD
+        sync: false
+
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      # Comma-separated web dashboard origins, e.g. https://playvo-dashboard.vercel.app
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
