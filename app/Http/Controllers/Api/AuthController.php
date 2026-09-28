@@ -2,312 +2,321 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use App\Http\Requests\Api\RegisterRequest;
-use App\Models\User;
-
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\OtpMail;
-use App\Models\VerificationCode;
 use App\Helpers\ApiResponse;
+use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\LoginRequest;
+use App\Http\Requests\Api\RegisterRequest;
 use App\Http\Requests\Api\VerifyResetOtpRequest;
 use App\Http\Requests\googleAuthRequest;
+use App\Mail\OtpMail;
+use App\Models\User;
+use App\Models\VerificationCode;
 use Google\Client as GoogleClient;
-use Illuminate\Support\Str;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
+
 class AuthController extends Controller
 {
-   private function apiResponse(bool $success, int $statusCode, string $message, mixed $data = null, mixed $errors = null)
-{
-    return response()->json([
-        'success' => $success,
-        'data' => $data,
-        'message' => $message,
-        'errors' => $errors,
-    ], $statusCode);
-}
+    private function apiResponse(bool $success, int $statusCode, string $message, mixed $data = null, mixed $errors = null)
+    {
+        return response()->json([
+            'success' => $success,
+            'data' => $data,
+            'message' => $message,
+            'errors' => $errors,
+        ], $statusCode);
+    }
 
-   public function registerPlayer(RegisterRequest $request)
-{
-    return $this->register($request, 'player');
-}
+    public function registerPlayer(RegisterRequest $request)
+    {
+        return $this->register($request, 'player');
+    }
 
-public function register(RegisterRequest $request, string $role)
-{
-    // التأكد أن الإيميل غير مسجل مسبقًا
-    $existingUser = User::where('email', $request->email)->first();
+    public function register(RegisterRequest $request, string $role)
+    {
+        // التأكد أن الإيميل غير مسجل مسبقًا
+        $existingUser = User::where('email', $request->email)->first();
 
-    if ($existingUser) {
+        if ($existingUser) {
+            return $this->apiResponse(
+                false,
+                422,
+                'Email is already registered'
+            );
+        }
+
+        // إنشاء المستخدم
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'phone' => $request->phone,
+            'password' => Hash::make($request->password),
+            'status' => 'active',
+            'email_verified_at' => null,
+        ]);
+
+        // إعطاء المستخدم Role
+        $user->assignRole($role);
+
         return $this->apiResponse(
-            false,
-            422,
-            'Email is already registered'
+            true,
+            200,
+            'Account created, call send-otp to receive a verification code',
+            [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]
+        );
+
+    }
+
+    public function googleAuth(googleAuthRequest $request)
+    {
+        $client = new GoogleClient([
+            'client_id' => config('services.google.client_id'),
+        ]);
+
+        try {
+            $payload = $client->verifyIdToken($request->id_token);
+        } catch (\Throwable $e) {
+            $payload = false;
+        }
+
+        if (! $payload) {
+            return $this->apiResponse(
+                false,
+                401,
+                'Invalid Google token.'
+            );
+        }
+
+        $googleId = $payload['sub'];
+        $email = $payload['email'];
+        $name = $payload['name'] ?? 'Google User';
+
+        // البحث عن حساب Google
+        $user = User::where('google_id', $googleId)->first();
+
+        if (! $user) {
+
+            // البحث عن حساب بنفس الإيميل
+            $user = User::where('email', $email)->first();
+
+            if ($user) {
+
+                // ربط حساب Google بالحساب الموجود
+                $user->update([
+                    'google_id' => $googleId,
+                    'email_verified_at' => $user->email_verified_at ?? now(),
+                ]);
+
+            } else {
+
+                // إنشاء مستخدم جديد
+                $user = User::create([
+                    'name' => $name,
+                    'email' => $email,
+                    'password' => null,
+                    'google_id' => $googleId,
+                    'email_verified_at' => now(),
+                    'status' => 'active',
+                ]);
+
+                $user->assignRole('player');
+            }
+        }
+
+        // إنشاء Sanctum token
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return $this->apiResponse(
+            true,
+            200,
+            'Logged in',
+            [
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'roles' => $user->getRoleNames(),
+                ],
+            ]
         );
     }
 
-    // إنشاء المستخدم
-    $user = User::create([
-        'name' => $request->name,
-        'email' => $request->email,
-        'phone' => $request->phone,
-        'password' => Hash::make($request->password),
-        'status' => 'active',
-        'email_verified_at' => null,
-    ]);
+    public function sendOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+        ]);
 
-    // إعطاء المستخدم Role
-    $user->assignRole($role);
+        $user = User::where('email', $request->email)->first();
 
-    return $this->apiResponse(
-        true,
-        200,
-        'Account created, verification code sent',
-        [
+        if ($user->email_verified_at) {
+            return ApiResponse::send(
+                false,
+                422,
+                'Email is already verified.'
+            );
+        }
+
+        $otp = random_int(100000, 999999);
+
+        VerificationCode::create([
             'user_id' => $user->id,
-            'email' => $user->email,
-        ]
-    );
+            'code' => $otp,
+            'type' => 'registration',
+            'expires_at' => now()->addMinutes(10),
+            'used_at' => null,
+        ]);
 
-}
+        Mail::to($user->email)->send(
+            new OtpMail($otp)
+        );
 
-public function googleAuth(googleAuthRequest $request)
-{
-    $client = new GoogleClient([
-        'client_id' => config('services.google.client_id'),
-    ]);
-
-    $payload = $client->verifyIdToken($request->id_token);
-
-    if (!$payload) {
-        return $this->apiResponse(
-            false,
-            401,
-            'Invalid Google token.'
+        return ApiResponse::send(
+            true,
+            200,
+            'OTP sent successfully to your email.'
         );
     }
 
-    $googleId = $payload['sub'];
-    $email = $payload['email'];
-    $name = $payload['name'] ?? 'Google User';
+    public function verifyOtp(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'otp_code' => 'required|digits:6',
+        ]);
 
-    // البحث عن حساب Google
-    $user = User::where('google_id', $googleId)->first();
+        $user = User::where('email', $request->email)->first();
 
-    if (!$user) {
+        $verificationCode = VerificationCode::where('user_id', $user->id)
+            ->where('code', $request->otp_code)
+            ->where('type', 'registration')
+            ->where('expires_at', '>', now())
+            ->whereNull('used_at')
+            ->first();
 
-        // البحث عن حساب بنفس الإيميل
-        $user = User::where('email', $email)->first();
+        if (! $verificationCode) {
+            return $this->apiResponse(
+                false,
+                422,
+                'Invalid or expired OTP.'
+            );
+        }
 
-        if ($user) {
+        $user->email_verified_at = now();
+        $user->save();
 
-            // ربط حساب Google بالحساب الموجود
+        $verificationCode->used_at = now();
+        $verificationCode->save();
+
+        return $this->apiResponse(
+            true,
+            200,
+            'Email verified',
+            [
+                'email_verified_at' => $user->email_verified_at,
+            ]
+        );
+    }
+
+    public function login(LoginRequest $request)
+    {
+        $user = User::where('email', $request->email)->first();
+
+        // Check if account is currently locked
+        if ($user && $user->locked_until && now()->lessThan($user->locked_until)) {
+            return $this->apiResponse(
+                false,
+                423,
+                'Account locked, try again later'
+            );
+        }
+
+        // Reset lockout after 15 minutes
+        if ($user && $user->locked_until && now()->greaterThanOrEqualTo($user->locked_until)) {
             $user->update([
-                'google_id' => $googleId,
-                'email_verified_at' => $user->email_verified_at ?? now(),
-            ]);
-
-        } else {
-
-            // إنشاء مستخدم جديد
-            $user = User::create([
-                'name' => $name,
-                'email' => $email,
-                'password' => null,
-                'google_id' => $googleId,
-                'email_verified_at' => now(),
+                'failed_login_attempts' => 0,
+                'locked_until' => null,
                 'status' => 'active',
             ]);
-
-            $user->assignRole('player');
         }
-    }
 
-    // إنشاء Sanctum token
-    $token = $user->createToken('auth_token')->plainTextToken;
+        // Check credentials
+        if (! $user || ! Hash::check($request->password, $user->password)) {
 
-    return $this->apiResponse(
-        true,
-        200,
-        'Logged in',
-        [
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'roles' => $user->getRoleNames(),
-            ],
-        ]
-    );
-}
-public function sendOtp(Request $request)
-{
-    $request->validate([
-        'email' => 'required|email|exists:users,email',
-    ]);
+            if ($user) {
+                $user->increment('failed_login_attempts');
 
-    $user = User::where('email', $request->email)->first();
+                // Lock account after 5 failed attempts
+                if ($user->failed_login_attempts >= 5) {
+                    $user->update([
+                        'locked_until' => now()->addMinutes(15),
+                        'status' => 'locked',
+                    ]);
 
-    if ($user->email_verified_at) {
-        return ApiResponse::send(
-            false,
-            422,
-            'Email is already verified.'
-        );
-    }
+                    return $this->apiResponse(
+                        false,
+                        423,
+                        'Account locked, try again in 15 minutes'
+                    );
+                }
+            }
 
-    $otp = random_int(100000, 999999);
+            return $this->apiResponse(
+                false,
+                401,
+                'Invalid credentials.'
+            );
+        }
 
-    VerificationCode::create([
-        'user_id' => $user->id,
-        'code' => $otp,
-        'type' => 'registration',
-        'expires_at' => now()->addMinutes(10),
-        'used_at' => null,
-    ]);
+        // Check account status
+        if ($user->status !== 'active') {
+            return $this->apiResponse(
+                false,
+                403,
+                'Your account is not active.'
+            );
+        }
 
-    Mail::to($user->email)->send(
-        new OtpMail($otp)
-    );
+        // Check email verification
+        if (! $user->email_verified_at) {
+            return $this->apiResponse(
+                false,
+                403,
+                'Please verify your email before logging in.'
+            );
+        }
 
-    return ApiResponse::send(
-        true,
-        200,
-        'OTP sent successfully to your email.'
-    );
-}public function verifyOtp(Request $request)
-{
-    $request->validate([
-        'email' => 'required|email|exists:users,email',
-        'otp_code' => 'required|digits:6',
-    ]);
-
-    $user = User::where('email', $request->email)->first();
-
-    $verificationCode = VerificationCode::where('user_id', $user->id)
-        ->where('code', $request->otp_code)
-        ->where('type', 'registration')
-        ->where('expires_at', '>', now())
-        ->whereNull('used_at')
-        ->first();
-
-    if (!$verificationCode) {
-        return $this->apiResponse(
-            false,
-            422,
-            'Invalid or expired OTP.'
-        );
-    }
-
-    $user->email_verified_at = now();
-    $user->save();
-
-    $verificationCode->used_at = now();
-    $verificationCode->save();
-
-    return $this->apiResponse(
-        true,
-        200,
-        'Email verified',
-        [
-            'email_verified_at' => $user->email_verified_at,
-        ]
-    );
-}
-
-public function login(LoginRequest $request)
-{
-    $user = User::where('email', $request->email)->first();
-
-    // Check if account is currently locked
-    if ($user && $user->locked_until && now()->lessThan($user->locked_until)) {
-        return $this->apiResponse(
-            false,
-            423,
-            'Account locked, try again later'
-        );
-    }
-
-    // Reset lockout after 15 minutes
-    if ($user && $user->locked_until && now()->greaterThanOrEqualTo($user->locked_until)) {
+        // Reset failed login attempts after successful login
         $user->update([
             'failed_login_attempts' => 0,
             'locked_until' => null,
         ]);
-    }
 
-    // Check credentials
-    if (!$user || !Hash::check($request->password, $user->password)) {
-
-        if ($user) {
-            $user->increment('failed_login_attempts');
-
-            // Lock account after 5 failed attempts
-            if ($user->failed_login_attempts >= 5) {
-                $user->update([
-                    'locked_until' => now()->addMinutes(15),
-                ]);
-
-                return $this->apiResponse(
-                    false,
-                    423,
-                    'Account locked, try again in 15 minutes'
-                );
-            }
-        }
+        // Create authentication token
+        $token = $user->createToken('auth_token')->plainTextToken;
 
         return $this->apiResponse(
-            false,
-            401,
-            'Invalid credentials.'
+            true,
+            200,
+            'Logged in',
+            [
+                'token' => $token,
+                'user' => [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'roles' => $user->getRoleNames(),
+                ],
+            ]
         );
-    }
-
-    // Check account status
-    if ($user->status !== 'active') {
-        return $this->apiResponse(
-            false,
-            403,
-            'Your account is not active.'
-        );
-    }
-
-    // Check email verification
-    if (!$user->email_verified_at) {
-        return $this->apiResponse(
-            false,
-            403,
-            'Please verify your email before logging in.'
-        );
-    }
-
-    // Reset failed login attempts after successful login
-    $user->update([
-        'failed_login_attempts' => 0,
-        'locked_until' => null,
-    ]);
-
-    // Create authentication token
-    $token = $user->createToken('auth_token')->plainTextToken;
-
-    return $this->apiResponse(
-        true,
-        200,
-        'Logged in',
-        [
-            'token' => $token,
-            'user' => [
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'roles' => $user->getRoleNames(),
-            ],
-        ]
-    );
 
     }
+
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
@@ -318,97 +327,104 @@ public function login(LoginRequest $request)
             'Logged out'
         );
     }
-   public function forgotPassword(Request $request)
-{
-    $request->validate([
-        'email' => 'required|email|exists:users,email',
-    ]);
 
-    $user = User::where('email', $request->email)->first();
+    public function forgotPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
 
-    $otp = random_int(100000, 999999);
+        $user = User::where('email', $request->email)->first();
 
-    VerificationCode::create([
-        'user_id' => $user->id,
-        'code' => $otp,
-        'type' => 'password_reset',
-        'expires_at' => now()->addMinutes(10),
-        'used_at' => null,
-    ]);
+        // Same response whether or not the email exists, so this endpoint never
+        // reveals which emails are registered.
+        if ($user) {
+            $otp = random_int(100000, 999999);
 
-    Mail::to($user->email)->send(
-        new OtpMail($otp)
-    );
+            VerificationCode::create([
+                'user_id' => $user->id,
+                'code' => $otp,
+                'type' => 'password_reset',
+                'expires_at' => now()->addMinutes(10),
+                'used_at' => null,
+            ]);
 
-    return $this->apiResponse(
-        true,
-        200,
-        'If this email exists, a reset code was sent'
-    );
-}
-public function verifyResetOtp(VerifyResetOtpRequest $request)
-{
-    $user = User::where('email', $request->email)->first();
+            Mail::to($user->email)->send(
+                new OtpMail($otp)
+            );
+        }
 
-    $verificationCode = VerificationCode::where('user_id', $user->id)
-        ->where('code', $request->otp_code)
-        ->where('type', 'password_reset')
-        ->where('expires_at', '>', now())
-        ->whereNull('used_at')
-        ->first();
-
-    if (!$verificationCode) {
-        return ApiResponse::send(
-            false,
-            422,
-            'Invalid or expired OTP.'
-        );
-    }
-
-    $verificationCode->verified_at = now();
-    $verificationCode->save();
-
-    return ApiResponse::send(
-        true,
-        200,
-        'OTP verified successfully. You can now reset your password.'
-    );
-}
-public function resetPassword(Request $request)
-{
-    $request->validate([
-        'email' => 'required|email|exists:users,email',
-        'password' => 'required|string|min:8|confirmed',
-    ]);
-
-    $user = User::where('email', $request->email)->first();
-
-    $verificationCode = VerificationCode::where('user_id', $user->id)
-        ->where('type', 'password_reset')
-        ->whereNotNull('verified_at')
-        ->whereNull('used_at')
-        ->where('expires_at', '>', now())
-        ->latest('verified_at')
-        ->first();
-
-    if (!$verificationCode) {
         return $this->apiResponse(
-            false,
-            422,
-            'OTP verification required o                                                                                    r expired.'
+            true,
+            200,
+            'If this email exists, a reset code was sent'
         );
     }
 
-    $user->password = Hash::make($request->password);
-    $user->save();
+    public function verifyResetOtp(VerifyResetOtpRequest $request)
+    {
+        $user = User::where('email', $request->email)->first();
 
-    $verificationCode->used_at = now();
-    $verificationCode->save();
+        $verificationCode = VerificationCode::where('user_id', $user->id)
+            ->where('code', $request->otp_code)
+            ->where('type', 'password_reset')
+            ->where('expires_at', '>', now())
+            ->whereNull('used_at')
+            ->first();
 
-    return $this->apiResponse(
-        true,
-        200,
-        'Password updated'
-    );
-}
+        if (! $verificationCode) {
+            return ApiResponse::send(
+                false,
+                422,
+                'Invalid or expired OTP.'
+            );
+        }
+
+        $verificationCode->verified_at = now();
+        $verificationCode->save();
+
+        return ApiResponse::send(
+            true,
+            200,
+            'OTP verified successfully. You can now reset your password.'
+        );
+    }
+
+    public function resetPassword(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|email|exists:users,email',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        $verificationCode = VerificationCode::where('user_id', $user->id)
+            ->where('type', 'password_reset')
+            ->whereNotNull('verified_at')
+            ->whereNull('used_at')
+            ->where('expires_at', '>', now())
+            ->latest('verified_at')
+            ->first();
+
+        if (! $verificationCode) {
+            return $this->apiResponse(
+                false,
+                422,
+                'OTP verification required or expired.'
+            );
+        }
+
+        $user->password = Hash::make($request->password);
+        $user->save();
+
+        $verificationCode->used_at = now();
+        $verificationCode->save();
+
+        return $this->apiResponse(
+            true,
+            200,
+            'Password updated'
+        );
+    }
 }
