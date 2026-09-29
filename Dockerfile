@@ -1,29 +1,41 @@
-FROM php:8.3-cli
+# Production image for Render (see render.yaml and docs in DEPLOY.md).
 
-RUN apt-get update && apt-get install -y \
-    git \
-    unzip \
-    libzip-dev \
-    libpng-dev \
-    libonig-dev \
-    libxml2-dev \
-    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+# --- Front-end assets (welcome page / emails use Vite) ---
+FROM node:20-alpine AS assets
+WORKDIR /app
+COPY package.json vite.config.js ./
+RUN npm install --no-audit --no-fund
+COPY resources ./resources
+COPY public ./public
+RUN npm run build
+
+# --- Application ---
+FROM php:8.2-apache
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends libzip-dev libicu-dev unzip \
+    && docker-php-ext-install pdo_mysql zip intl bcmath opcache \
+    && a2enmod rewrite \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
+    && sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-WORKDIR /var/www
+WORKDIR /var/www/html
+
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --no-interaction
 
 COPY . .
+COPY --from=assets /app/public/build ./public/build
 
-RUN composer install --no-dev --optimize-autoloader
+RUN composer dump-autoload --optimize --no-dev \
+    && chown -R www-data:www-data storage bootstrap/cache
 
-RUN mkdir -p storage/framework/cache \
-    storage/framework/sessions \
-    storage/framework/views \
-    bootstrap/cache
+COPY docker/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
 
-RUN chmod -R 775 storage bootstrap/cache
-
-EXPOSE 10000
-
-CMD php artisan serve --host=0.0.0.0 --port=10000
+CMD ["entrypoint.sh"]
