@@ -3,13 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\BookingRequest;
+use App\Http\Requests\Api\BookingRequest;
 use App\Models\Booking;
 use App\Models\TimeSlot;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use App\Http\Requests\PaymentReceiptUploadRequest;
+use App\Http\Requests\Api\PaymentReceiptUploadRequest;
 use App\Models\PaymentReceipt;
 use Illuminate\Support\Facades\Storage;
 class BookingController extends Controller

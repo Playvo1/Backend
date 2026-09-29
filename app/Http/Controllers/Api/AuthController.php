@@ -14,7 +14,7 @@ use App\Models\VerificationCode;
 use App\Helpers\ApiResponse;
 use App\Http\Requests\Api\LoginRequest;
 use App\Http\Requests\Api\VerifyResetOtpRequest;
-use App\Http\Requests\googleAuthRequest;
+use App\Http\Requests\Api\googleAuthRequest;
 use Google\Client as GoogleClient;
 use Illuminate\Support\Str;
 class AuthController extends Controller

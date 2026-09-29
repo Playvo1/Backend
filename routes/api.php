@@ -5,6 +5,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\VenueController;
 use App\Http\Controllers\Api\BookingController;
+use App\Http\Controllers\Api\TimeSlotController;
+use App\Http\Controllers\Api\OwnerBookingController;
+use App\Http\Controllers\Api\AdminVenueController;
+use App\Http\Controllers\Api\AdminPaymentReceiptController;
 Route::prefix('v1')->group(function () {
 
     Route::post('auth/register/player', [AuthController::class, 'registerPlayer']);
@@ -22,8 +26,45 @@ Route::prefix('v1')->group(function () {
  Route::get('venues', [VenueController::class, 'index']);
  Route::get('/venues/{id}', [VenueController::class, 'show']);
   Route::get('/venues/{id}/time-slots', [VenueController::class, 'timeSlots']);
+  Route::put('owner/venues/{id}', [VenueController::class, 'update'])
+    ->middleware('auth:sanctum');
+    Route::post('owner/venues/{id}/images', [VenueController::class, 'uploadImage'])
+    ->middleware('auth:sanctum');
+
+
   Route::post('/bookings', [BookingController::class, 'store'])
     ->middleware('auth:sanctum');
     Route::post('/bookings/{id}/payment-receipt', [BookingController::class, 'uploadPaymentReceipt'])
     ->middleware('auth:sanctum');
+
+
+
+    Route::prefix('venue_owner')
+        ->middleware(['auth:sanctum', 'role:venue_owner'])
+        ->group(function () {
+
+    Route::post('owner/venues/{id}/time-slots', [TimeSlotController::class, 'store']);
+
+
+  Route::put('owner/time-slots/{id}', [TimeSlotController::class, 'update']);
+
+
+    Route::get('owner/bookings', [OwnerBookingController::class, 'index']);
+
+});
+    Route::prefix('admin')
+        ->middleware(['auth:sanctum', 'role:admin'])
+        ->group(function () {
+            Route::post('admin/venues', [AdminVenueController::class, 'store']);
+
+            Route::put('admin/venues/{id}/status', [AdminVenueController::class, 'updateStatus']);
+            Route::post('admin/venues', [AdminVenueController::class, 'store']);
+
+            Route::put('admin/venues/{id}/status', [AdminVenueController::class, 'updateStatus']);
+
+            Route::get('payment-receipts', [AdminPaymentReceiptController::class, 'index']);
+            Route::put('payment-receipts/{id}/verify', [AdminPaymentReceiptController::class, 'verify']);
+            Route::put('payment-receipts/{id}/reject', [AdminPaymentReceiptController::class, 'reject']);
+        });
+
 });
