@@ -9,6 +9,14 @@ sed -i "s/<VirtualHost \*:[0-9]*>/<VirtualHost *:${PORT}>/" /etc/apache2/sites-a
 # Render sets RENDER_EXTERNAL_URL (https://<service>.onrender.com) automatically.
 export APP_URL="${APP_URL:-$RENDER_EXTERNAL_URL}"
 
+# Render secret files are readable by root only, but Apache runs PHP as www-data,
+# so web requests couldn't load the DB CA certificate. Copy it somewhere readable.
+if [ -n "$MYSQL_ATTR_SSL_CA" ] && [ -f "$MYSQL_ATTR_SSL_CA" ]; then
+    cp "$MYSQL_ATTR_SSL_CA" /usr/local/share/db-ca.pem
+    chmod 644 /usr/local/share/db-ca.pem
+    export MYSQL_ATTR_SSL_CA=/usr/local/share/db-ca.pem
+fi
+
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
