@@ -141,7 +141,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\r\n    \"email\": \"h***@gmail.com\",\r\n    \"password\": \"hatem1234\"\r\n}",
+              "raw": "{\r\n    \"email\": \"hatem.shbair2003@gmail.com\",\r\n    \"password\": \"si1^<!VPMK6!\"\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -414,6 +414,223 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "updatevenue",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "23|twe3FWArFU9lCgqUH9IRj95o9RHdzquH6kc073po4e1b9695",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/owner/venues/1",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "owner",
+                "venues",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "images venue",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "26|OOvXE7SQhzQCrZEvAqryySi9cQvcEUfgsdHlQy2098606f0e",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "image",
+                  "type": "file",
+                  "src": [
+                    "/C:/Users/joker/Pictures/Screenshots/Screenshot (1).png"
+                  ]
+                },
+                {
+                  "key": "sort_order",
+                  "value": "1",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{playvo}}/api/v1/owner/venues/1/images",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "owner",
+                "venues",
+                "1",
+                "images"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "create timeslot",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "/api/v1/owner/venues/1/time-slots",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": " application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/owner/venues/1/time-slots",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "owner",
+                "venues",
+                "1",
+                "time-slots"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "update timeslot",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "27|EWgL6ROT22qDHlqPfOM0XILan9lqzWQvKIzwMLPIa32562da",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "appliction/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"slot_date\": \"2026-09-30\",\r\n    \"start_time\": \"21:00\",\r\n    \"end_time\": \"22:00\",\r\n    \"hourly_price\": 120\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{playvo}}/api/v1/owner/time-slots/1",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "owner",
+                "time-slots",
+                "1"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "owner booking",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "27|EWgL6ROT22qDHlqPfOM0XILan9lqzWQvKIzwMLPIa32562da",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/owner/bookings?venue_id=1",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "owner",
+                "bookings"
+              ],
+              "query": [
+                {
+                  "key": "venue_id",
+                  "value": "1"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -508,6 +725,272 @@
                 "bookings",
                 "18",
                 "payment-receipt"
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "add venue",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "28|qUaptWmNak2FvtUaE0Knmyvul79LDmoCwHVlWLxQed0b7367",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n        \"owner_id\": 16,\r\n    \"name_ar\": \"ملعب غزة الرياضي\",\r\n    \"name_en\": \"Gaza Sports Stadium\",\r\n    \"city_id\": 1,\r\n    \"address_ar\": \"الرمال، غزة\",\r\n    \"address_en\": \"Al-Rimal, Gaza\",\r\n    \"area_ar\": \"الرمال\",\r\n    \"area_en\": \"Al-Rimal\",\r\n    \"latitude\": 31.5204,\r\n    \"longitude\": 34.4600,\r\n    \"length_m\": 40,\r\n    \"width_m\": 20,\r\n    \"min_hourly_price\": 100\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{playvo}}/api/v1/admin/venues",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "venues"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "remove venue",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "29|u7zWO94SuOnfLAyiB2ZShRxosznoiuAqSqj6j9wV76c88fcd",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/admin/venues/2/status",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "venues",
+                "2",
+                "status"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "login",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "30|DQZHDlI215tcU6kVHHy1OL7ZnJq4lC8i2ECkz7d2c896483f",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"name\": \"Test Venue Owner\",\r\n    \"email\": \"hatem.shbair2003@gmail.com\",\r\n    \"phone\": \"0591234567\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{playvo}}/api/v1/admin/venue-owners",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "venue-owners"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "paymet receipt",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "32|cQsM2uxZRf7HjxUtBE3Sv1LqyXuHUVjwvYdw8Ko20553635c",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "appliction/json"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/admin/payment-receipts?status=pending",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "payment-receipts"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "verify payment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "32|cQsM2uxZRf7HjxUtBE3Sv1LqyXuHUVjwvYdw8Ko20553635c",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "appliction/json"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/admin/payment-receipts/1/verify",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "payment-receipts",
+                "1",
+                "verify"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "reject payment",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "32|cQsM2uxZRf7HjxUtBE3Sv1LqyXuHUVjwvYdw8Ko20553635c",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"reason\": \"Receipt image is unclear\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{playvo}}/api/v1/admin/payment-receipts/1/reject",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "payment-receipts",
+                "1",
+                "reject"
               ]
             }
           },
