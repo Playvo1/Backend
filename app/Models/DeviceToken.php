@@ -8,6 +8,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DeviceToken extends Model
 {
+    public $timestamps = false;
+
+    protected $fillable = [
+        'user_id',
+        'fcm_token',
+        'platform',
+    ];
+
     /**
      * The user this device token belongs to.
      */

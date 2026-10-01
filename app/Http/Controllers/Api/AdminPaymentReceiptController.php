@@ -9,7 +9,9 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-
+use App\Models\Notification;
+use App\Services\FirebaseNotificationService;
+use Illuminate\Support\Facades\Log;
 class AdminPaymentReceiptController extends Controller
 {
     public function index(Request $request): JsonResponse
@@ -31,11 +33,11 @@ class AdminPaymentReceiptController extends Controller
             $receipts
         );
     }
-
-    public function verify(int $id): JsonResponse
-    {
-        return DB::transaction(function () use ($id) {
-
+public function verify(
+    int $id,
+    FirebaseNotificationService $firebase
+): JsonResponse {
+    return DB::transaction(function () use ($id, $firebase) {
             $receipt = PaymentReceipt::with([
                 'booking.timeSlot.venue',
             ])
@@ -79,7 +81,42 @@ class AdminPaymentReceiptController extends Controller
             $booking->timeSlot->update([
                 'status' => 'booked',
             ]);
+          $player = $booking->captain;
 
+$title = 'Booking Confirmed';
+$body = 'Your booking has been confirmed successfully.';
+
+$notification = Notification::create([
+    'user_id' => $player->id,
+    'booking_id' => $booking->id,
+    'type' => 'booking_confirmed',
+    'title' => $title,
+    'body' => $body,
+    'sent_at' => now(),
+]);
+
+$deviceTokens = $player->deviceTokens()->pluck('fcm_token');
+
+foreach ($deviceTokens as $token) {
+    try {
+        $firebase->sendToToken(
+            $token,
+            $title,
+            $body,
+            [
+                'type' => 'booking_confirmed',
+                'booking_id' => $booking->id,
+                'notification_id' => $notification->id,
+            ]
+        );
+    } catch (\Throwable $e) {
+        Log::error('FCM notification failed', [
+            'user_id' => $player->id,
+            'booking_id' => $booking->id,
+            'error' => $e->getMessage(),
+        ]);
+    }
+}
             return ApiResponse::send(
                 true,
                 200,
@@ -95,6 +132,7 @@ class AdminPaymentReceiptController extends Controller
                 ]
             );
         });
+
     }
 
     public function reject(Request $request, int $id): JsonResponse

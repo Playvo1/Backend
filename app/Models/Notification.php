@@ -7,6 +7,21 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Notification extends Model
 {
+    protected $fillable = [
+        'user_id',
+        'booking_id',
+        'type',
+        'title',
+        'body',
+        'is_read',
+        'sent_at',
+    ];
+
+    protected $casts = [
+        'is_read' => 'boolean',
+        'sent_at' => 'datetime',
+    ];
+
     /**
      * The user this notification was sent to.
      */

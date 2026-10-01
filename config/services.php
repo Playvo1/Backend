@@ -38,5 +38,7 @@ return [
 'google' => [
     'client_id' => env('GOOGLE_CLIENT_ID'),
 ],
-
+'firebase' => [
+    'credentials' => storage_path('app/firebase/palyvo-cc91c-firebase-adminsdk-fbsvc-e36e3ac9fb.json'),
+],
 ];

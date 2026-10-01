@@ -9,6 +9,10 @@ use App\Http\Controllers\Api\TimeSlotController;
 use App\Http\Controllers\Api\OwnerBookingController;
 use App\Http\Controllers\Api\AdminVenueController;
 use App\Http\Controllers\Api\AdminPaymentReceiptController;
+use App\Http\Controllers\Api\VenueRatingController;
+use App\Http\Controllers\Api\FavoriteController;
+use App\Http\Controllers\Api\DeviceTokenController;
+use App\Http\Controllers\Api\NotificationController;
 Route::prefix('v1')->group(function () {
 
     Route::post('auth/register/player', [AuthController::class, 'registerPlayer']);
@@ -33,6 +37,25 @@ Route::prefix('v1')->group(function () {
     ->middleware('auth:sanctum');
 
 
+   Route::middleware('auth:sanctum')->group(function () {
+
+    Route::get('/bookings', [BookingController::class, 'history']);
+
+    Route::post('/bookings', [BookingController::class, 'store']);
+
+    Route::post('/bookings/{id}/payment-receipt', [BookingController::class, 'uploadPaymentReceipt']);
+
+    Route::post('/bookings/{id}/rating', [VenueRatingController::class, 'store']);
+Route::post('/venues/{id}/favorite', [FavoriteController::class, 'toggle']);
+
+    Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
+    Route::get('/notifications', [NotificationController::class, 'index']);
+    Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+Route::get('/favorites', [FavoriteController::class, 'index']);
+});
+
+
+Route::get('/bookings/share/{share_token}',[BookingController::class, 'share']);
 
 
     Route::prefix('venue_owner')
