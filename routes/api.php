@@ -26,11 +26,6 @@ Route::prefix('v1')->group(function () {
  Route::get('venues', [VenueController::class, 'index']);
  Route::get('/venues/{id}', [VenueController::class, 'show']);
   Route::get('/venues/{id}/time-slots', [VenueController::class, 'timeSlots']);
-  Route::put('owner/venues/{id}', [VenueController::class, 'update'])
-    ->middleware('auth:sanctum');
-    Route::post('owner/venues/{id}/images', [VenueController::class, 'uploadImage'])
-    ->middleware('auth:sanctum');
-
 
   Route::post('/bookings', [BookingController::class, 'store'])
     ->middleware('auth:sanctum');
@@ -39,11 +34,16 @@ Route::prefix('v1')->group(function () {
 
 
 
+
     Route::prefix('venue_owner')
         ->middleware(['auth:sanctum', 'role:venue_owner'])
         ->group(function () {
 
-    Route::post('owner/venues/{id}/time-slots', [TimeSlotController::class, 'store']);
+         Route::put('owner/venues/{id}', [VenueController::class, 'update']);
+
+    Route::post('owner/venues/{id}/images', [VenueController::class, 'uploadImage']);
+
+   Route::post('owner/venues/{id}/time-slots', [TimeSlotController::class, 'store']);
 
 
   Route::put('owner/time-slots/{id}', [TimeSlotController::class, 'update']);
