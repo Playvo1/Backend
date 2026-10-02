@@ -60,7 +60,7 @@ services:
       - key: MAIL_PASSWORD
         sync: false
       - key: MAIL_FROM_ADDRESS
-        value: no-reply@playvo.app
+        value: no-reply@playvo.test
       - key: MAIL_FROM_NAME
         value: Playvo
 
