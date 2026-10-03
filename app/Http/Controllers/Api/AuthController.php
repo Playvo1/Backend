@@ -4,10 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\googleAuthRequest;
 use App\Http\Requests\Api\LoginRequest;
 use App\Http\Requests\Api\RegisterRequest;
 use App\Http\Requests\Api\VerifyResetOtpRequest;
-use App\Http\Requests\googleAuthRequest;
 use App\Mail\OtpMail;
 use App\Models\User;
 use App\Models\VerificationCode;

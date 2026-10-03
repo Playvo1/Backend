@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\VenueFilterRequest;
+use App\Http\Requests\Api\VenueFilterRequest;
 use App\Models\Venue;
 use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
