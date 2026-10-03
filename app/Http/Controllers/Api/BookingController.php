@@ -18,7 +18,7 @@ class BookingController extends Controller
     {
         $data = $request->validated();
 
-        $timeSlot = TimeSlot::find($data['time_slot_id']);
+        $timeSlot = TimeSlot::bookable()->find($data['time_slot_id']);
 
         if (!$timeSlot) {
             return response()->json([
@@ -39,11 +39,11 @@ class BookingController extends Controller
         }
 
         $result = DB::transaction(function () use ($data, $request) {
-            $timeSlot = TimeSlot::where('id', $data['time_slot_id'])
+            $timeSlot = TimeSlot::bookable()->where('id', $data['time_slot_id'])
                 ->lockForUpdate()
                 ->first();
 
-            if (!$timeSlot || $timeSlot->status !== 'available') {
+            if (!$timeSlot || $timeSlot->hasActiveBooking()) {
                 return null;
             }
 

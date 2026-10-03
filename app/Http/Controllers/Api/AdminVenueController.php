@@ -63,7 +63,10 @@ class AdminVenueController extends Controller
         }
 
         DB::transaction(function () use ($request, $venue) {
-            $venue->restore();
+            if ($venue->trashed()) {
+                $venue->restore();
+                $venue->upcomingFreeSlots('blocked')->update(['status' => 'available']);
+            }
             $venue->update(['status' => 'active']);
 
             AuditLog::record($request->user()->id, 'venue_status_change', 'VENUE', $venue->id);
@@ -74,18 +77,26 @@ class AdminVenueController extends Controller
 
     private function remove(UpdateVenueStatusRequest $request, Venue $venue): JsonResponse
     {
+        $removed = ['id' => $venue->id, 'status' => 'inactive'];
+
+        // Removing twice is a no-op: no second audit row and the original deleted_at stays.
+        if ($venue->trashed()) {
+            return ApiResponse::send(true, 200, 'Venue removed', $removed);
+        }
+
         if ($venue->hasUpcomingBookings()) {
             return ApiResponse::send(false, 409, "Resolve this venue's upcoming bookings before removing it.");
         }
 
         DB::transaction(function () use ($request, $venue) {
             $venue->update(['status' => 'inactive']);
+            $venue->upcomingFreeSlots('available')->update(['status' => 'blocked']);
             $venue->delete();
 
             AuditLog::record($request->user()->id, 'venue_status_change', 'VENUE', $venue->id);
         });
 
-        return ApiResponse::send(true, 200, 'Venue removed', ['id' => $venue->id, 'status' => 'inactive']);
+        return ApiResponse::send(true, 200, 'Venue removed', $removed);
     }
 
     private function present(Venue $venue): array

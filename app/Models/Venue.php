@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\LocalClock;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -87,7 +88,7 @@ class Venue extends Model
      */
     public function hasUpcomingBookings(): bool
     {
-        $now = now();
+        $now = LocalClock::now();
 
         return Booking::query()
             ->whereIn('status', ['pending_payment', 'confirmed'])
@@ -99,6 +100,24 @@ class Venue extends Model
                         ->whereDate('slot_date', $now->toDateString())
                         ->where('end_time', '>', $now->format('H:i:s')))))
             ->exists();
+    }
+
+    /**
+     * Not-yet-started slots in $status that no player holds or has booked. Removing a
+     * venue blocks its available ones; restoring it releases the blocked ones again.
+     */
+    public function upcomingFreeSlots(string $status): HasMany
+    {
+        $now = LocalClock::now();
+
+        return $this->timeSlots()
+            ->where('status', $status)
+            ->whereDoesntHave('bookings', fn (Builder $booking) => $booking->whereIn('status', ['pending_payment', 'confirmed']))
+            ->where(fn (Builder $when) => $when
+                ->whereDate('slot_date', '>', $now->toDateString())
+                ->orWhere(fn (Builder $today) => $today
+                    ->whereDate('slot_date', $now->toDateString())
+                    ->where('start_time', '>', $now->format('H:i:s'))));
     }
 
     /**

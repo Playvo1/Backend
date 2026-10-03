@@ -107,6 +107,39 @@ class TimeSlotManagementTest extends TestCase
             ->assertCreated();
     }
 
+    public function test_slots_of_different_sports_cannot_overlap_on_the_same_court(): void
+    {
+        $basketball = $this->makeSport('Basketball', 'كرة السلة');
+        $this->venue->sports()->attach($basketball->id);
+        $this->makeSlot($this->venue, ['slot_date' => now()->addDay()->toDateString()]);
+
+        $this->postJson("/api/v1/owner/venues/{$this->venue->id}/time-slots", $this->slotPayload(['sport_id' => $basketball->id, 'start_time' => '18:30', 'end_time' => '19:30']))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['start_time']);
+    }
+
+    public function test_slot_that_already_started_today_is_rejected(): void
+    {
+        $this->travelTo(now()->setTimezone('Asia/Gaza')->setTime(15, 0)->utc());
+        $today = now()->setTimezone('Asia/Gaza')->toDateString();
+
+        $this->postJson("/api/v1/owner/venues/{$this->venue->id}/time-slots", $this->slotPayload(['slot_date' => $today, 'start_time' => '14:00', 'end_time' => '16:00']))
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['start_time']);
+
+        $this->postJson("/api/v1/owner/venues/{$this->venue->id}/time-slots", $this->slotPayload(['slot_date' => $today, 'start_time' => '16:00', 'end_time' => '17:00']))
+            ->assertCreated();
+    }
+
+    public function test_editing_a_slot_into_the_past_is_rejected(): void
+    {
+        $slot = $this->makeSlot($this->venue);
+
+        $this->putJson("/api/v1/owner/time-slots/{$slot->id}", ['slot_date' => now()->subDays(2)->toDateString()])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['slot_date']);
+    }
+
     public function test_owner_cannot_create_slots_for_another_owners_venue(): void
     {
         $other = $this->makeVenue();
@@ -204,8 +237,7 @@ class TimeSlotManagementTest extends TestCase
         $slot = $this->makeSlot($this->venue);
 
         $this->deleteJson("/api/v1/owner/time-slots/{$slot->id}")
-            ->assertOk()
-            ->assertJson(['success' => true, 'message' => 'Time slot removed', 'data' => null]);
+            ->assertNoContent();
 
         $this->assertDatabaseMissing('time_slots', ['id' => $slot->id]);
     }

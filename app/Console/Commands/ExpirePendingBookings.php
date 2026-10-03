@@ -49,7 +49,7 @@ class ExpirePendingBookings extends Command
                     ]);
                 }
 
-               $booking->delete();
+               $booking->update(['status' => 'cancelled']);
             });
         }
 

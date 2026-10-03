@@ -23,12 +23,14 @@ class PaymentReceiptReviewService
 {
     public const REUPLOAD_WINDOW_MINUTES = 10;
 
+    public function __construct(private readonly ReceiptReuseCheck $reuseCheck) {}
+
     public function verify(PaymentReceipt $receipt, User $admin): PaymentReceipt
     {
         return DB::transaction(function () use ($receipt, $admin) {
             [$receipt, $booking] = $this->lockForReview($receipt);
 
-            if ($this->wasUsedForAnotherBooking($receipt)) {
+            if ($this->reuseCheck->usedForAnotherBooking($receipt)) {
                 throw new ConflictHttpException('This receipt has already been used for another booking.');
             }
 
@@ -82,19 +84,6 @@ class PaymentReceiptReviewService
         }
 
         return [$receipt, $booking];
-    }
-
-    /**
-     * receipt_hash is unique, so the upload already rejects a reused image; this re-check
-     * keeps verification safe even if older data predates that constraint.
-     */
-    private function wasUsedForAnotherBooking(PaymentReceipt $receipt): bool
-    {
-        return PaymentReceipt::query()
-            ->where('receipt_hash', $receipt->receipt_hash)
-            ->where('booking_id', '!=', $receipt->booking_id)
-            ->where('status', 'verified')
-            ->exists();
     }
 
     private function confirmationText(Booking $booking): string

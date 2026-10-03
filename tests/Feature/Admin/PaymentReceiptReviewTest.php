@@ -6,9 +6,9 @@ use App\Http\Resources\PaymentReceiptResource;
 use App\Models\Booking;
 use App\Models\PaymentReceipt;
 use App\Models\User;
+use App\Services\Payments\ReceiptReuseCheck;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\Sanctum;
@@ -147,12 +147,15 @@ class PaymentReceiptReviewTest extends TestCase
 
     public function test_receipt_already_used_for_another_booking_cannot_be_verified(): void
     {
-        // The unique receipt_hash index already blocks this at upload; drop it to
-        // prove verification re-checks on its own, as US-3.6 requires.
-        Schema::table('payment_receipts', fn ($table) => $table->dropUnique(['receipt_hash']));
-        $this->receipt(overrides: ['receipt_hash' => 'same-transfer', 'status' => 'verified']);
-        $booking = $this->pendingBooking(['start_time' => '20:00:00', 'end_time' => '21:00:00']);
-        $reused = $this->receipt($booking, ['receipt_hash' => 'same-transfer']);
+        // receipt_hash is unique, so two stored receipts can't share a hash; the reuse
+        // check is therefore stubbed here and its query is tested on its own below.
+        $booking = $this->pendingBooking();
+        $reused = $this->receipt($booking);
+        $this->mock(ReceiptReuseCheck::class)
+            ->shouldReceive('usedForAnotherBooking')
+            ->once()
+            ->withArgs(fn (PaymentReceipt $receipt) => $receipt->id === $reused->id)
+            ->andReturnTrue();
 
         $this->putJson("/api/v1/admin/payment-receipts/{$reused->id}/verify", ['status' => 'verified'])
             ->assertStatus(409)
@@ -164,6 +167,19 @@ class PaymentReceiptReviewTest extends TestCase
 
         $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'pending_payment']);
         $this->assertDatabaseHas('payment_receipts', ['id' => $reused->id, 'status' => 'pending']);
+        $this->assertDatabaseCount('audit_logs', 0);
+    }
+
+    public function test_reuse_check_flags_a_hash_that_confirmed_a_different_booking(): void
+    {
+        $verified = $this->receipt(overrides: ['status' => 'verified']);
+        $otherBooking = $this->pendingBooking(['start_time' => '20:00:00', 'end_time' => '21:00:00']);
+        $check = new ReceiptReuseCheck;
+
+        // An unsaved receipt carrying the same image hash for another booking.
+        $this->assertTrue($check->usedForAnotherBooking(new PaymentReceipt(['receipt_hash' => $verified->receipt_hash, 'booking_id' => $otherBooking->id])));
+        $this->assertFalse($check->usedForAnotherBooking(new PaymentReceipt(['receipt_hash' => $verified->receipt_hash, 'booking_id' => $verified->booking_id])));
+        $this->assertFalse($check->usedForAnotherBooking($this->receipt($otherBooking)));
     }
 
     public function test_admin_rejects_a_receipt_with_a_reason_the_player_sees(): void
@@ -234,7 +250,8 @@ class PaymentReceiptReviewTest extends TestCase
         $this->travel(11)->minutes();
         $this->artisan('bookings:expire')->assertSuccessful();
 
-        $this->assertDatabaseMissing('bookings', ['id' => $booking->id]);
+        $this->assertDatabaseHas('bookings', ['id' => $booking->id, 'status' => 'cancelled']);
+        $this->assertDatabaseHas('payment_receipts', ['id' => $receipt->id, 'status' => 'rejected']);
         $this->assertDatabaseHas('time_slots', ['id' => $booking->time_slot_id, 'status' => 'available']);
     }
 

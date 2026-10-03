@@ -3,27 +3,38 @@
 namespace App\Http\Requests\Api;
 
 use App\Models\TimeSlot;
+use App\Support\LocalClock;
 use Carbon\Carbon;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Validator;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * Validates an edit to an existing time slot (US-3.3). Any of date, hours and price may
- * be sent; the resulting hour range is checked against the slot's current values so a
- * partial edit can't produce an inverted or overlapping range. The already-booked
- * guard is enforced in the controller.
+ * be sent; the resulting schedule is checked against the slot's current values so a
+ * partial edit can't produce an inverted range or move the slot into the past.
+ *
+ * A slot that is held or booked is refused with 409 before any validation, so the
+ * owner always gets the story's message. Overlaps are checked by TimeSlotScheduler.
  */
 class UpdateTimeSlotRequest extends FormRequest
 {
+    public const BOOKED_MESSAGE = 'This slot already has a booking and cannot be changed.';
+
     public function authorize(): Response
     {
         $venue = $this->timeSlot()->venue ?? throw new NotFoundHttpException;
+        $ownership = Gate::inspect('manage', $venue);
 
-        return Gate::inspect('manage', $venue);
+        if ($ownership->allowed() && $this->timeSlot()->hasActiveBooking()) {
+            throw new ConflictHttpException(self::BOOKED_MESSAGE);
+        }
+
+        return $ownership;
     }
 
     /**
@@ -32,7 +43,7 @@ class UpdateTimeSlotRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'slot_date' => 'sometimes|required|date_format:Y-m-d|after_or_equal:today',
+            'slot_date' => 'sometimes|required|date_format:Y-m-d',
             'start_time' => 'sometimes|required|date_format:H:i',
             'end_time' => 'sometimes|required|date_format:H:i',
             'hourly_price' => 'sometimes|required|numeric|min:0|max:99999999',
@@ -46,7 +57,7 @@ class UpdateTimeSlotRequest extends FormRequest
     {
         return [
             function (Validator $validator) {
-                if ($validator->errors()->isNotEmpty()) {
+                if ($validator->errors()->hasAny(['slot_date', 'start_time', 'end_time'])) {
                     return;
                 }
 
@@ -58,11 +69,7 @@ class UpdateTimeSlotRequest extends FormRequest
                     return;
                 }
 
-                $slot = $this->timeSlot();
-
-                if (TimeSlot::overlapsExisting($slot->venue_id, $slot->sport_id, $date, $start, $end, $slot->id)) {
-                    $validator->errors()->add('start_time', 'This slot overlaps an existing slot for the same sport.');
-                }
+                LocalClock::addPastSlotError($validator->errors(), $date, $start);
             },
         ];
     }
