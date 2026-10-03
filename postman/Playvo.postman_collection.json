@@ -1115,6 +1115,44 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "receipt image (signed URL)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/admin/payment-receipts/1/image?expires={{receipt_expires}}&signature={{receipt_signature}}",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "payment-receipts",
+                "1",
+                "image"
+              ],
+              "query": [
+                {
+                  "key": "expires",
+                  "value": "{{receipt_expires}}"
+                },
+                {
+                  "key": "signature",
+                  "value": "{{receipt_signature}}"
+                }
+              ]
+            },
+            "description": "Receipt images are private. Copy receipt_url from the pending receipts queue (or its expires and signature query values); the link is valid for 15 minutes and needs no bearer token. An unsigned, tampered or expired link returns 403."
+          },
+          "response": []
         }
       ]
     },
