@@ -4,6 +4,7 @@ namespace App\Services\Assistant;
 
 use App\Models\AssistantQuery;
 use App\Models\User;
+use App\Support\LocalClock;
 use Carbon\CarbonImmutable;
 
 /**
@@ -59,7 +60,7 @@ class BookingAssistant
      */
     public static function today(): CarbonImmutable
     {
-        return CarbonImmutable::now(config('services.assistant.timezone'))->startOfDay();
+        return LocalClock::today();
     }
 
     /**
@@ -78,6 +79,12 @@ class BookingAssistant
         }
 
         $fromGemini = $this->onlyValid($fromGemini);
+
+        // A sport outside the SPORT table can't be searched; the fallback's reading may be.
+        if (isset($fromGemini['sport']) && ! $this->tool->findSport($fromGemini['sport'])) {
+            unset($fromGemini['sport']);
+        }
+
         $missing = array_diff_key(array_flip(self::REQUIRED_ARGUMENTS), $fromGemini);
 
         return [...$fromGemini, ...array_intersect_key($fallback, $missing)];

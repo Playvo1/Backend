@@ -5,7 +5,9 @@ namespace App\Services\Assistant;
 use App\Models\City;
 use App\Models\Sport;
 use App\Models\TimeSlot;
+use App\Support\LocalClock;
 use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 
 /**
@@ -64,9 +66,11 @@ class VenueSearchTool
      * Returns the best available slot (highest-rated venue, then cheapest),
      * or null when nothing matches — the caller then replies with the
      * "No venues match that request — try a different time." fallback.
+     * A slot today that has already started (local time, or $now) is never suggested.
      */
-    public function execute(array $arguments): ?TimeSlot
+    public function execute(array $arguments, ?CarbonInterface $now = null): ?TimeSlot
     {
+        $now ??= LocalClock::now();
         $sport = $this->findSport($arguments['sport'] ?? null);
         $date = $this->parseDate($arguments['date'] ?? null);
         $hour = $this->parseHour($arguments['hour'] ?? null);
@@ -84,7 +88,8 @@ class VenueSearchTool
             ->where('time_slots.end_time', '>', $hour)
             ->where('time_slots.status', 'available')
             ->where('venues.status', 'active')
-            ->whereNull('venues.deleted_at');
+            ->whereNull('venues.deleted_at')
+            ->when($date === $now->toDateString(), fn (Builder $q) => $q->where('time_slots.start_time', '>', $now->format('H:i:s')));
 
         if (! empty($arguments['city'])) {
             $city = $this->findByName(City::query(), $arguments['city']);
@@ -97,13 +102,13 @@ class VenueSearchTool
         }
 
         if (! empty($arguments['area'])) {
-            $area = '%'.$arguments['area'].'%';
+            // "!" is used as the LIKE escape character because it means the same on MySQL and SQLite.
+            $area = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $arguments['area']).'%';
 
             $query->where(function (Builder $q) use ($area) {
-                $q->where('venues.area_ar', 'like', $area)
-                    ->orWhere('venues.area_en', 'like', $area)
-                    ->orWhere('venues.address_ar', 'like', $area)
-                    ->orWhere('venues.address_en', 'like', $area);
+                foreach (['area_ar', 'area_en', 'address_ar', 'address_en'] as $column) {
+                    $q->orWhereRaw("venues.{$column} LIKE ? ESCAPE '!'", [$area]);
+                }
             });
         }
 

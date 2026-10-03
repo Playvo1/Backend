@@ -43,7 +43,7 @@ class GeminiQueryParser implements QueryParser
             return null;
         }
 
-        return $this->functionArguments($response->json('candidates.0.content.parts') ?? []);
+        return $this->functionArguments($response->json('candidates.0.content.parts'));
     }
 
     /**
@@ -75,19 +75,24 @@ class GeminiQueryParser implements QueryParser
     }
 
     /**
-     * @param  array<int, array<string, mixed>>  $parts
+     * Reads the search_available_venues call out of the reply. Any unexpected shape (a
+     * non-JSON body, parts or args that are not lists/objects, non-string values) counts
+     * as "no answer", so the caller falls back to the rule-based parser instead of failing.
+     *
      * @return array<string, string>|null
      */
-    private function functionArguments(array $parts): ?array
+    private function functionArguments(mixed $parts): ?array
     {
-        $call = collect($parts)->pluck('functionCall')->filter()->firstWhere('name', VenueSearchTool::NAME);
+        $call = collect(is_array($parts) ? $parts : [])
+            ->map(fn (mixed $part) => is_array($part) ? ($part['functionCall'] ?? null) : null)
+            ->first(fn (mixed $call) => is_array($call) && ($call['name'] ?? null) === VenueSearchTool::NAME);
 
-        if (! $call) {
-            Log::warning('Gemini answered without calling '.VenueSearchTool::NAME.'; using the rule-based parser.');
+        if (! is_array($call['args'] ?? null)) {
+            Log::warning('Gemini answered without a usable '.VenueSearchTool::NAME.' call; using the rule-based parser.');
 
             return null;
         }
 
-        return array_filter($call['args'] ?? [], fn ($value) => is_string($value) && $value !== '');
+        return array_filter($call['args'], fn (mixed $value) => is_string($value) && trim($value) !== '');
     }
 }

@@ -64,8 +64,11 @@ class TextNormalizer
         return str_contains(str_replace(' ', '', $text), str_replace(' ', '', $name));
     }
 
+    /**
+     * Whether most of the letters are Arabic, so "football at 6pm in الجلاء" is still English.
+     */
     public static function isArabic(string $text): bool
     {
-        return (bool) preg_match('/\p{Arabic}/u', $text);
+        return preg_match_all('/\p{Arabic}/u', $text) > preg_match_all('/\p{Latin}/u', $text);
     }
 }

@@ -44,11 +44,11 @@ class AppServiceProvider extends ServiceProvider
 
             return Limit::perHour($limit)
                 ->by('assistant:'.$request->user()->id)
-                ->response(fn () => ApiResponse::send(
+                ->response(fn (Request $request, array $headers) => ApiResponse::send(
                     false,
                     429,
                     "You've reached the limit of {$limit} assistant questions per hour. Please try again later.",
-                ));
+                )->withHeaders($headers));
         });
     }
 }

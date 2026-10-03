@@ -88,7 +88,7 @@ class AssistantEvaluator
 
         foreach ($cases as $case) {
             $arguments = $parser->parse($case['query'], $today) ?? [];
-            $actual = $this->outcome($arguments);
+            $actual = $this->outcome($arguments, $today);
             $mismatches = $this->mismatches($case['expected'], $actual);
 
             if ($mismatches !== []) {
@@ -111,7 +111,7 @@ class AssistantEvaluator
      * @param  array<string, string>  $arguments
      * @return array<string, ?string>
      */
-    private function outcome(array $arguments): array
+    private function outcome(array $arguments, CarbonImmutable $today): array
     {
         $city = isset($arguments['city'])
             ? City::where('name_ar', $arguments['city'])->orWhere('name_en', $arguments['city'])->first()
@@ -122,7 +122,7 @@ class AssistantEvaluator
             'date' => $arguments['date'] ?? null,
             'hour' => $arguments['hour'] ?? null,
             'city' => $city?->name_en,
-            'venue' => $this->tool->execute($arguments)?->venue?->name_en,
+            'venue' => $this->tool->execute($arguments, $today)?->venue?->name_en,
         ];
     }
 

@@ -7,6 +7,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\OwnerBookingIndexRequest;
 use App\Http\Resources\OwnerBookingResource;
 use App\Models\Booking;
+use App\Support\LocalClock;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 
@@ -34,15 +35,15 @@ class OwnerBookingController extends Controller
     }
 
     /**
-     * Bookings submitted this week (Monday to Sunday): every non-cancelled booking counts
+     * Bookings submitted this local (Asia/Gaza) week, Monday to Sunday: every non-cancelled booking counts
      * towards demand, while income only counts confirmed (payment-verified) bookings.
      */
     private function weeklyStats(OwnerBookingIndexRequest $request): array
     {
-        $weekStart = now()->startOfWeek();
-        $weekEnd = now()->endOfWeek();
+        $weekStart = LocalClock::now()->startOfWeek();
+        $weekEnd = LocalClock::now()->endOfWeek();
 
-        $thisWeek = fn () => $this->ownerBookings($request)->whereBetween('created_at', [$weekStart, $weekEnd]);
+        $thisWeek = fn () => $this->ownerBookings($request)->whereBetween('created_at', [$weekStart->utc(), $weekEnd->utc()]);
 
         return [
             'week_start' => $weekStart->toDateString(),

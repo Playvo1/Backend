@@ -6,6 +6,7 @@ use App\Models\Booking;
 use App\Models\PaymentReceipt;
 use App\Models\User;
 use App\Models\Venue;
+use App\Support\LocalClock;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\DB;
 /**
  * Platform-wide numbers for the admin dashboard (US-5.1). Everything is aggregated per
  * request so the cards move as soon as bookings come in. Cancelled bookings never
- * count; "today" and "this month" are ranges on bookings.created_at.
+ * count; "today" and "this month" are local-time ranges on bookings.created_at.
  */
 class DashboardStatistics
 {
@@ -30,8 +31,8 @@ class DashboardStatistics
             'total_users' => User::count(),
             'total_venues' => Venue::count(),
             'active_venues' => Venue::where('status', 'active')->count(),
-            'bookings_today' => $this->bookingsBetween(now()->startOfDay(), now()->endOfDay()),
-            'bookings_this_month' => $this->bookingsBetween(now()->startOfMonth(), now()->endOfMonth()),
+            'bookings_today' => $this->bookingsBetween(LocalClock::now()->startOfDay(), LocalClock::now()->endOfDay()),
+            'bookings_this_month' => $this->bookingsBetween(LocalClock::now()->startOfMonth(), LocalClock::now()->endOfMonth()),
             'pending_receipts' => PaymentReceipt::where('status', 'pending')->count(),
             'most_booked_venues' => $this->mostBookedVenues(),
             'most_active_cities' => $this->mostActiveCities(),
@@ -42,7 +43,7 @@ class DashboardStatistics
     {
         return Booking::query()
             ->whereIn('status', self::ACTIVE_BOOKING_STATUSES)
-            ->whereBetween('created_at', [$from, $to])
+            ->whereBetween('created_at', [$from->utc(), $to->utc()])
             ->count();
     }
 

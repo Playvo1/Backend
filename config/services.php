@@ -47,9 +47,7 @@ return [
         'timeout' => (int) env('GEMINI_TIMEOUT', 8),
     ],
 
-    // "Today" / "tomorrow" in assistant queries are resolved in the players' local time.
     'assistant' => [
-        'timezone' => env('ASSISTANT_TIMEZONE', 'Asia/Gaza'),
         'hourly_limit' => (int) env('ASSISTANT_HOURLY_LIMIT', 20),
     ],
 
