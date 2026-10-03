@@ -85,7 +85,8 @@ class VenueSearchTool
             ->where('time_slots.start_time', '<=', $hour)
             ->where('time_slots.end_time', '>', $hour)
             ->where('time_slots.status', 'available')
-            ->where('venues.status', 'active');
+            ->where('venues.status', 'active')
+            ->whereNull('venues.deleted_at');
 
         if (! empty($arguments['city'])) {
             $city = $this->findByName(City::query(), $arguments['city']);

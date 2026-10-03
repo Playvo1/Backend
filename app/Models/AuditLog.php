@@ -21,6 +21,19 @@ class AuditLog extends Model
     ];
 
     /**
+     * Records an admin action against an ERD entity (target_type is a morph-map key such as "VENUE").
+     */
+    public static function record(int $adminUserId, string $action, string $targetType, int $targetId): self
+    {
+        return static::create([
+            'admin_user_id' => $adminUserId,
+            'action' => $action,
+            'target_type' => $targetType,
+            'target_id' => $targetId,
+        ]);
+    }
+
+    /**
      * The admin user who performed this action.
      */
     public function adminUser(): BelongsTo

@@ -811,6 +811,176 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Admin - Venues",
+      "item": [
+        {
+          "name": "list venues",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/admin/venues?status=inactive",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "venues"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "inactive"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "add venue",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/admin/venues",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "venues"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"owner_id\": 2,\n    \"city_id\": 1,\n    \"name_ar\": \"ملعب المدينة\",\n    \"name_en\": \"City Court\",\n    \"address_ar\": \"شارع الجلاء\",\n    \"address_en\": \"Al-Jalaa St\",\n    \"sport_ids\": [\n        1\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "approve venue",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/admin/venues/1/status",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "venues",
+                "1",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "remove venue",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/admin/venues/1/status",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "venues",
+                "1",
+                "status"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"inactive\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [

@@ -124,6 +124,15 @@ class VenueSearchToolTest extends TestCase
         $this->assertNull($this->search());
     }
 
+    public function test_ignores_removed_venues(): void
+    {
+        $venue = $this->venue();
+        $this->slot($venue);
+        $venue->delete();
+
+        $this->assertNull($this->search());
+    }
+
     public function test_returns_null_when_nothing_matches_the_hour_or_city(): void
     {
         $this->slot($this->venue());

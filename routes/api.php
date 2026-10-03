@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AdminAccountController;
+use App\Http\Controllers\Api\AdminVenueController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\OwnerBookingController;
@@ -49,6 +50,10 @@ Route::prefix('v1')->group(function () {
         ->group(function () {
             Route::post('venue-owners', [AdminAccountController::class, 'createVenueOwner']);
             Route::post('admins', [AdminAccountController::class, 'createAdmin']);
+
+            Route::get('venues', [AdminVenueController::class, 'index']);
+            Route::post('venues', [AdminVenueController::class, 'store']);
+            Route::put('venues/{venue}/status', [AdminVenueController::class, 'updateStatus'])->withTrashed();
         });
 
 });

@@ -2,17 +2,22 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * A bookable sports facility (ERD VENUE), owned by a venue_owner user.
+ * A bookable sports facility (ERD VENUE), owned by a venue_owner user. Admins remove
+ * venues with a soft delete so booking and rating history is preserved (US-3.5).
  */
 class Venue extends Model
 {
+    use SoftDeletes;
+
     /**
      * Secondary information the owner must complete before the venue can go live (US-3.1).
      */
@@ -75,6 +80,25 @@ class Venue extends Model
         }
 
         return true;
+    }
+
+    /**
+     * Whether a player still holds or has a booking for a slot that hasn't finished yet.
+     */
+    public function hasUpcomingBookings(): bool
+    {
+        $now = now();
+
+        return Booking::query()
+            ->whereIn('status', ['pending_payment', 'confirmed'])
+            ->whereHas('timeSlot', fn (Builder $slot) => $slot
+                ->where('venue_id', $this->id)
+                ->where(fn (Builder $when) => $when
+                    ->whereDate('slot_date', '>', $now->toDateString())
+                    ->orWhere(fn (Builder $today) => $today
+                        ->whereDate('slot_date', $now->toDateString())
+                        ->where('end_time', '>', $now->format('H:i:s')))))
+            ->exists();
     }
 
     /**
