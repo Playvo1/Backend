@@ -35,6 +35,7 @@ Route::prefix('v1')->group(function () {
         ->group(function () {
             Route::get('venues', [OwnerVenueController::class, 'index']);
             Route::put('venues/{venue}', [OwnerVenueController::class, 'update']);
+            Route::post('venues/{venue}/images', [OwnerVenueController::class, 'uploadImage']);
         });
 
     Route::prefix('admin')

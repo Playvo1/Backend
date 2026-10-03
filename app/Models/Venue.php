@@ -150,10 +150,12 @@ class Venue extends Model
     }
 
     /**
-     * The venue's photos.
+     * The venue's photos, in the display order the owner chose (US-3.2).
      */
     public function images(): MorphMany
     {
-        return $this->morphMany(Image::class, 'imageable');
+        return $this->morphMany(Image::class, 'imageable')
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 }
