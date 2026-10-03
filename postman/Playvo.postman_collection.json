@@ -514,11 +514,92 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Owner - Venues",
+      "item": [
+        {
+          "name": "list my venues",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/owner/venues",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "owner",
+                "venues"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "update venue profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/owner/venues/1",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "owner",
+                "venues",
+                "1"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"name_en\": \"City Court (Updated)\",\n    \"address_ar\": \"شارع الجلاء\",\n    \"address_en\": \"Al-Jalaa St\",\n    \"area_ar\": \"الجلاء\",\n    \"area_en\": \"Al-Jalaa\",\n    \"latitude\": 31.5203,\n    \"longitude\": 34.4531,\n    \"length_m\": 40,\n    \"width_m\": 20,\n    \"min_hourly_price\": 45,\n    \"sport_ids\": [\n        1\n    ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [
     {
       "key": "playvo",
+      "value": ""
+    },
+    {
+      "key": "token",
       "value": ""
     }
   ]

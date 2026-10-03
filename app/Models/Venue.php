@@ -7,8 +7,76 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+
+/**
+ * A bookable sports facility (ERD VENUE), owned by a venue_owner user.
+ */
 class Venue extends Model
 {
+    /**
+     * Secondary information the owner must complete before the venue can go live (US-3.1).
+     */
+    public const PROFILE_FIELDS = [
+        'address_ar',
+        'address_en',
+        'area_ar',
+        'area_en',
+        'latitude',
+        'longitude',
+        'length_m',
+        'width_m',
+    ];
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
+    protected $fillable = [
+        'owner_id',
+        'city_id',
+        'name_ar',
+        'name_en',
+        'address_ar',
+        'address_en',
+        'area_ar',
+        'area_en',
+        'latitude',
+        'longitude',
+        'length_m',
+        'width_m',
+        'min_hourly_price',
+        'status',
+    ];
+
+    /**
+     * Decimal columns come back as strings from MySQL; the API contract uses numbers.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'latitude' => 'float',
+            'longitude' => 'float',
+            'length_m' => 'float',
+            'width_m' => 'float',
+            'avg_rating' => 'float',
+            'min_hourly_price' => 'float',
+        ];
+    }
+
+    public function isProfileComplete(): bool
+    {
+        foreach (self::PROFILE_FIELDS as $field) {
+            if ($this->{$field} === null || $this->{$field} === '') {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     /**
      * The user who owns this venue.
      */
@@ -80,8 +148,12 @@ class Venue extends Model
     {
         return $this->hasMany(AssistantQuery::class, 'suggested_venue_id');
     }
+
+    /**
+     * The venue's photos.
+     */
     public function images(): MorphMany
-{
-    return $this->morphMany(Image::class, 'imageable');
-}
+    {
+        return $this->morphMany(Image::class, 'imageable');
+    }
 }

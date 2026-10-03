@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdminAccountController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookingController;
+use App\Http\Controllers\Api\OwnerVenueController;
 use App\Http\Controllers\Api\VenueController;
 use Illuminate\Support\Facades\Route;
 
@@ -28,6 +29,13 @@ Route::prefix('v1')->group(function () {
         ->middleware('auth:sanctum');
     Route::post('bookings/{id}/payment-receipt', [BookingController::class, 'uploadPaymentReceipt'])
         ->middleware('auth:sanctum');
+
+    Route::prefix('owner')
+        ->middleware(['auth:sanctum', 'role:venue_owner'])
+        ->group(function () {
+            Route::get('venues', [OwnerVenueController::class, 'index']);
+            Route::put('venues/{venue}', [OwnerVenueController::class, 'update']);
+        });
 
     Route::prefix('admin')
         ->middleware(['auth:sanctum', 'role:admin'])
