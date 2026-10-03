@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\AdminAccountController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookingController;
+use App\Http\Controllers\Api\OwnerBookingController;
 use App\Http\Controllers\Api\OwnerTimeSlotController;
 use App\Http\Controllers\Api\OwnerVenueController;
 use App\Http\Controllers\Api\VenueController;
@@ -40,6 +41,7 @@ Route::prefix('v1')->group(function () {
             Route::post('venues/{venue}/time-slots', [OwnerTimeSlotController::class, 'store']);
             Route::put('time-slots/{timeSlot}', [OwnerTimeSlotController::class, 'update']);
             Route::delete('time-slots/{timeSlot}', [OwnerTimeSlotController::class, 'destroy']);
+            Route::get('bookings', [OwnerBookingController::class, 'index']);
         });
 
     Route::prefix('admin')
