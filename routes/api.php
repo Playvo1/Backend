@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AdminAccountController;
+use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AdminPaymentReceiptController;
 use App\Http\Controllers\Api\AdminVenueController;
 use App\Http\Controllers\Api\AssistantController;
@@ -55,6 +56,8 @@ Route::prefix('v1')->group(function () {
         ->group(function () {
             Route::post('venue-owners', [AdminAccountController::class, 'createVenueOwner']);
             Route::post('admins', [AdminAccountController::class, 'createAdmin']);
+
+            Route::get('dashboard-stats', [AdminDashboardController::class, 'stats']);
 
             Route::get('venues', [AdminVenueController::class, 'index']);
             Route::post('venues', [AdminVenueController::class, 'store']);
