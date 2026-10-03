@@ -27,16 +27,15 @@ class VenueSearchTool
     {
         return [
             'name' => self::NAME,
-            'description' => 'Find an available football venue time slot for a sport, date and hour. '
+            'description' => 'Find an available sports venue time slot for a sport, date and hour. '
                 .'Resolve relative dates such as "today" or "بكرا" to an absolute date before calling.',
             'parameters' => [
                 'type' => 'OBJECT',
                 'properties' => [
-                    'sport' => [
+                    'sport' => $this->withEnum([
                         'type' => 'STRING',
                         'description' => 'Sport the player wants, in Arabic or English.',
-                        'enum' => $this->namesOf(Sport::query()),
-                    ],
+                    ], $this->namesOf(Sport::query())),
                     'date' => [
                         'type' => 'STRING',
                         'description' => 'Requested date as YYYY-MM-DD.',
@@ -45,11 +44,10 @@ class VenueSearchTool
                         'type' => 'STRING',
                         'description' => 'Requested start hour in 24-hour HH:mm, e.g. "18:00" for 6 pm.',
                     ],
-                    'city' => [
+                    'city' => $this->withEnum([
                         'type' => 'STRING',
                         'description' => 'City, if the player mentioned one.',
-                        'enum' => $this->namesOf(City::query()),
-                    ],
+                    ], $this->namesOf(City::query())),
                     'area' => [
                         'type' => 'STRING',
                         'description' => 'Neighbourhood or area, if the player mentioned one (e.g. "الجلاء").',
@@ -69,7 +67,7 @@ class VenueSearchTool
      */
     public function execute(array $arguments): ?TimeSlot
     {
-        $sport = $this->findByName(Sport::query(), $arguments['sport'] ?? null);
+        $sport = $this->findSport($arguments['sport'] ?? null);
         $date = $this->parseDate($arguments['date'] ?? null);
         $hour = $this->parseHour($arguments['hour'] ?? null);
 
@@ -114,6 +112,19 @@ class VenueSearchTool
             ->orderBy('time_slots.hourly_price')
             ->with('venue')
             ->first();
+    }
+
+    public function findSport(?string $name): ?Sport
+    {
+        return $this->findByName(Sport::query(), $name);
+    }
+
+    /**
+     * Gemini rejects an empty enum, so the list is only offered when there are values.
+     */
+    private function withEnum(array $property, array $values): array
+    {
+        return $values === [] ? $property : [...$property, 'enum' => $values];
     }
 
     /**

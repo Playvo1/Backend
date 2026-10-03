@@ -2,11 +2,15 @@
 
 namespace App\Providers;
 
+use App\Helpers\ApiResponse;
 use App\Models\Booking;
 use App\Models\PaymentReceipt;
 use App\Models\User;
 use App\Models\Venue;
+use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -33,5 +37,18 @@ class AppServiceProvider extends ServiceProvider
             'BOOKING' => Booking::class,
             'PAYMENT_RECEIPT' => PaymentReceipt::class,
         ]);
+
+        // Guidelines 2.4: the assistant is limited per user to control Gemini cost and abuse.
+        RateLimiter::for('assistant', function (Request $request) {
+            $limit = config('services.assistant.hourly_limit');
+
+            return Limit::perHour($limit)
+                ->by('assistant:'.$request->user()->id)
+                ->response(fn () => ApiResponse::send(
+                    false,
+                    429,
+                    "You've reached the limit of {$limit} assistant questions per hour. Please try again later.",
+                ));
+        });
     }
 }

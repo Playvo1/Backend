@@ -1117,6 +1117,95 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Assistant",
+      "item": [
+        {
+          "name": "assistant query (Arabic)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/assistant/query",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "assistant",
+                "query"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"query_text\": \"بدي ملعب كرة قدم بكرا الساعة 6 مساءً بالجلاء\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "assistant query (English)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/assistant/query",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "assistant",
+                "query"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"query_text\": \"Football court tomorrow at 6pm near Gaza City\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [
