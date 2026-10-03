@@ -75,3 +75,9 @@ services:
       # Comma-separated web dashboard origins, e.g. https://playvo-dashboard.vercel.app
       - key: CORS_ALLOWED_ORIGINS
         sync: false
+
+      # Booking assistant (Google Gemini). Without a key the rule-based parser answers alone.
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.5-flash

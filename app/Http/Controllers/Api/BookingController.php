@@ -18,7 +18,7 @@ class BookingController extends Controller
     {
         $data = $request->validated();
 
-        $timeSlot = TimeSlot::find($data['time_slot_id']);
+        $timeSlot = TimeSlot::bookable()->find($data['time_slot_id']);
 
         if (!$timeSlot) {
             return response()->json([
@@ -39,11 +39,11 @@ class BookingController extends Controller
         }
 
         $result = DB::transaction(function () use ($data, $request) {
-            $timeSlot = TimeSlot::where('id', $data['time_slot_id'])
+            $timeSlot = TimeSlot::bookable()->where('id', $data['time_slot_id'])
                 ->lockForUpdate()
                 ->first();
 
-            if (!$timeSlot || $timeSlot->status !== 'available') {
+            if (!$timeSlot || $timeSlot->hasActiveBooking()) {
                 return null;
             }
 
@@ -113,7 +113,7 @@ class BookingController extends Controller
         'errors' => null,
     ], 409);
 }
-if (PaymentReceipt::where('booking_id', $booking->id)->exists()) {
+if (PaymentReceipt::where('booking_id', $booking->id)->where('status', '!=', 'rejected')->exists()) {
     return response()->json([
         'success' => false,
         'data' => null,
@@ -132,10 +132,11 @@ if (PaymentReceipt::where('booking_id', $booking->id)->exists()) {
         'errors' => null,
     ], 422);
 }
-        $path = $file->store('payment-receipts', 'public');
+        // Receipts live on the private disk; admins view them through a signed URL (Guidelines 2.4).
+        $path = $file->store('payment-receipts', 'local');
         $receipt = PaymentReceipt::create([
             'booking_id' => $booking->id,
-            'image_url' => asset('storage/' . $path),
+            'image_url' => $path,
             'receipt_hash' => $hash,
             'status' => 'pending',
             'uploaded_at' => now(),

@@ -7,6 +7,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Validation\ValidationException;
 use Spatie\Permission\Middleware\PermissionMiddleware;
 use Spatie\Permission\Middleware\RoleMiddleware;
@@ -30,6 +31,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => PermissionMiddleware::class,
             'role_or_permission' => RoleOrPermissionMiddleware::class,
         ]);
+
+        // Check the role before route model binding, so a caller without the role gets 403
+        // whether or not the id exists and can't probe which receipts or venues exist.
+        $middleware->prependToPriorityList(SubstituteBindings::class, RoleMiddleware::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Every API error response is forced into the unified
