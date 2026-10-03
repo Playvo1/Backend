@@ -981,6 +981,142 @@
           "response": []
         }
       ]
+    },
+    {
+      "name": "Admin - Payment receipts",
+      "item": [
+        {
+          "name": "pending receipts queue",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/admin/payment-receipts?status=pending&page=1&per_page=20",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "payment-receipts"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "per_page",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "verify receipt",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/admin/payment-receipts/1/verify",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "payment-receipts",
+                "1",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"verified\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "reject receipt",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{playvo}}/api/v1/admin/payment-receipts/1/verify",
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "admin",
+                "payment-receipts",
+                "1",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"status\": \"rejected\",\n    \"rejection_reason\": \"Receipt image is blurry, amount not readable\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
     }
   ],
   "variable": [

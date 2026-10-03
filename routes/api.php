@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AdminAccountController;
+use App\Http\Controllers\Api\AdminPaymentReceiptController;
 use App\Http\Controllers\Api\AdminVenueController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookingController;
@@ -54,6 +55,15 @@ Route::prefix('v1')->group(function () {
             Route::get('venues', [AdminVenueController::class, 'index']);
             Route::post('venues', [AdminVenueController::class, 'store']);
             Route::put('venues/{venue}/status', [AdminVenueController::class, 'updateStatus'])->withTrashed();
+
+            Route::get('payment-receipts', [AdminPaymentReceiptController::class, 'index']);
+            Route::put('payment-receipts/{paymentReceipt}/verify', [AdminPaymentReceiptController::class, 'review']);
         });
+
+    // Receipt images are private; admins load them through the short-lived signed
+    // receipt_url from the review queue, so no bearer token is needed here.
+    Route::get('admin/payment-receipts/{paymentReceipt}/image', [AdminPaymentReceiptController::class, 'image'])
+        ->middleware('signed')
+        ->name('admin.payment-receipts.image');
 
 });
