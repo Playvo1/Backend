@@ -4,6 +4,8 @@ namespace App\Services\Assistant;
 
 use App\Models\AssistantQuery;
 use App\Models\City;
+use App\Models\Sport;
+use App\Models\TimeSlot;
 use App\Models\User;
 use App\Support\LocalClock;
 use Carbon\CarbonImmutable;
@@ -20,6 +22,22 @@ class BookingAssistant
      */
     private const REQUIRED_ARGUMENTS = ['sport', 'date', 'hour'];
 
+    /**
+     * What the reply did: suggested a venue, found none, or asked for the sport, day or hour.
+     */
+    public const SUGGESTION = 'suggestion';
+
+    public const NO_MATCH = 'no_match';
+
+    public const NEEDS_DETAILS = 'needs_details';
+
+    /**
+     * Who understood the question.
+     */
+    public const FROM_GEMINI = 'gemini';
+
+    public const FROM_FALLBACK = 'fallback';
+
     public function __construct(
         private readonly GeminiQueryParser $gemini,
         private readonly RuleBasedQueryParser $rules,
@@ -33,29 +51,51 @@ class BookingAssistant
     public function answer(User $user, string $queryText): array
     {
         // "Today" and "already started" are the players' local time, not the server's UTC.
-        $now = LocalClock::now();
-        $today = $now->startOfDay();
-        $arguments = $this->understand($queryText, $today);
-        $slot = $this->tool->execute($arguments, $now);
-        $sport = $this->tool->findSport($arguments['sport'] ?? null);
-        $arabic = TextNormalizer::isArabic($queryText);
-
-        $replyText = match (true) {
-            ! $sport || ! isset($arguments['date'], $arguments['hour']) => $this->replies->needsDetails($arabic),
-            ! $slot => $this->replies->noMatch($arabic),
-            default => $this->replies->suggestion($slot, $today, $arabic),
-        };
+        $answer = $this->respond($queryText, LocalClock::now());
+        $arguments = $answer['arguments'];
 
         $query = AssistantQuery::create([
             'user_id' => $user->id,
             'query_text' => $queryText,
-            'parsed_sport_id' => $sport?->id,
+            'parsed_sport_id' => $answer['sport']?->id,
             'parsed_date' => $arguments['date'] ?? null,
             'parsed_hour' => isset($arguments['hour']) ? $arguments['hour'].':00' : null,
-            'suggested_venue_id' => $slot?->venue_id,
+            'suggested_venue_id' => $answer['slot']?->venue_id,
         ]);
 
-        return ['query' => $query, 'reply_text' => $replyText];
+        return ['query' => $query, 'reply_text' => $answer['reply_text']];
+    }
+
+    /**
+     * Understands and answers a question at the players' local time $now, without logging it.
+     * The evaluation (assistant:evaluate) uses it with the fixed reference time of the test
+     * cases, and with $useGemini false to measure the rule-based fallback alone.
+     *
+     * @return array{arguments: array<string, string>, source: string, sport: ?Sport, slot: ?TimeSlot, outcome: string, reply_text: string}
+     */
+    public function respond(string $queryText, CarbonImmutable $now, bool $useGemini = true): array
+    {
+        $today = $now->startOfDay();
+        ['arguments' => $arguments, 'source' => $source] = $this->interpret($queryText, $today, $useGemini);
+        $sport = $this->tool->findSport($arguments['sport'] ?? null);
+        $complete = $sport && isset($arguments['date'], $arguments['hour']);
+        $slot = $complete ? $this->tool->execute($arguments, $now) : null;
+        $arabic = TextNormalizer::isArabic($queryText);
+
+        [$outcome, $replyText] = match (true) {
+            ! $complete => [self::NEEDS_DETAILS, $this->replies->needsDetails($arabic)],
+            ! $slot => [self::NO_MATCH, $this->replies->noMatch($arabic)],
+            default => [self::SUGGESTION, $this->replies->suggestion($slot, $today, $arabic)],
+        };
+
+        return [
+            'arguments' => $arguments,
+            'source' => $source,
+            'sport' => $sport,
+            'slot' => $slot,
+            'outcome' => $outcome,
+            'reply_text' => $replyText,
+        ];
     }
 
     /**
@@ -64,13 +104,22 @@ class BookingAssistant
      *
      * @return array<string, string>
      */
-    public function understand(string $queryText, CarbonImmutable $today): array
+    public function understand(string $queryText, CarbonImmutable $today, bool $useGemini = true): array
+    {
+        return $this->interpret($queryText, $today, $useGemini)['arguments'];
+    }
+
+    /**
+     * @return array{arguments: array<string, string>, source: string} the source is "gemini"
+     *                                                                 when Gemini answered
+     */
+    private function interpret(string $queryText, CarbonImmutable $today, bool $useGemini): array
     {
         $fallback = $this->rules->parse($queryText, $today);
-        $fromGemini = $this->gemini->parse($queryText, $today);
+        $fromGemini = $useGemini ? $this->gemini->parse($queryText, $today) : null;
 
         if ($fromGemini === null) {
-            return $fallback;
+            return ['arguments' => $fallback, 'source' => self::FROM_FALLBACK];
         }
 
         $fromGemini = $this->onlyValid($fromGemini, $today);
@@ -93,7 +142,10 @@ class BookingAssistant
         $fromGemini = $this->resolvePlace($fromGemini, $fallback);
         $missing = array_diff_key(array_flip(self::REQUIRED_ARGUMENTS), $fromGemini);
 
-        return [...$fromGemini, ...array_intersect_key($fallback, $missing)];
+        return [
+            'arguments' => [...$fromGemini, ...array_intersect_key($fallback, $missing)],
+            'source' => self::FROM_GEMINI,
+        ];
     }
 
     /**

@@ -1,0 +1,249 @@
+{
+    "meta": {
+        "title": "Playvo booking assistant: suggestion accuracy test cases (US-5.4, SRS specific objective 4)",
+        "status": "draft — pending team approval",
+        "version": 1,
+        "reference_date": "2026-10-03",
+        "reference_weekday": "Saturday",
+        "reference_time": "12:00",
+        "timezone": "Asia/Gaza",
+        "target_accuracy": 90,
+        "groups": {
+            "tuning": "Cases the rule-based fallback may be tuned against.",
+            "held_out": "Written before any tuning of the fallback and never used to tune it; they measure how well the rules generalise."
+        },
+        "scoring": "A case is correct only when the outcome matches (the expected venue, no match, or a request for the missing details) and the sport, date, hour, and the city or area when one is expected, are all understood as expected.",
+        "outcomes": {
+            "suggestion": "The assistant suggests the expected venue.",
+            "no_match": "Everything is understood but no available slot fits, so the no-match reply is given.",
+            "needs_details": "The sport, day or hour is missing, so the assistant asks for it."
+        }
+    },
+    "sports": [
+        {"name_en": "Football", "name_ar": "كرة القدم"},
+        {"name_en": "Basketball", "name_ar": "كرة السلة"},
+        {"name_en": "Volleyball", "name_ar": "كرة الطائرة"},
+        {"name_en": "Tennis", "name_ar": "التنس"},
+        {"name_en": "Padel", "name_ar": "البادل"}
+    ],
+    "cities": [
+        {"name_en": "Gaza", "name_ar": "غزة"},
+        {"name_en": "Khan Younis", "name_ar": "خانيونس"},
+        {"name_en": "Deir al-Balah", "name_ar": "دير البلح"},
+        {"name_en": "Rafah", "name_ar": "رفح"},
+        {"name_en": "Jabalia", "name_ar": "جباليا"}
+    ],
+    "venues": [
+        {
+            "name_en": "Green Field Court", "name_ar": "ملعب الحقل الأخضر", "city": "Gaza",
+            "area_en": "Al-Rimal", "area_ar": "الرمال", "avg_rating": 4.6, "sports": ["Football"],
+            "slots": [
+                {"sport": "Football", "date": "2026-10-03", "start": "10:00", "end": "11:00", "price": 40},
+                {"sport": "Football", "date": "2026-10-03", "start": "21:00", "end": "22:00", "price": 45},
+                {"sport": "Football", "date": "2026-10-04", "start": "18:00", "end": "19:00", "price": 50},
+                {"sport": "Football", "date": "2026-10-04", "start": "21:00", "end": "22:00", "price": 45},
+                {"sport": "Football", "date": "2026-10-05", "start": "20:00", "end": "21:00", "price": 40},
+                {"sport": "Football", "date": "2026-10-09", "start": "18:00", "end": "19:00", "price": 40}
+            ]
+        },
+        {
+            "name_en": "Al-Jalaa Stadium", "name_ar": "ملعب الجلاء", "city": "Gaza",
+            "area_en": "Al-Jalaa", "area_ar": "الجلاء", "avg_rating": 4.2, "sports": ["Football"],
+            "slots": [
+                {"sport": "Football", "date": "2026-10-03", "start": "20:00", "end": "21:00", "price": 35},
+                {"sport": "Football", "date": "2026-10-04", "start": "18:00", "end": "19:00", "price": 40},
+                {"sport": "Football", "date": "2026-10-04", "start": "20:00", "end": "21:00", "price": 40},
+                {"sport": "Football", "date": "2026-10-04", "start": "23:00", "end": "00:00", "price": 40},
+                {"sport": "Football", "date": "2026-10-09", "start": "09:00", "end": "10:00", "price": 35}
+            ]
+        },
+        {
+            "name_en": "Shujaiya Arena", "name_ar": "ساحة الشجاعية", "city": "Gaza",
+            "area_en": "Shujaiya", "area_ar": "الشجاعية", "avg_rating": 3.9, "sports": ["Football", "Volleyball"],
+            "slots": [
+                {"sport": "Football", "date": "2026-10-03", "start": "20:00", "end": "21:00", "price": 30},
+                {"sport": "Football", "date": "2026-10-04", "start": "19:00", "end": "20:00", "price": 30},
+                {"sport": "Volleyball", "date": "2026-10-04", "start": "17:00", "end": "18:00", "price": 25},
+                {"sport": "Volleyball", "date": "2026-10-05", "start": "18:00", "end": "19:00", "price": 25},
+                {"sport": "Volleyball", "date": "2026-10-08", "start": "17:00", "end": "18:00", "price": 25},
+                {"sport": "Football", "date": "2026-10-09", "start": "10:00", "end": "11:00", "price": 30}
+            ]
+        },
+        {
+            "name_en": "Tal al-Hawa Club", "name_ar": "نادي تل الهوى", "city": "Gaza",
+            "area_en": "Tal al-Hawa", "area_ar": "تل الهوى", "avg_rating": 4.4, "sports": ["Football", "Basketball"],
+            "slots": [
+                {"sport": "Football", "date": "2026-10-04", "start": "20:00", "end": "21:00", "price": 45},
+                {"sport": "Basketball", "date": "2026-10-05", "start": "19:00", "end": "20:00", "price": 30}
+            ]
+        },
+        {
+            "name_en": "South Court", "name_ar": "الملعب الجنوبي", "city": "Khan Younis",
+            "area_en": "Bani Suheila", "area_ar": "بني سهيلا", "avg_rating": 4.8, "sports": ["Football", "Basketball"],
+            "slots": [
+                {"sport": "Football", "date": "2026-10-04", "start": "18:00", "end": "19:00", "price": 60},
+                {"sport": "Football", "date": "2026-10-04", "start": "19:00", "end": "20:00", "price": 60},
+                {"sport": "Football", "date": "2026-10-04", "start": "21:00", "end": "22:00", "price": 60},
+                {"sport": "Basketball", "date": "2026-10-08", "start": "17:00", "end": "19:00", "price": 35},
+                {"sport": "Football", "date": "2026-10-09", "start": "09:00", "end": "10:00", "price": 55}
+            ]
+        },
+        {
+            "name_en": "Khan Younis Sports Hall", "name_ar": "صالة خانيونس الرياضية", "city": "Khan Younis",
+            "area_en": "City Center", "area_ar": "وسط البلد", "avg_rating": 4.0, "sports": ["Basketball", "Volleyball"],
+            "slots": [
+                {"sport": "Basketball", "date": "2026-10-05", "start": "19:00", "end": "20:00", "price": 25},
+                {"sport": "Volleyball", "date": "2026-10-08", "start": "17:00", "end": "18:00", "price": 20},
+                {"sport": "Basketball", "date": "2026-10-08", "start": "18:00", "end": "19:00", "price": 25}
+            ]
+        },
+        {
+            "name_en": "Deir Beach Court", "name_ar": "ملعب شاطئ الدير", "city": "Deir al-Balah",
+            "area_en": "Al-Bassa", "area_ar": "البصة", "avg_rating": 4.1, "sports": ["Football", "Volleyball"],
+            "slots": [
+                {"sport": "Football", "date": "2026-10-04", "start": "17:00", "end": "18:00", "price": 35},
+                {"sport": "Volleyball", "date": "2026-10-05", "start": "18:00", "end": "19:00", "price": 25},
+                {"sport": "Volleyball", "date": "2026-10-09", "start": "16:00", "end": "17:00", "price": 25}
+            ]
+        },
+        {
+            "name_en": "Rafah Padel Club", "name_ar": "نادي رفح للبادل", "city": "Rafah",
+            "area_en": "Tal al-Sultan", "area_ar": "تل السلطان", "avg_rating": 4.5, "sports": ["Padel", "Tennis"],
+            "slots": [
+                {"sport": "Tennis", "date": "2026-10-03", "start": "17:00", "end": "18:00", "price": 50},
+                {"sport": "Padel", "date": "2026-10-04", "start": "18:00", "end": "19:00", "price": 80},
+                {"sport": "Tennis", "date": "2026-10-04", "start": "18:00", "end": "19:00", "price": 50},
+                {"sport": "Tennis", "date": "2026-10-04", "start": "19:00", "end": "20:00", "price": 50},
+                {"sport": "Padel", "date": "2026-10-05", "start": "20:00", "end": "21:00", "price": 80}
+            ]
+        },
+        {
+            "name_en": "Jabalia Youth Court", "name_ar": "ملعب شباب جباليا", "city": "Jabalia",
+            "area_en": "Al-Nazla", "area_ar": "النزلة", "avg_rating": 3.8, "sports": ["Football"],
+            "slots": [
+                {"sport": "Football", "date": "2026-10-03", "start": "22:00", "end": "23:00", "price": 30},
+                {"sport": "Football", "date": "2026-10-05", "start": "10:00", "end": "11:00", "price": 30},
+                {"sport": "Football", "date": "2026-10-09", "start": "18:00", "end": "19:00", "price": 30}
+            ]
+        }
+    ],
+    "cases": [
+        {"id": "T01", "group": "tuning", "language": "ar", "query": "بدي ملعب كرة قدم بكرا الساعة 6 مساءً بالجلاء",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "18:00", "city": null, "area": "الجلاء", "outcome": "suggestion", "venue": "Al-Jalaa Stadium"}},
+        {"id": "T02", "group": "tuning", "language": "ar", "query": "كورة اليوم 8",
+            "expected": {"sport": "Football", "date": "2026-10-03", "hour": "20:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Al-Jalaa Stadium"}},
+        {"id": "T03", "group": "tuning", "language": "ar", "query": "فوتبول بكره 6 المسا",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "18:00", "city": null, "area": null, "outcome": "suggestion", "venue": "South Court"}},
+        {"id": "T04", "group": "tuning", "language": "ar", "query": "كرة سلة بعد بكرا الساعة 7",
+            "expected": {"sport": "Basketball", "date": "2026-10-05", "hour": "19:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Tal al-Hawa Club"}},
+        {"id": "T05", "group": "tuning", "language": "ar", "query": "ملعب كرة قدم يوم الجمعة الساعة 9 الصبح",
+            "expected": {"sport": "Football", "date": "2026-10-09", "hour": "09:00", "city": null, "area": null, "outcome": "suggestion", "venue": "South Court"}},
+        {"id": "T06", "group": "tuning", "language": "ar", "query": "كرة قدم الساعة 6 ونص بكرا",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "18:30", "city": null, "area": null, "outcome": "suggestion", "venue": "South Court"}},
+        {"id": "T07", "group": "tuning", "language": "ar", "query": "كورة بكرا الساعة 8 وربع",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "20:15", "city": null, "area": null, "outcome": "suggestion", "venue": "Tal al-Hawa Club"}},
+        {"id": "T08", "group": "tuning", "language": "ar", "query": "بدي ملعب كرة قدم بكرا الساعة 12 بالليل",
+            "expected": {"sport": "Football", "date": "2026-10-05", "hour": "00:00", "city": null, "area": null, "outcome": "no_match", "venue": null}},
+        {"id": "T09", "group": "tuning", "language": "ar", "query": "كرة قدم الساعة ٧ مساءً بخانيونس بكرا",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "19:00", "city": "Khan Younis", "area": null, "outcome": "suggestion", "venue": "South Court"}},
+        {"id": "T10", "group": "tuning", "language": "ar", "query": "بدي ملعب بادل بكرا",
+            "expected": {"sport": "Padel", "date": "2026-10-04", "hour": null, "city": null, "area": null, "outcome": "needs_details", "venue": null}},
+        {"id": "T11", "group": "tuning", "language": "ar", "query": "الساعة 6 بكرا في ملعب فاضي؟",
+            "expected": {"sport": null, "date": "2026-10-04", "hour": "18:00", "city": null, "area": null, "outcome": "needs_details", "venue": null}},
+        {"id": "T12", "group": "tuning", "language": "ar", "query": "كرة طايرة الخميس 5 العصر",
+            "expected": {"sport": "Volleyball", "date": "2026-10-08", "hour": "17:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Khan Younis Sports Hall"}},
+        {"id": "T13", "group": "tuning", "language": "ar", "query": "بدي احجز ملعب بالشجاعيه بكرا 7 المسا كورة",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "19:00", "city": null, "area": "الشجاعية", "outcome": "suggestion", "venue": "Shujaiya Arena"}},
+        {"id": "T14", "group": "tuning", "language": "ar", "query": "هلا، في ملعب كرة قدم الجمعة الساعة 6؟",
+            "expected": {"sport": "Football", "date": "2026-10-09", "hour": "18:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Green Field Court"}},
+        {"id": "T15", "group": "tuning", "language": "ar", "query": "كرة قدم بمدينة غزة بكرا الساعة 9 بالليل",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "21:00", "city": "Gaza", "area": null, "outcome": "suggestion", "venue": "Green Field Court"}},
+        {"id": "T16", "group": "tuning", "language": "ar", "query": "تنس برفح اليوم الساعة 5 المسا",
+            "expected": {"sport": "Tennis", "date": "2026-10-03", "hour": "17:00", "city": "Rafah", "area": null, "outcome": "suggestion", "venue": "Rafah Padel Club"}},
+        {"id": "T17", "group": "tuning", "language": "ar", "query": "كرة قدم بتل الهوى الأحد الساعة 8 المسا",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "20:00", "city": null, "area": "تل الهوى", "outcome": "suggestion", "venue": "Tal al-Hawa Club"}},
+        {"id": "T18", "group": "tuning", "language": "ar", "query": "بدي ملعب كورة 6.30 مساء بكرا",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "18:30", "city": null, "area": null, "outcome": "suggestion", "venue": "South Court"}},
+        {"id": "T19", "group": "tuning", "language": "ar", "query": "كرة قدم 12/10 الساعة 7",
+            "expected": {"sport": "Football", "date": "2026-10-12", "hour": "19:00", "city": null, "area": null, "outcome": "no_match", "venue": null}},
+        {"id": "T20", "group": "tuning", "language": "ar", "query": "ملعب سلة بخان يونس الخميس الساعة 6 المسا",
+            "expected": {"sport": "Basketball", "date": "2026-10-08", "hour": "18:00", "city": "Khan Younis", "area": null, "outcome": "suggestion", "venue": "South Court"}},
+        {"id": "T21", "group": "tuning", "language": "ar", "query": "padel برفح بكرا الساعة 6 المسا",
+            "expected": {"sport": "Padel", "date": "2026-10-04", "hour": "18:00", "city": "Rafah", "area": null, "outcome": "suggestion", "venue": "Rafah Padel Club"}},
+        {"id": "T22", "group": "tuning", "language": "en", "query": "Football court tomorrow at 6pm near Gaza City",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "18:00", "city": "Gaza", "area": null, "outcome": "suggestion", "venue": "Green Field Court"}},
+        {"id": "T23", "group": "tuning", "language": "en", "query": "soccer today at 9pm",
+            "expected": {"sport": "Football", "date": "2026-10-03", "hour": "21:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Green Field Court"}},
+        {"id": "T24", "group": "tuning", "language": "en", "query": "basketball on thursday at 5pm in khan younis",
+            "expected": {"sport": "Basketball", "date": "2026-10-08", "hour": "17:00", "city": "Khan Younis", "area": null, "outcome": "suggestion", "venue": "South Court"}},
+        {"id": "T25", "group": "tuning", "language": "en", "query": "football tomorrow at 6.30pm",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "18:30", "city": null, "area": null, "outcome": "suggestion", "venue": "South Court"}},
+        {"id": "T26", "group": "tuning", "language": "en", "query": "volleyball the day after tomorrow at 18:00",
+            "expected": {"sport": "Volleyball", "date": "2026-10-05", "hour": "18:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Deir Beach Court"}},
+        {"id": "T27", "group": "tuning", "language": "en", "query": "tennis in Rafah tomorrow at 7 pm",
+            "expected": {"sport": "Tennis", "date": "2026-10-04", "hour": "19:00", "city": "Rafah", "area": null, "outcome": "suggestion", "venue": "Rafah Padel Club"}},
+        {"id": "T28", "group": "tuning", "language": "en", "query": "football in al jalaa tomorrow at 8",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "20:00", "city": null, "area": "Al-Jalaa", "outcome": "suggestion", "venue": "Al-Jalaa Stadium"}},
+        {"id": "T29", "group": "tuning", "language": "en", "query": "football tomorrow",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": null, "city": null, "area": null, "outcome": "needs_details", "venue": null}},
+        {"id": "T30", "group": "tuning", "language": "en", "query": "is there a court free at 7pm tomorrow?",
+            "expected": {"sport": null, "date": "2026-10-04", "hour": "19:00", "city": null, "area": null, "outcome": "needs_details", "venue": null}},
+        {"id": "T31", "group": "tuning", "language": "en", "query": "football on 2026-10-09 at 10am",
+            "expected": {"sport": "Football", "date": "2026-10-09", "hour": "10:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Shujaiya Arena"}},
+        {"id": "T32", "group": "tuning", "language": "en", "query": "football tomorrow at half past 7",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "19:30", "city": null, "area": null, "outcome": "suggestion", "venue": "South Court"}},
+        {"id": "T33", "group": "tuning", "language": "en", "query": "football in deir al balah tomorrow at 5pm",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "17:00", "city": "Deir al-Balah", "area": null, "outcome": "suggestion", "venue": "Deir Beach Court"}},
+        {"id": "T34", "group": "tuning", "language": "en", "query": "padel at midnight tomorrow",
+            "expected": {"sport": "Padel", "date": "2026-10-05", "hour": "00:00", "city": null, "area": null, "outcome": "no_match", "venue": null}},
+        {"id": "T35", "group": "tuning", "language": "ar", "query": "كورة اليوم الساعة 10 الصبح",
+            "expected": {"sport": "Football", "date": "2026-10-03", "hour": "10:00", "city": null, "area": null, "outcome": "no_match", "venue": null}},
+
+        {"id": "H01", "group": "held_out", "language": "ar", "query": "في ملعب كورة فاضي بكرا الساعة 7 المسا؟",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "19:00", "city": null, "area": null, "outcome": "suggestion", "venue": "South Court"}},
+        {"id": "H02", "group": "held_out", "language": "ar", "query": "بدنا نلعب كرة سلة يوم الخميس الساعة 5 العصر بخانيونس",
+            "expected": {"sport": "Basketball", "date": "2026-10-08", "hour": "17:00", "city": "Khan Younis", "area": null, "outcome": "suggestion", "venue": "South Court"}},
+        {"id": "H03", "group": "held_out", "language": "ar", "query": "حجز ملعب فوتبول اليوم الساعة 9 بالليل",
+            "expected": {"sport": "Football", "date": "2026-10-03", "hour": "21:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Green Field Court"}},
+        {"id": "H04", "group": "held_out", "language": "ar", "query": "بدي ملعب كرة قدم بالرمال بعد بكرا الساعة 8 ونص",
+            "expected": {"sport": "Football", "date": "2026-10-05", "hour": "20:30", "city": null, "area": "الرمال", "outcome": "suggestion", "venue": "Green Field Court"}},
+        {"id": "H05", "group": "held_out", "language": "ar", "query": "كرة طائرة الجمعة 4 العصر",
+            "expected": {"sport": "Volleyball", "date": "2026-10-09", "hour": "16:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Deir Beach Court"}},
+        {"id": "H06", "group": "held_out", "language": "ar", "query": "في بادل برفح بكرا الساعة ٦ مساءً؟",
+            "expected": {"sport": "Padel", "date": "2026-10-04", "hour": "18:00", "city": "Rafah", "area": null, "outcome": "suggestion", "venue": "Rafah Padel Club"}},
+        {"id": "H07", "group": "held_out", "language": "ar", "query": "ملعب كورة الساعة 10 الصبح يوم الاثنين",
+            "expected": {"sport": "Football", "date": "2026-10-05", "hour": "10:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Jabalia Youth Court"}},
+        {"id": "H08", "group": "held_out", "language": "ar", "query": "بدي احجز ملعب كره قدم بكره الساعه 11 بالليل بغزه",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "23:00", "city": "Gaza", "area": null, "outcome": "suggestion", "venue": "Al-Jalaa Stadium"}},
+        {"id": "H09", "group": "held_out", "language": "ar", "query": "تنس بكرا الساعة 7 الا ربع",
+            "expected": {"sport": "Tennis", "date": "2026-10-04", "hour": "18:45", "city": null, "area": null, "outcome": "suggestion", "venue": "Rafah Padel Club"}},
+        {"id": "H10", "group": "held_out", "language": "ar", "query": "بدي ملعب الساعة 8 المسا بكرا",
+            "expected": {"sport": null, "date": "2026-10-04", "hour": "20:00", "city": null, "area": null, "outcome": "needs_details", "venue": null}},
+        {"id": "H11", "group": "held_out", "language": "ar", "query": "كورة بكرا بالشجاعية",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": null, "city": null, "area": "الشجاعية", "outcome": "needs_details", "venue": null}},
+        {"id": "H12", "group": "held_out", "language": "ar", "query": "ملعب كرة قدم بدير البلح يوم الأحد الساعة 3 العصر",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "15:00", "city": "Deir al-Balah", "area": null, "outcome": "no_match", "venue": null}},
+        {"id": "H13", "group": "held_out", "language": "en", "query": "Any football pitch free tomorrow at 7pm?",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "19:00", "city": null, "area": null, "outcome": "suggestion", "venue": "South Court"}},
+        {"id": "H14", "group": "held_out", "language": "en", "query": "basketball court in Khan Younis on Thursday 6pm",
+            "expected": {"sport": "Basketball", "date": "2026-10-08", "hour": "18:00", "city": "Khan Younis", "area": null, "outcome": "suggestion", "venue": "South Court"}},
+        {"id": "H15", "group": "held_out", "language": "en", "query": "Need a soccer field today at 10pm",
+            "expected": {"sport": "Football", "date": "2026-10-03", "hour": "22:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Jabalia Youth Court"}},
+        {"id": "H16", "group": "held_out", "language": "en", "query": "padel in rafah day after tomorrow at 8.30pm",
+            "expected": {"sport": "Padel", "date": "2026-10-05", "hour": "20:30", "city": "Rafah", "area": null, "outcome": "suggestion", "venue": "Rafah Padel Club"}},
+        {"id": "H17", "group": "held_out", "language": "en", "query": "volleyball tomorrow 17:00",
+            "expected": {"sport": "Volleyball", "date": "2026-10-04", "hour": "17:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Shujaiya Arena"}},
+        {"id": "H18", "group": "held_out", "language": "en", "query": "football in Gaza City on Friday at 9am",
+            "expected": {"sport": "Football", "date": "2026-10-09", "hour": "09:00", "city": "Gaza", "area": null, "outcome": "suggestion", "venue": "Al-Jalaa Stadium"}},
+        {"id": "H19", "group": "held_out", "language": "en", "query": "tennis tomorrow",
+            "expected": {"sport": "Tennis", "date": "2026-10-04", "hour": null, "city": null, "area": null, "outcome": "needs_details", "venue": null}},
+        {"id": "H20", "group": "held_out", "language": "en", "query": "football tomorrow at 6am in Jabalia",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "06:00", "city": "Jabalia", "area": null, "outcome": "no_match", "venue": null}},
+        {"id": "H21", "group": "held_out", "language": "ar", "query": "football بكرا الساعة 9 بالليل",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "21:00", "city": null, "area": null, "outcome": "suggestion", "venue": "South Court"}},
+        {"id": "H22", "group": "held_out", "language": "en", "query": "can we book a futsal court at 8 tonight",
+            "expected": {"sport": "Football", "date": "2026-10-03", "hour": "20:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Al-Jalaa Stadium"}},
+        {"id": "H23", "group": "held_out", "language": "ar", "query": "بدي ملعب كورة بكرا الساعة سبعة المسا",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "19:00", "city": null, "area": null, "outcome": "suggestion", "venue": "South Court"}}
+    ]
+}
