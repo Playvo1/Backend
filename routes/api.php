@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\VenueRatingController;
 use App\Http\Controllers\Api\FavoriteController;
 use App\Http\Controllers\Api\DeviceTokenController;
 use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\AdminDashboardController;
 Route::prefix('v1')->group(function () {
 
     Route::post('auth/register/player', [AuthController::class, 'registerPlayer']);
@@ -78,6 +79,7 @@ Route::get('/bookings/share/{share_token}',[BookingController::class, 'share']);
     Route::prefix('admin')
         ->middleware(['auth:sanctum', 'role:admin'])
         ->group(function () {
+          Route::get('dashboard', [AdminDashboardController::class, 'index']);
             Route::post('admin/venues', [AdminVenueController::class, 'store']);
 
             Route::put('admin/venues/{id}/status', [AdminVenueController::class, 'updateStatus']);
