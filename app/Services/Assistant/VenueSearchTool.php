@@ -30,7 +30,10 @@ class VenueSearchTool
 {
     public const NAME = 'search_available_venues';
 
-    private const ARGUMENTS = ['sport', 'date', 'hour', 'city', 'area'];
+    /**
+     * Every argument the declaration offers.
+     */
+    public const ARGUMENTS = ['sport', 'date', 'hour', 'city', 'area'];
 
     /**
      * A slot that ends at midnight is stored with this end_time.
