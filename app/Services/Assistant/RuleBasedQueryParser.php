@@ -28,7 +28,7 @@ class RuleBasedQueryParser implements QueryParser
     private const SPORT_ALIASES = [
         'football' => ['soccer', 'futsal', 'كوره', 'كوره قدم', 'كره قدم', 'فوتبول', 'فطبول'],
         'basketball' => ['basket', 'باسكت', 'باسكيت', 'باسكت بول', 'كره سله', 'سله'],
-        'volleyball' => ['volley', 'فولي', 'فولي بول', 'كره طائره', 'طائره'],
+        'volleyball' => ['volley', 'فولي', 'فولي بول', 'كره طايره', 'طايره'],
         'tennis' => ['تنس', 'تنس ارضي'],
         'padel' => ['paddle', 'بادل', 'بادل تنس'],
     ];

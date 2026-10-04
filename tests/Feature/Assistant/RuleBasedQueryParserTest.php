@@ -259,6 +259,17 @@ class RuleBasedQueryParserTest extends TestCase
         $this->assertFalse(TextNormalizer::mentions('gazans', 'Gaza'));
     }
 
+    public function test_a_dropped_hamza_seat_still_matches(): void
+    {
+        $this->makeSport('Volleyball', 'كرة الطائرة');
+
+        $this->assertSame('كره طايره', TextNormalizer::normalize('كرة طائرة'));
+        $this->assertSame('موجل', TextNormalizer::normalize('مؤجل'));
+        $this->assertSame('Volleyball', $this->parse('كرة طايرة الخميس 5 العصر')['sport'] ?? null);
+        $this->assertSame('Volleyball', $this->parse('كرة طائرة الخميس 5 العصر')['sport'] ?? null);
+        $this->assertSame('Volleyball', $this->parse('بدي طايرة بكرا')['sport'] ?? null);
+    }
+
     public function test_language_is_the_majority_script(): void
     {
         $this->assertTrue(TextNormalizer::isArabic('بدي ملعب كرة قدم بكرا'));

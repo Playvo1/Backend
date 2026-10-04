@@ -323,6 +323,16 @@ class VenueSearchToolTest extends TestCase
         $this->assertNull($this->search(['area' => ' - - ']));
     }
 
+    public function test_a_dropped_hamza_seat_matches_names_and_areas(): void
+    {
+        $volleyball = Sport::forceCreate(['name_ar' => 'كرة الطائرة', 'name_en' => 'Volleyball']);
+        $slot = $this->slot($this->venue(['area_ar' => 'حي الطائرة']), ['sport_id' => $volleyball->id]);
+
+        $this->assertTrue($volleyball->is((new VenueSearchTool)->findSport('كرة الطايرة')));
+        $this->assertTrue($slot->is($this->search(['sport' => 'كره الطايره', 'area' => 'حي الطايرة'])));
+        $this->assertTrue($slot->is($this->search(['sport' => 'Volleyball', 'area' => 'الطائره'])));
+    }
+
     public function test_trailing_newlines_are_rejected(): void
     {
         $this->slot($this->venue());

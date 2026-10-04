@@ -4,23 +4,26 @@ namespace App\Services\Assistant;
 
 /**
  * Normalises Arabic and English text so names match regardless of case, harakat,
- * tatweel, the letters players swap when typing Arabic (أ/إ/آ/ٱ as ا, ة as ه, ى as ي),
- * Arabic-Indic digits or punctuation. It runs in PHP, so matching behaves the same
- * on MySQL and SQLite.
+ * tatweel, the letters players swap when typing Arabic (أ/إ/آ/ٱ as ا, ة as ه, ى and ئ
+ * as ي, ؤ as و), Arabic-Indic digits or punctuation. It runs in PHP, so matching
+ * behaves the same on MySQL and SQLite.
  */
 class TextNormalizer
 {
     /**
      * Letters that are commonly written in place of one another.
      */
-    public const AMBIGUOUS_LETTERS = ['ا', 'أ', 'إ', 'آ', 'ٱ', 'ة', 'ه', 'ى', 'ي'];
+    public const AMBIGUOUS_LETTERS = ['ا', 'أ', 'إ', 'آ', 'ٱ', 'ة', 'ه', 'ى', 'ي', 'ئ'];
 
     /**
      * Harakat (U+064B-U+065F), superscript alef (U+0670) and tatweel (U+0640).
      */
     private const DIACRITICS = '/[\x{064B}-\x{065F}\x{0670}\x{0640}]/u';
 
-    private const LETTER_VARIANTS = ['أ' => 'ا', 'إ' => 'ا', 'آ' => 'ا', 'ٱ' => 'ا', 'ة' => 'ه', 'ى' => 'ي'];
+    /**
+     * Hamza seats are often left out: طائرة is typed طايرة, مؤجل is typed موجل.
+     */
+    private const LETTER_VARIANTS = ['أ' => 'ا', 'إ' => 'ا', 'آ' => 'ا', 'ٱ' => 'ا', 'ة' => 'ه', 'ى' => 'ي', 'ئ' => 'ي', 'ؤ' => 'و'];
 
     private const DIGITS = [
         '٠' => '0', '١' => '1', '٢' => '2', '٣' => '3', '٤' => '4', '٥' => '5', '٦' => '6', '٧' => '7', '٨' => '8', '٩' => '9',
