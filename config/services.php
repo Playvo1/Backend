@@ -44,16 +44,17 @@ return [
     ],
 
     // Booking assistant (US-4.5). Without a key the rule-based parser answers alone.
+    // "?:" so an empty value in the environment (e.g. GEMINI_TIMEOUT=) keeps the default.
     'gemini' => [
         'key' => env('GEMINI_API_KEY'),
-        'model' => env('GEMINI_MODEL', 'gemini-2.5-flash'),
-        'base_url' => env('GEMINI_BASE_URL', 'https://generativelanguage.googleapis.com/v1beta'),
-        'timeout' => (int) env('GEMINI_TIMEOUT', 8),
+        'model' => env('GEMINI_MODEL') ?: 'gemini-2.5-flash',
+        'base_url' => env('GEMINI_BASE_URL') ?: 'https://generativelanguage.googleapis.com/v1beta',
+        'timeout' => (int) (env('GEMINI_TIMEOUT') ?: 8),
     ],
 
     // Guidelines 2.4: assistant questions per player per hour.
     'assistant' => [
-        'hourly_limit' => (int) env('ASSISTANT_HOURLY_LIMIT', 20),
+        'hourly_limit' => (int) (env('ASSISTANT_HOURLY_LIMIT') ?: 20),
     ],
 
 ];

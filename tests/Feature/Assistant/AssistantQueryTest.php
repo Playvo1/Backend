@@ -191,7 +191,7 @@ class AssistantQueryTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.parsed_sport_id', null)
             ->assertJsonPath('data.parsed_hour', null)
-            ->assertJsonPath('data.parsed_date', '2026-10-03')
+            ->assertJsonPath('data.parsed_date', null)
             ->assertJsonPath('data.suggested_venue_id', null)
             ->assertJsonPath('data.reply_text', 'Tell me the sport, day and hour you want, for example: "Football tomorrow at 6pm".');
 
@@ -252,6 +252,131 @@ class AssistantQueryTest extends TestCase
             ->assertJsonPath('data.suggested_venue_id', $this->venue->id);
 
         Http::assertNothingSent();
+    }
+
+    // ---------------------------------------------------------------- what the player did not say
+
+    public function test_an_hour_gemini_invents_is_ignored_and_the_player_is_asked(): void
+    {
+        // Mode ANY makes Gemini return an hour even for "football tomorrow".
+        $this->fakeGeminiCall(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00']);
+
+        $this->ask('football tomorrow')
+            ->assertOk()
+            ->assertJsonPath('data.parsed_sport_id', $this->football->id)
+            ->assertJsonPath('data.parsed_date', '2026-10-04')
+            ->assertJsonPath('data.parsed_hour', null)
+            ->assertJsonPath('data.suggested_venue_id', null)
+            ->assertJsonPath('data.reply_text', 'Tell me the sport, day and hour you want, for example: "Football tomorrow at 6pm".');
+
+        $this->ask('بدي كورة بكرا')
+            ->assertOk()
+            ->assertJsonPath('data.parsed_hour', null)
+            ->assertJsonPath('data.reply_text', 'أخبرني بالرياضة واليوم والساعة التي تريدها، مثلاً: "كرة قدم بكرا الساعة 6 مساءً".');
+
+        $this->assertDatabaseHas('assistant_queries', ['query_text' => 'football tomorrow', 'parsed_hour' => null, 'suggested_venue_id' => null]);
+    }
+
+    public function test_an_hour_given_in_words_keeps_geminis_hour(): void
+    {
+        $this->fakeGeminiCall(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00']);
+
+        $this->ask('football tomorrow at six in the evening')
+            ->assertOk()
+            ->assertJsonPath('data.parsed_hour', '18:00')
+            ->assertJsonPath('data.suggested_venue_id', $this->venue->id);
+    }
+
+    public function test_a_day_gemini_invents_is_ignored_unless_the_player_said_now(): void
+    {
+        $today = $this->makeSlot($this->venue, ['slot_date' => '2026-10-03', 'hourly_price' => 30]);
+        $this->fakeGeminiCall(['sport' => 'Football', 'date' => '2026-10-03', 'hour' => '18:00']);
+
+        $this->ask('football at 6pm')
+            ->assertOk()
+            ->assertJsonPath('data.parsed_date', null)
+            ->assertJsonPath('data.parsed_hour', '18:00')
+            ->assertJsonPath('data.suggested_venue_id', null)
+            ->assertJsonPath('data.reply_text', 'Tell me the sport, day and hour you want, for example: "Football tomorrow at 6pm".');
+
+        $this->ask('هلق بدي كورة الساعة 6')
+            ->assertOk()
+            ->assertJsonPath('data.parsed_date', '2026-10-03')
+            ->assertJsonPath('data.suggested_venue_id', $today->venue_id);
+    }
+
+    public function test_without_gemini_a_missing_day_is_asked_for_too(): void
+    {
+        config(['services.gemini.key' => null]);
+
+        $this->ask('كورة الساعة 6 المسا')
+            ->assertOk()
+            ->assertJsonPath('data.parsed_date', null)
+            ->assertJsonPath('data.parsed_hour', '18:00')
+            ->assertJsonPath('data.reply_text', 'أخبرني بالرياضة واليوم والساعة التي تريدها، مثلاً: "كرة قدم بكرا الساعة 6 مساءً".');
+    }
+
+    // ---------------------------------------------------------------- city and area from Gemini
+
+    public function test_a_city_gemini_writes_with_city_is_still_found(): void
+    {
+        $this->fakeGeminiCall(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00', 'city' => 'مدينة غزة']);
+
+        $this->ask('بدي ملعب كرة قدم بكرا الساعة 6 بمدينة غزة')
+            ->assertOk()
+            ->assertJsonPath('data.suggested_venue_id', $this->venue->id);
+    }
+
+    public function test_an_unknown_city_is_dropped_when_the_text_names_no_seeded_city(): void
+    {
+        $this->fakeGeminiCall(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00', 'city' => 'Jerusalem']);
+
+        $this->ask('football tomorrow at 6pm in Jerusalem')
+            ->assertOk()
+            ->assertJsonPath('data.suggested_venue_id', $this->venue->id);
+    }
+
+    public function test_a_city_given_as_the_area_does_not_override_a_different_city(): void
+    {
+        $khanYounis = $this->makeCity('Khan Younis', 'خانيونس');
+        $south = $this->makeVenue(null, ['city_id' => $khanYounis->id, 'name_en' => 'South Court', 'avg_rating' => 1]);
+        $this->makeSlot($south, ['slot_date' => '2026-10-04']);
+        $this->fakeGeminiCall(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00', 'city' => 'Khan Younis', 'area' => 'Gaza']);
+
+        $this->ask('football tomorrow at 6pm in Khan Younis')
+            ->assertOk()
+            ->assertJsonPath('data.suggested_venue_id', $south->id);
+    }
+
+    // ---------------------------------------------------------------- the slot's own time in the reply
+
+    public function test_the_reply_quotes_the_slot_time_not_the_requested_minute(): void
+    {
+        config(['services.gemini.key' => null]);
+
+        $this->ask('football tomorrow at 6:30pm')
+            ->assertJsonPath('data.parsed_hour', '18:30')
+            ->assertJsonPath('data.reply_text', 'Green Field Court is available tomorrow at 18:00 for 40 ILS/hour. Want me to book it?');
+    }
+
+    public function test_a_longer_slot_is_quoted_as_a_range(): void
+    {
+        config(['services.gemini.key' => null]);
+        $this->makeSlot($this->venue, ['slot_date' => '2026-10-05', 'start_time' => '17:00:00', 'end_time' => '20:00:00']);
+
+        $this->ask('football on monday at 6pm')
+            ->assertJsonPath('data.reply_text', 'Green Field Court is available on 2026-10-05 from 17:00 to 20:00 for 40 ILS/hour. Want me to book it?');
+        $this->ask('كرة قدم يوم الاثنين الساعة 6')
+            ->assertJsonPath('data.reply_text', 'ملعب الحقل الأخضر متاح بتاريخ 2026-10-05 من الساعة 17:00 حتى 20:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟');
+    }
+
+    public function test_a_slot_ending_at_midnight_is_one_hour(): void
+    {
+        config(['services.gemini.key' => null]);
+        $this->makeSlot($this->venue, ['slot_date' => '2026-10-04', 'start_time' => '23:00:00', 'end_time' => '00:00:00']);
+
+        $this->ask('football tomorrow at 11pm')
+            ->assertJsonPath('data.reply_text', 'Green Field Court is available tomorrow at 23:00 for 40 ILS/hour. Want me to book it?');
     }
 
     // ---------------------------------------------------------------- local time

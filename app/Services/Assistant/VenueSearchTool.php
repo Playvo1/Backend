@@ -163,6 +163,14 @@ class VenueSearchTool
     }
 
     /**
+     * The first seeded city with this name (the search itself uses every city sharing it).
+     */
+    public function findCity(?string $name): ?City
+    {
+        return $this->matchingByName(City::query(), $name)->first();
+    }
+
+    /**
      * The arguments come from the model, so anything that isn't a string is rejected.
      */
     private function hasOnlyStringArguments(array $arguments): bool
@@ -227,21 +235,23 @@ class VenueSearchTool
     /**
      * LIKE pattern for the free-text area. Wildcards typed by the player are escaped
      * ("!" is the escape character because it means the same on MySQL and SQLite),
-     * harakat are dropped, and each letter that players swap (ا/أ/إ/آ, ة/ه, ى/ي)
-     * becomes the single-character wildcard, so "الشجاعيه" finds "الشجاعية".
-     * Returns null when nothing but those letters is left, as it would match any area.
+     * harakat are dropped, and each letter that players swap (ا/أ/إ/آ, ة/ه, ى/ي), each
+     * hyphen and each space becomes the single-character wildcard, so "الشجاعيه" finds
+     * "الشجاعية" and "Al Jalaa" finds "Al-Jalaa".
+     * Returns null when only those characters are left, as it would match any area.
      */
     private function areaPattern(string $area): ?string
     {
-        $area = trim(TextNormalizer::stripDiacritics($area));
+        $area = preg_replace('/\s+/u', ' ', trim(TextNormalizer::stripDiacritics($area))) ?? '';
+        $interchangeable = [...TextNormalizer::AMBIGUOUS_LETTERS, '-', ' '];
 
-        if (trim(str_replace(TextNormalizer::AMBIGUOUS_LETTERS, '', $area)) === '') {
+        if (str_replace($interchangeable, '', $area) === '') {
             return null;
         }
 
         $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $area);
 
-        return '%'.str_replace(TextNormalizer::AMBIGUOUS_LETTERS, '_', $escaped).'%';
+        return '%'.str_replace($interchangeable, '_', $escaped).'%';
     }
 
     private function parseDate(?string $date): ?string

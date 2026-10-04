@@ -31,12 +31,15 @@ class TextNormalizer
 
     /**
      * Lower-case, unified letters and digits, punctuation turned into spaces (":", "/"
-     * and a hyphen between digits are kept for times and dates), single spaces.
+     * and a hyphen between digits are kept for times and dates), single spaces. A dotted
+     * time such as "6.30" or "18.30" becomes "6:30" before the dot would be dropped.
      */
     public static function normalize(string $text): string
     {
         $text = strtr(self::stripDiacritics(mb_strtolower($text)), self::LETTER_VARIANTS + self::DIGITS);
         $text = strtr($text, self::SYMBOLS);
+        // Not inside a dotted date such as 12.10.2026.
+        $text = preg_replace('/(?<!\d)(?<!\d\.)(\d{1,2})\.([0-5]\d)(?!\d|\.\d)/u', '$1:$2', $text) ?? '';
         $text = preg_replace('/(?<!\d)-|-(?!\d)/u', ' ', $text) ?? '';
         $text = preg_replace('/[^\p{L}\p{N}:\/\-\s]/u', ' ', $text) ?? '';
 

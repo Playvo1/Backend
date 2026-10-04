@@ -297,6 +297,20 @@ class VenueSearchToolTest extends TestCase
         $this->assertNull($this->search(['area' => 'ا ي']));
     }
 
+    public function test_hyphens_and_spaces_in_the_area_match_either(): void
+    {
+        $hyphen = $this->slot($this->venue(['avg_rating' => 5]));
+        $spaced = $this->slot($this->venue(['area_en' => 'Tal al Hawa', 'avg_rating' => 3]));
+
+        $this->assertTrue($hyphen->is($this->search(['area' => 'Al Jalaa'])));
+        $this->assertTrue($hyphen->is($this->search(['area' => 'al-jalaa'])));
+        $this->assertTrue($spaced->is($this->search(['area' => 'Tal al-Hawa'])));
+        $this->assertTrue($spaced->is($this->search(['area' => 'tal  al   hawa'])));
+        $this->assertNull($this->search(['area' => 'AlJalaa']));
+        $this->assertNull($this->search(['area' => '-']));
+        $this->assertNull($this->search(['area' => ' - - ']));
+    }
+
     public function test_trailing_newlines_are_rejected(): void
     {
         $this->slot($this->venue());

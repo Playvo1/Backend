@@ -72,8 +72,11 @@ class RuleBasedQueryParserTest extends TestCase
     public static function dates(): array
     {
         return [
-            'no date means today' => ['football at 6pm', '2026-10-03'],
             'today' => ['football today at 6pm', '2026-10-03'],
+            'now word means today' => ['هلق بدي كورة الساعة 6', '2026-10-03'],
+            'english now' => ['football now', '2026-10-03'],
+            'هلا greeting does not beat a weekday' => ['هلا، بدي ملعب كرة قدم الجمعة الساعة 6', '2026-10-09'],
+            'now word does not beat tomorrow' => ['هلق بدي كورة بكرا الساعة 6', '2026-10-04'],
             'tonight' => ['football tonight at 9', '2026-10-03'],
             'tomorrow' => ['football tomorrow at 6pm', '2026-10-04'],
             'day after tomorrow' => ['football the day after tomorrow at 6pm', '2026-10-05'],
@@ -99,6 +102,83 @@ class RuleBasedQueryParserTest extends TestCase
     public function test_reads_the_date(string $text, string $date): void
     {
         $this->assertSame($date, $this->parse($text)['date']);
+    }
+
+    public static function spokenAndNightTimes(): array
+    {
+        return [
+            // Night: 12, midnight and 1-4 are after midnight of the named day; 5-11 are evening.
+            '12 at night arabic' => ['كرة قدم اليوم الساعة 12 بالليل', '2026-10-04', '00:00'],
+            '12 at night english' => ['football today at 12 at night', '2026-10-04', '00:00'],
+            'midnight' => ['football tomorrow at midnight', '2026-10-05', '00:00'],
+            'arabic midnight' => ['كورة بكرا نص الليل', '2026-10-05', '00:00'],
+            '1 at night' => ['كرة قدم بكرا الساعة 1 بالليل', '2026-10-05', '01:00'],
+            '3 at night' => ['كرة قدم الساعة 3 ليلا اليوم', '2026-10-04', '03:00'],
+            'tonight at 1' => ['football tonight at 1', '2026-10-04', '01:00'],
+            '11 at night stays evening' => ['كرة قدم بكرا الساعة 11 بالليل', '2026-10-04', '23:00'],
+            '9 tonight stays evening' => ['football tonight at 9', '2026-10-03', '21:00'],
+            '12am stays on the named day' => ['football tomorrow at 12am', '2026-10-04', '00:00'],
+            // Spoken minutes.
+            'ونص' => ['كرة قدم بكرا الساعة 6 ونص', '2026-10-04', '18:30'],
+            'و نص' => ['كرة قدم بكرا 7 و نص المسا', '2026-10-04', '19:30'],
+            'وربع' => ['كرة قدم بكرا الساعة 8 وربع', '2026-10-04', '20:15'],
+            'الا ربع' => ['كرة قدم بكرا الساعة 6 الا ربع', '2026-10-04', '17:45'],
+            'إلا ربع with hamza' => ['كرة قدم بكرا الساعة 6 إلا ربع', '2026-10-04', '17:45'],
+            'وثلث' => ['كرة قدم بكرا الساعة 5 وثلث', '2026-10-04', '17:20'],
+            'ونص الصبح' => ['كرة قدم بكرا الساعة 9 ونص الصبح', '2026-10-04', '09:30'],
+            '12 ونص بالليل' => ['كرة قدم اليوم الساعة 12 ونص بالليل', '2026-10-04', '00:30'],
+            '12 الا ربع بالليل' => ['كرة قدم اليوم الساعة 12 الا ربع بالليل', '2026-10-03', '23:45'],
+            'half past' => ['football tomorrow at half past 6', '2026-10-04', '18:30'],
+            'quarter past' => ['football tomorrow quarter past 7pm', '2026-10-04', '19:15'],
+            'quarter to' => ['football tomorrow quarter to 7', '2026-10-04', '18:45'],
+            // Dotted minutes.
+            '6.30pm' => ['football tomorrow at 6.30pm', '2026-10-04', '18:30'],
+            '6.30 مساء' => ['كرة قدم بكرا 6.30 مساء', '2026-10-04', '18:30'],
+            '18.30' => ['football tomorrow 18.30', '2026-10-04', '18:30'],
+            'arabic decimal separator' => ['كرة قدم بكرا ٦٫٣٠ مساء', '2026-10-04', '18:30'],
+            'sentence dot' => ['football tomorrow at 6.30.', '2026-10-04', '18:30'],
+            'noon' => ['football tomorrow at noon', '2026-10-04', '12:00'],
+        ];
+    }
+
+    #[DataProvider('spokenAndNightTimes')]
+    public function test_reads_spoken_night_and_dotted_times(string $text, string $date, string $hour): void
+    {
+        $parsed = $this->parse($text);
+
+        $this->assertSame($hour, $parsed['hour'] ?? null, 'hour');
+        $this->assertSame($date, $parsed['date'] ?? null, 'date');
+    }
+
+    public function test_a_dotted_date_is_not_read_as_a_time(): void
+    {
+        $this->assertSame('كره قدم 12 10 2026', TextNormalizer::normalize('كرة قدم 12.10.2026'));
+        $this->assertSame('football 6:30pm', TextNormalizer::normalize('Football 6.30pm'));
+    }
+
+    public function test_tells_whether_a_day_or_an_hour_was_given(): void
+    {
+        $parser = new RuleBasedQueryParser;
+        $today = CarbonImmutable::parse('2026-10-03');
+
+        $this->assertTrue($parser->mentionsDate('football tomorrow', $today));
+        $this->assertTrue($parser->mentionsDate('كورة الجمعة', $today));
+        $this->assertTrue($parser->mentionsDate('football on 12/10', $today));
+        $this->assertTrue($parser->mentionsDate('football next week', $today));
+        $this->assertTrue($parser->mentionsDate('football on the 12th', $today));
+        $this->assertTrue($parser->mentionsDate('كورة 15 تشرين', $today));
+        $this->assertTrue($parser->mentionsDate('هلق كورة', $today));
+        $this->assertFalse($parser->mentionsDate('football at 6pm', $today));
+        $this->assertFalse($parser->mentionsDate('بدي ملعب كرة قدم الساعة 6', $today));
+
+        $this->assertTrue($parser->mentionsTime('football at 6pm', $today));
+        $this->assertTrue($parser->mentionsTime('كورة الساعة ستة', $today));
+        $this->assertTrue($parser->mentionsTime('football at seven', $today));
+        $this->assertTrue($parser->mentionsTime('football at midnight', $today));
+        $this->assertFalse($parser->mentionsTime('football tomorrow', $today));
+        $this->assertFalse($parser->mentionsTime('football tomorrow evening', $today));
+        $this->assertFalse($parser->mentionsTime('football on 2026-10-12', $today));
+        $this->assertFalse($parser->mentionsTime('كورة بكرا بالجلاء', $today));
     }
 
     public function test_explicit_dates_are_not_read_as_hours(): void
@@ -161,8 +241,14 @@ class RuleBasedQueryParserTest extends TestCase
 
     public function test_leaves_out_what_it_cannot_find(): void
     {
-        $this->assertSame(['date' => '2026-10-03'], $this->parse('hello'));
-        $this->assertSame(['date' => '2026-10-03'], $this->parse(''));
+        $this->assertSame([], $this->parse('hello'));
+        $this->assertSame([], $this->parse(''));
+    }
+
+    public function test_no_day_or_hour_is_guessed(): void
+    {
+        $this->assertSame(['sport' => 'Football', 'hour' => '18:00'], $this->parse('football at 6pm'));
+        $this->assertSame(['sport' => 'Football', 'date' => '2026-10-04'], $this->parse('football tomorrow'));
     }
 
     public function test_normalizer_unifies_arabic_letter_variants(): void

@@ -71,7 +71,9 @@ class GeminiQueryParser implements QueryParser
             'You are the Playvo booking assistant for sports venues in Palestine. Players write short requests in Arabic (often Palestinian dialect) or English.',
             "Today is {$today->englishDayOfWeek} {$today->toDateString()}; tomorrow is {$today->addDay()->toDateString()}.",
             'Always call '.VenueSearchTool::NAME.'. Resolve relative dates (today, tonight, tomorrow, اليوم, الليلة, بكرا, بكره, غداً, بعد بكرا, weekday names) to YYYY-MM-DD; if no date is given use today.',
-            'Give the hour in 24-hour HH:mm. مساءً, المسا, بالليل, العصر and pm mean afternoon/evening; صباحاً, الصبح and am mean morning. An hour from 1 to 11 with no am/pm means the evening (e.g. 8 means 20:00).',
+            'Give the hour in 24-hour HH:mm. مساءً, المسا, العصر and pm mean afternoon/evening; صباحاً, الصبح and am mean morning. An hour from 1 to 11 with no am/pm means the evening (e.g. 8 means 20:00).',
+            'At night (بالليل, at night), 5 to 11 mean 17:00 to 23:00, while 12, midnight and 1 to 4 are after midnight: 00:00 to 04:00 on the next day\'s date (اليوم الساعة 12 بالليل is tomorrow at 00:00).',
+            'ونص adds 30 minutes, وربع adds 15 and الا ربع takes 15 away (6 الا ربع means 17:45).',
             'Use the exact enum values for sport and city. Put a neighbourhood or area such as الجلاء or Al-Rimal in area, not in city.',
         ]);
     }

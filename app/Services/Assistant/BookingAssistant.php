@@ -3,6 +3,7 @@
 namespace App\Services\Assistant;
 
 use App\Models\AssistantQuery;
+use App\Models\City;
 use App\Models\User;
 use App\Support\LocalClock;
 use Carbon\CarbonImmutable;
@@ -40,9 +41,9 @@ class BookingAssistant
         $arabic = TextNormalizer::isArabic($queryText);
 
         $replyText = match (true) {
-            ! $sport || ! isset($arguments['hour']) => $this->replies->needsDetails($arabic),
+            ! $sport || ! isset($arguments['date'], $arguments['hour']) => $this->replies->needsDetails($arabic),
             ! $slot => $this->replies->noMatch($arabic),
-            default => $this->replies->suggestion($slot, $arguments['date'], $arguments['hour'], $today, $arabic),
+            default => $this->replies->suggestion($slot, $today, $arabic),
         };
 
         $query = AssistantQuery::create([
@@ -74,11 +75,22 @@ class BookingAssistant
 
         $fromGemini = $this->onlyValid($fromGemini, $today);
 
+        // Mode ANY makes Gemini fill every required argument, even a day or an hour the
+        // player never gave; then the assistant asks for it instead of guessing.
+        if (! $this->rules->mentionsDate($queryText, $today)) {
+            unset($fromGemini['date']);
+        }
+
+        if (! $this->rules->mentionsTime($queryText, $today)) {
+            unset($fromGemini['hour']);
+        }
+
         // A sport outside the SPORT table can't be searched; the fallback's reading may be.
         if (isset($fromGemini['sport']) && ! $this->tool->findSport($fromGemini['sport'])) {
             unset($fromGemini['sport']);
         }
 
+        $fromGemini = $this->resolvePlace($fromGemini, $fallback);
         $missing = array_diff_key(array_flip(self::REQUIRED_ARGUMENTS), $fromGemini);
 
         return [...$fromGemini, ...array_intersect_key($fallback, $missing)];
@@ -110,6 +122,39 @@ class BookingAssistant
         }
 
         return array_filter($arguments);
+    }
+
+    /**
+     * Gemini's optional city and area are hard filters, so one that names no seeded city must
+     * not hide a real match. An unknown city is replaced by the rule-based reading of the text
+     * (which finds "Gaza" in "Gaza City") or dropped; an area that is really a city name is
+     * used as the city instead.
+     *
+     * @param  array<string, string>  $arguments
+     * @param  array<string, string>  $fallback
+     * @return array<string, string>
+     */
+    private function resolvePlace(array $arguments, array $fallback): array
+    {
+        if (isset($arguments['city'])) {
+            $arguments['city'] = $this->cityNamed($arguments['city'])?->name_en ?? $fallback['city'] ?? null;
+        }
+
+        if (isset($arguments['area']) && ($city = $this->cityNamed($arguments['area']))) {
+            unset($arguments['area']);
+            $arguments['city'] ??= $city->name_en;
+        }
+
+        return array_filter($arguments);
+    }
+
+    /**
+     * The seeded city a value names, also when it adds the word city ("Gaza City", "مدينة غزة").
+     */
+    private function cityNamed(string $value): ?City
+    {
+        return $this->tool->findCity($value)
+            ?? $this->tool->findCity(preg_replace('/(?<!\p{L})(?:city|مدينه)(?!\p{L})/u', '', TextNormalizer::normalize($value)));
     }
 
     private function isDate(string $value): bool
