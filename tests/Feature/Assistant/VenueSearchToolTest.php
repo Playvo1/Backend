@@ -11,6 +11,7 @@ use App\Models\Venue;
 use App\Services\Assistant\VenueSearchTool;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
 
@@ -51,8 +52,15 @@ class VenueSearchToolTest extends TestCase
         ], $overrides));
     }
 
-    private function slot(Venue $venue, array $overrides = []): TimeSlot
+    private function slot(Venue $venue, array $overrides = [], bool $venueOffersSport = true): TimeSlot
     {
+        if ($venueOffersSport) {
+            DB::table('venue_sports')->insertOrIgnore([
+                'venue_id' => $venue->id,
+                'sport_id' => $overrides['sport_id'] ?? $this->football->id,
+            ]);
+        }
+
         return TimeSlot::forceCreate(array_merge([
             'venue_id' => $venue->id,
             'sport_id' => $this->football->id,
@@ -237,6 +245,64 @@ class VenueSearchToolTest extends TestCase
         $this->assertNull($this->search(['city' => ['Gaza']]));
         $this->assertNull($tool->execute(['date' => '2026-10-10', 'hour' => '18:00']));
         $this->assertNull($tool->execute([]));
+    }
+
+    public function test_only_suggests_venues_that_offer_the_sport(): void
+    {
+        $this->slot($this->venue(['avg_rating' => 5]), [], venueOffersSport: false);
+        $offered = $this->slot($this->venue(['avg_rating' => 1]));
+
+        $this->assertTrue($offered->is($this->search()));
+    }
+
+    public function test_a_slot_ending_at_midnight_covers_the_last_hour(): void
+    {
+        $late = $this->slot($this->venue(), ['start_time' => '23:00:00', 'end_time' => '00:00:00']);
+
+        $this->assertTrue($late->is($this->search(['hour' => '23:00'])));
+        $this->assertTrue($late->is($this->search(['hour' => '23:59'])));
+        $this->assertNull($this->search(['hour' => '22:59']));
+        $this->assertNull($this->search(['hour' => '00:00']));
+    }
+
+    public function test_a_city_name_shared_by_two_countries_searches_both(): void
+    {
+        $egypt = Country::forceCreate(['name_ar' => 'مصر', 'name_en' => 'Egypt']);
+        City::forceCreate(['country_id' => $this->gaza->country_id, 'name_ar' => 'رفح', 'name_en' => 'Rafah']);
+        $egyptianRafah = City::forceCreate(['country_id' => $egypt->id, 'name_ar' => 'رفح', 'name_en' => 'Rafah']);
+        $slot = $this->slot($this->venue(['city_id' => $egyptianRafah->id]));
+
+        $this->assertTrue($slot->is($this->search(['city' => 'Rafah'])));
+        $this->assertTrue($slot->is($this->search(['city' => 'رفح'])));
+    }
+
+    public function test_arabic_spelling_variants_match_names_and_areas(): void
+    {
+        $slot = $this->slot($this->venue(['area_ar' => 'الشجاعية']));
+
+        $this->assertTrue($slot->is($this->search(['sport' => 'كره القدم', 'city' => 'غزه'])));
+        $this->assertTrue($slot->is($this->search(['sport' => 'كُرَة القَدَم'])));
+        $this->assertTrue($slot->is($this->search(['sport' => ' كرة   القدم '])));
+        $this->assertTrue($slot->is($this->search(['area' => 'الشجاعيه'])));
+        $this->assertTrue($slot->is($this->search(['area' => 'الشُّجاعية'])));
+        $this->assertTrue($slot->is($this->search(['area' => 'إلشجاعية'])));
+    }
+
+    public function test_blank_city_and_area_are_ignored_but_an_area_of_only_variant_letters_is_not(): void
+    {
+        $slot = $this->slot($this->venue());
+
+        $this->assertTrue($slot->is($this->search(['city' => '  ', 'area' => ' '])));
+        $this->assertNull($this->search(['area' => 'ه']));
+        $this->assertNull($this->search(['area' => 'ا ي']));
+    }
+
+    public function test_trailing_newlines_are_rejected(): void
+    {
+        $this->slot($this->venue());
+
+        $this->assertNull($this->search(['date' => "2026-10-10\n"]));
+        $this->assertNull($this->search(['hour' => "18:00\n"]));
     }
 
     public function test_accepts_a_single_digit_hour(): void
