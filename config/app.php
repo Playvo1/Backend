@@ -68,14 +68,6 @@ return [
     'timezone' => 'UTC',
 
     /*
-    | Players, owners and admins live in this timezone. Stored timestamps stay in UTC
-    | (above); this one decides what "today", "this week" and "this month" mean, and
-    | slot dates/times are local wall-clock values in it.
-    */
-
-    'local_timezone' => env('APP_LOCAL_TIMEZONE', 'Asia/Gaza'),
-
-    /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------

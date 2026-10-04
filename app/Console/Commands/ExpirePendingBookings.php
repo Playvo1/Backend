@@ -32,8 +32,7 @@ class ExpirePendingBookings extends Command
                     return;
                 }
 
-                // A rejected receipt doesn't stop the clock; the player has to upload a new one.
-                $hasReceipt = $booking->paymentReceipts()->where('status', '!=', 'rejected')->exists();
+                $hasReceipt = $booking->paymentReceipts()->exists();
 
                 if ($hasReceipt) {
                     return;
@@ -49,7 +48,7 @@ class ExpirePendingBookings extends Command
                     ]);
                 }
 
-               $booking->update(['status' => 'cancelled']);
+               $booking->delete();
             });
         }
 

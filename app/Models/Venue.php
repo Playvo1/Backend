@@ -2,124 +2,13 @@
 
 namespace App\Models;
 
-use App\Support\LocalClock;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
-
-/**
- * A bookable sports facility (ERD VENUE), owned by a venue_owner user. Admins remove
- * venues with a soft delete so booking and rating history is preserved (US-3.5).
- */
 class Venue extends Model
 {
-    use SoftDeletes;
-
-    /**
-     * Secondary information the owner must complete before the venue can go live (US-3.1).
-     */
-    public const PROFILE_FIELDS = [
-        'address_ar',
-        'address_en',
-        'area_ar',
-        'area_en',
-        'latitude',
-        'longitude',
-        'length_m',
-        'width_m',
-    ];
-
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var list<string>
-     */
-    protected $fillable = [
-        'owner_id',
-        'city_id',
-        'name_ar',
-        'name_en',
-        'address_ar',
-        'address_en',
-        'area_ar',
-        'area_en',
-        'latitude',
-        'longitude',
-        'length_m',
-        'width_m',
-        'min_hourly_price',
-        'status',
-    ];
-
-    /**
-     * Decimal columns come back as strings from MySQL; the API contract uses numbers.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'latitude' => 'float',
-            'longitude' => 'float',
-            'length_m' => 'float',
-            'width_m' => 'float',
-            'avg_rating' => 'float',
-            'min_hourly_price' => 'float',
-        ];
-    }
-
-    public function isProfileComplete(): bool
-    {
-        foreach (self::PROFILE_FIELDS as $field) {
-            if ($this->{$field} === null || $this->{$field} === '') {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Whether a player still holds or has a booking for a slot that hasn't finished yet.
-     */
-    public function hasUpcomingBookings(): bool
-    {
-        $now = LocalClock::now();
-
-        return Booking::query()
-            ->whereIn('status', ['pending_payment', 'confirmed'])
-            ->whereHas('timeSlot', fn (Builder $slot) => $slot
-                ->where('venue_id', $this->id)
-                ->where(fn (Builder $when) => $when
-                    ->whereDate('slot_date', '>', $now->toDateString())
-                    ->orWhere(fn (Builder $today) => $today
-                        ->whereDate('slot_date', $now->toDateString())
-                        ->where('end_time', '>', $now->format('H:i:s')))))
-            ->exists();
-    }
-
-    /**
-     * Not-yet-started slots in $status that no player holds or has booked. Removing a
-     * venue blocks its available ones; restoring it releases the blocked ones again.
-     */
-    public function upcomingFreeSlots(string $status): HasMany
-    {
-        $now = LocalClock::now();
-
-        return $this->timeSlots()
-            ->where('status', $status)
-            ->whereDoesntHave('bookings', fn (Builder $booking) => $booking->whereIn('status', ['pending_payment', 'confirmed']))
-            ->where(fn (Builder $when) => $when
-                ->whereDate('slot_date', '>', $now->toDateString())
-                ->orWhere(fn (Builder $today) => $today
-                    ->whereDate('slot_date', $now->toDateString())
-                    ->where('start_time', '>', $now->format('H:i:s'))));
-    }
-
     /**
      * The user who owns this venue.
      */
@@ -191,14 +80,8 @@ class Venue extends Model
     {
         return $this->hasMany(AssistantQuery::class, 'suggested_venue_id');
     }
-
-    /**
-     * The venue's photos, in the display order the owner chose (US-3.2).
-     */
     public function images(): MorphMany
-    {
-        return $this->morphMany(Image::class, 'imageable')
-            ->orderBy('sort_order')
-            ->orderBy('id');
-    }
+{
+    return $this->morphMany(Image::class, 'imageable');
+}
 }
