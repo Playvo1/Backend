@@ -334,7 +334,18 @@ class RuleBasedQueryParserTest extends TestCase
             'ba3d bukra' => ['kora ba3d bukra', 'date', '2026-10-05'],
             '3al 7' => ['bde mal3ab kora bukra 3al 7', 'hour', '19:00'],
             '3al 9 bel lel' => ['kora bukra 3al 9 bel lel', 'hour', '21:00'],
+            '3al sab3a' => ['bdi mal3ab kora bokra 3al sab3a', 'hour', '19:00'],
+            'sa3a tmanye bel lail' => ['koora bokra sa3a tmanye bel lail', 'hour', '20:00'],
+            'tes3a bel lail' => ['koora bokra tes3a bel lail', 'hour', '21:00'],
+            '3al tna3sh bel lail' => ['koora bokra 3al tna3sh bel lail', 'date', '2026-10-05'],
+            'tlata alone is still Tuesday' => ['koora el tlata 3al sab3a', 'date', '2026-10-06'],
         ];
+    }
+
+    public function test_an_arabizi_number_word_outside_a_time_context_is_not_an_hour(): void
+    {
+        $this->assertArrayNotHasKey('hour', $this->parse('koora sab3a shabab bokra'));
+        $this->assertArrayNotHasKey('hour', $this->parse('koora el arba3a'));
     }
 
     #[DataProvider('typosAndSlang')]

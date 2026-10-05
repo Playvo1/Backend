@@ -15,7 +15,8 @@ use Illuminate\Support\Collection;
  * synonyms and typos, today/tomorrow/weekdays (اليوم، بكرا، بعد بكرا، الجمعة، السبت الجاي,
  * bukra, tmrw...), explicit dates (12/10, 10 اكتوبر, oct 12), hours such as "8", "6pm",
  * "6.30pm", "18:30", "6 المسا", "الساعة ستة", "عالتمانية", "السابعة مساءً", "6 ونص",
- * "6 الا ربع", "at seven" or "12 بالليل", and city/area names from the CITY and VENUE tables.
+ * "6 الا ربع", "at seven", "3al sab3a" or "12 بالليل", and city/area names from the CITY and VENUE
+ * tables.
  *
  * A date or hour is only returned when the text gives one: the assistant asks for the
  * missing detail instead of guessing. A number is only read as the hour in a time context,
@@ -227,6 +228,25 @@ class RuleBasedQueryParser implements QueryParser
         1 => ['واحده'], 2 => ['ثانيه'], 3 => ['ثالثه'], 4 => ['رابعه'], 5 => ['خامسه'], 6 => ['سادسه'],
         7 => ['سابعه'], 8 => ['ثامنه'], 9 => ['تاسعه'], 10 => ['عاشره'],
         11 => ['حاديه عشر', 'حاديه عشره'], 12 => ['ثانيه عشر', 'ثانيه عشره'],
+    ];
+
+    /**
+     * Hours written as Arabizi words ("3al sab3a", "sa3a tmanye"). Several are also weekday
+     * names (tlata, arba3a), so they are only read after "3al"/"sa3a" or before "bel lail".
+     */
+    private const ARABIZI_HOURS = [
+        1 => ['wa7de', 'wa7deh', 'wa7da', 'wahde'],
+        2 => ['tintain', 'tinten', 'tnen', 'tneen'],
+        3 => ['tlate', 'tlateh', 'tlata', 'talateh'],
+        4 => ['arba3a', 'arb3a', 'arba3ah'],
+        5 => ['5amse', '5amseh', '5amsa', 'khamse', 'khamseh'],
+        6 => ['sitte', 'sitteh', 'sette', 'setteh', 'sitta'],
+        7 => ['sab3a', 'sab3ah', 'saba3', 'sabe3'],
+        8 => ['tmanye', 'tmanyeh', 'tamanye', 'tamanyeh', 'tmanya', 'tamanya', 'tmane'],
+        9 => ['tis3a', 'tis3ah', 'tes3a', 'tes3ah'],
+        10 => ['3ashra', '3ashrah', '3ashara', '3asharah'],
+        11 => ['7da3sh', 'hda3sh', '7da3esh', 'ida3sh'],
+        12 => ['tna3sh', 'itna3sh', 'etna3sh', 'tnash'],
     ];
 
     private const ENGLISH_HOURS = [
@@ -471,7 +491,7 @@ class RuleBasedQueryParser implements QueryParser
         $queryText = strtr($queryText, ['@' => ' at ', '₪' => ' ils ', '$' => ' usd ']);
         $queryText = preg_replace('/(?<![\p{Nd}.٫])(\p{Nd}{1,2})[.٫](\p{Nd}{1,2})[.٫](\p{Nd}{2,4})(?!\p{Nd})/u', '$1/$2/$3', $queryText) ?? $queryText;
         $queryText = preg_replace('/((?<!\p{L})(?:[وب]?يوم|on|date|تاريخ|بتاريخ)\s*)(\p{Nd}{1,2})[.٫](\p{Nd}{1,2})(?![.٫]?\p{Nd})/iu', '$1$2/$3', $queryText) ?? $queryText;
-        $text = TextNormalizer::normalize($queryText);
+        $text = $this->arabiziHours(TextNormalizer::normalize($queryText));
 
         foreach (self::REWRITES as $pattern => $replacement) {
             $text = preg_replace($pattern.'u', $replacement, $text) ?? $text;
@@ -480,6 +500,29 @@ class RuleBasedQueryParser implements QueryParser
         $text = preg_replace_callback('/(?<![a-z\d])[a-z]{4,}(?![a-z\d])/u', fn (array $m) => $this->closestDayWord($m[0]) ?? $m[0], $text) ?? $text;
 
         return trim(preg_replace('/\s+/u', ' ', $this->hoursFromWords($text)) ?? $text);
+    }
+
+    /**
+     * "3al sab3a", "sa3a tmanye" and "tes3a bel lail" become "at 7", "at 8" and "9 bel lail".
+     * Run before the rewrites, which read "tlata" and "arba3a" alone as weekdays.
+     */
+    private function arabiziHours(string $text): string
+    {
+        $hours = $this->wordsToNumbers(self::ARABIZI_HOURS);
+        $words = $this->alternation(array_keys($hours));
+        $timeOfDay = '(?:bel|bil|b|el)\s?(?:lail|leil|lel|layl)|(?:el\s?|bel\s?|bil\s?)?(?:masa|mesa|sob7|sub7|subh|sobh)|(?:el\s?)?3asr';
+
+        $text = preg_replace_callback(
+            '/(?<![a-z\d])(?:3al|3ala|3a|3l|(?:el\s?|il\s?)?sa3a|at|around)\s*('.$words.')(?![a-z\d])/u',
+            fn (array $m) => ' at '.$hours[$m[1]].' ',
+            $text,
+        ) ?? $text;
+
+        return preg_replace_callback(
+            '/(?<![a-z\d])('.$words.')(?=\s+(?:'.$timeOfDay.')(?![a-z\d]))/u',
+            fn (array $m) => ' '.$hours[$m[1]].' ',
+            $text,
+        ) ?? $text;
     }
 
     private function closestDayWord(string $word): ?string
