@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\User;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -31,3 +33,4 @@ class AssistantQuery extends Model
         return $this->belongsTo(Venue::class, 'suggested_venue_id');
     }
 }
+

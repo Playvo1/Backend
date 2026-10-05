@@ -8,6 +8,10 @@ use App\Models\Venue;
 use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use App\Http\Requests\Api\UpdateVenueRequest;
+use App\Models\Image;
+use Illuminate\Support\Facades\Storage;
+use App\Models\User;
 class VenueController extends Controller
 {
     public function index(VenueFilterRequest $request): JsonResponse
@@ -150,5 +154,100 @@ public function timeSlots(int $id, Request $request): JsonResponse
         'message' => 'Time slots retrieved successfully',
         'errors' => null,
     ]);
+}
+public function update(UpdateVenueRequest $request,  $id): JsonResponse
+{
+    $venue = Venue::find($id);
+
+    if (!$venue) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'Venue not found.',
+        ], 404);
+    }
+
+   $user = $request->user();
+
+if (!$user) {
+    return response()->json([
+        'success' => false,
+        'data' => null,
+        'message' => 'Unauthenticated.',
+        'errors' => null,
+    ], 401);
+}
+
+if ((int) $venue->owner_id !== (int) $user->id) {
+    return response()->json([
+        'success' => false,
+        'data' => null,
+        'message' => 'You are not authorized to update this venue.',
+        'errors' => null,
+    ], 403);
+}
+
+    $venue->update($request->validated());
+
+    return response()->json([
+        'success' => true,
+        'data' => $venue->fresh(),
+        'message' => 'Venue updated successfully.',
+    ]);
+}
+public function uploadImage(Request $request, int $id): JsonResponse
+{
+    $venue = Venue::find($id);
+
+    if (!$venue) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'Venue not found.',
+            'errors' => null,
+        ], 404);
+    }
+
+    $user = $request->user();
+
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'Unauthenticated.',
+            'errors' => null,
+        ], 401);
+    }
+
+    if ((int) $venue->owner_id !== (int) $user->id) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'You are not authorized to manage this venue.',
+            'errors' => null,
+        ], 403);
+    }
+
+    $request->validate([
+        'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+        'sort_order' => ['nullable', 'integer', 'min:0'],
+    ]);
+
+    $path = $request->file('image')->store('venues', 'public');
+
+    $image = $venue->images()->create([
+        'image_url' => Storage::url($path),
+        'sort_order' => $request->input(
+            'sort_order',
+            $venue->images()->max('sort_order') + 1
+        ),
+    ]);
+
+    return response()->json([
+        'success' => true,
+        'data' => $image,
+        'message' => 'Venue image uploaded successfully.',
+        'errors' => null,
+    ], 201);
 }
 }

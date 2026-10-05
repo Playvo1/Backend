@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class VenueRating extends Model
 {
+    protected $guarded = [];
     /**
      * The venue this rating was left for.
      */

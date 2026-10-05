@@ -154,4 +154,77 @@ if (PaymentReceipt::where('booking_id', $booking->id)->exists()) {
             'errors' => null,
         ], 201);
     }
+    public function history(\Illuminate\Http\Request $request): JsonResponse
+{
+    $query = Booking::query()
+        ->with([
+            'timeSlot.venue',
+            'timeSlot.sport',
+            'rating',
+        ])
+        ->where('captain_user_id', $request->user()->id)
+        ->whereHas('timeSlot', function ($query) {
+            $query->whereRaw(
+                "TIMESTAMP(slot_date, end_time) < ?",
+                [now()]
+            );
+        });
+
+    if ($request->filled('sport_id')) {
+        $query->whereHas('timeSlot', function ($query) use ($request) {
+            $query->where('sport_id', $request->sport_id);
+        });
+    }
+
+    $bookings = $query
+        ->latest('id')
+        ->paginate(10);
+
+    return response()->json([
+        'success' => true,
+        'data' => $bookings,
+        'message' => 'Booking history retrieved successfully.',
+        'errors' => null,
+    ]);
+}
+public function share(string $shareToken): JsonResponse
+{
+    $booking = Booking::with([
+        'timeSlot.venue',
+        'timeSlot.sport',
+    ])
+        ->where('share_token', $shareToken)
+        ->first();
+
+    if (!$booking) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'Booking share link not found.',
+            'errors' => null,
+        ], 404);
+    }
+
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'booking_id' => $booking->id,
+            'status' => $booking->status,
+            'venue' => [
+                'id' => $booking->timeSlot->venue->id,
+                'name' => $booking->timeSlot->venue->name,
+                'name_ar' => $booking->timeSlot->venue->name_ar,
+            ],
+            'sport' => [
+                'id' => $booking->timeSlot->sport->id,
+                'name' => $booking->timeSlot->sport->name,
+            ],
+            'date' => $booking->timeSlot->slot_date,
+            'start_time' => $booking->timeSlot->start_time,
+            'end_time' => $booking->timeSlot->end_time,
+        ],
+        'message' => 'Booking details retrieved successfully.',
+        'errors' => null,
+    ]);
+}
 }

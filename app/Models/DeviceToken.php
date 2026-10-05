@@ -2,12 +2,22 @@
 
 namespace App\Models;
 
+use App\Models\User;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class DeviceToken extends Model
 {
+    public $timestamps = false;
+
+    protected $fillable = [
+        'user_id',
+        'fcm_token',
+        'platform',
+    ];
+
     /**
      * The user this device token belongs to.
      */
@@ -24,3 +34,4 @@ class DeviceToken extends Model
         return $this->hasMany(SyncStatus::class, 'device_token_id');
     }
 }
+

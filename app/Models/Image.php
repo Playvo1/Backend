@@ -7,6 +7,10 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 class Image extends Model
 {
+    protected $fillable = [
+    'image_url',
+    'sort_order',
+];
     /**
      * The model this image belongs to (imageable_type / imageable_id).
      */

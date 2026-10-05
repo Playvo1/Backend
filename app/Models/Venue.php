@@ -2,13 +2,26 @@
 
 namespace App\Models;
 
+use App\Models\User;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 class Venue extends Model
 {
+      use SoftDeletes;
+    protected $guarded = [];
+    protected $casts = [
+        'latitude' => 'float',
+        'longitude' => 'float',
+        'length_m' => 'float',
+        'width_m' => 'float',
+        'min_hourly_price' => 'float',
+    ];
+
     /**
      * The user who owns this venue.
      */
@@ -85,3 +98,4 @@ class Venue extends Model
     return $this->morphMany(Image::class, 'imageable');
 }
 }
+
