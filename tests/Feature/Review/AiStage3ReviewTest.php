@@ -415,7 +415,7 @@ class AiStage3ReviewTest extends TestCase
         $this->assertSame('Green Field Court', $answer['slot']->venue->name_en);
         // Updated for the Stage 3 decision 8: the player said "tomorrow", so the reply says
         // tomorrow night after midnight, with the calendar date of the day after.
-        $this->assertSame('ملعب الحقل الأخضر متاح بكرا بالليل بعد منتصف الليل (الإثنين 5 أكتوبر) الساعة 00:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟', $answer['reply_text']);
+        $this->assertSame('يتوفر موعد في ملعب الحقل الأخضر بكرا بالليل بعد منتصف الليل (الإثنين 5 أكتوبر) الساعة 00:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟', $answer['reply_text']);
     }
 
     public function test_after_midnight_tonight_at_1_is_the_same_calendar_day(): void
@@ -515,7 +515,7 @@ class AiStage3ReviewTest extends TestCase
         $this->assertSame('2026-10-04', $response->json('data.parsed_date'));
         $this->assertSame('18:00', $response->json('data.parsed_hour'));
         $this->assertSame(Venue::where('name_en', 'South Court')->value('id'), $response->json('data.suggested_venue_id'));
-        $this->assertSame('الملعب الجنوبي متاح غداً الساعة 18:00 بسعر 60 شيكل للساعة. هل تريد أن أحجزه لك؟', $response->json('data.reply_text'));
+        $this->assertSame('يتوفر موعد في الملعب الجنوبي غداً الساعة 18:00 بسعر 60 شيكل للساعة. هل تريد أن أحجزه لك؟', $response->json('data.reply_text'));
         $this->assertSame(1, AssistantQuery::where('user_id', $player->id)->count());
     }
 }

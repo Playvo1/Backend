@@ -27,9 +27,9 @@ class ReplyComposerTest extends TestCase
             'hour' => [['hour'], 'What time would you like to play?', 'أي ساعة؟'],
             'day' => [['date'], 'Which day would you like to play?', 'أي يوم؟'],
             'sport' => [['sport'], 'Which sport would you like to play?', 'أي رياضة؟'],
-            'sport and hour' => [['sport', 'hour'], 'Tell me the sport and hour you want, for example: "Football tomorrow at 6pm".', 'أخبرني بالرياضة والساعة التي تريدها، مثلاً: "كرة قدم بكرا الساعة 6 مساءً".'],
-            'day and hour' => [['hour', 'date'], 'Tell me the day and hour you want, for example: "Football tomorrow at 6pm".', 'أخبرني باليوم والساعة التي تريدها، مثلاً: "كرة قدم بكرا الساعة 6 مساءً".'],
-            'everything' => [['sport', 'date', 'hour'], 'Tell me the sport, day and hour you want, for example: "Football tomorrow at 6pm".', 'أخبرني بالرياضة واليوم والساعة التي تريدها، مثلاً: "كرة قدم بكرا الساعة 6 مساءً".'],
+            'sport and hour' => [['sport', 'hour'], 'Tell me the sport and hour you want, for example: "Football tomorrow at 6pm".', 'أخبرني بالرياضة والساعة، مثلاً: "كرة قدم بكرا الساعة 6 مساءً".'],
+            'day and hour' => [['hour', 'date'], 'Tell me the day and hour you want, for example: "Football tomorrow at 6pm".', 'أخبرني باليوم والساعة، مثلاً: "كرة قدم بكرا الساعة 6 مساءً".'],
+            'everything' => [['sport', 'date', 'hour'], 'Tell me the sport, day and hour you want, for example: "Football tomorrow at 6pm".', 'أخبرني بالرياضة واليوم والساعة، مثلاً: "كرة قدم بكرا الساعة 6 مساءً".'],
         ];
     }
 
@@ -47,6 +47,37 @@ class ReplyComposerTest extends TestCase
         $this->assertSame('What time would you like to play? Free that evening: 20:00.', $this->replies()->needsDetails(['hour'], false, ['20:00']));
         // Free hours are only offered for a missing hour.
         $this->assertSame('Which day would you like to play?', $this->replies()->needsDetails(['date'], false, ['18:00']));
+    }
+
+    public function test_free_hours_are_introduced_by_the_part_of_the_day_asked_for(): void
+    {
+        $this->assertSame('أي ساعة؟ المتاح صباحاً: 09:00 و10:00.', $this->replies()->needsDetails(['hour'], true, ['09:00', '10:00'], 'morning'));
+        $this->assertSame('What time would you like to play? Free that morning: 09:00 and 10:00.', $this->replies()->needsDetails(['hour'], false, ['09:00', '10:00'], 'morning'));
+        $this->assertSame('أي ساعة؟ المتاح بعد الظهر: 15:00.', $this->replies()->needsDetails(['hour'], true, ['15:00'], 'afternoon'));
+        $this->assertSame('What time would you like to play? Free that afternoon: 15:00.', $this->replies()->needsDetails(['hour'], false, ['15:00'], 'afternoon'));
+    }
+
+    public function test_the_arabic_suggestion_reads_right_for_any_venue_name(): void
+    {
+        $this->seedRoles();
+        $today = CarbonImmutable::parse('2026-10-03');
+
+        foreach (['صالة خانيونس الرياضية', 'ساحة الشجاعية', 'ملعب الحقل الأخضر'] as $name) {
+            $slot = $this->makeSlot($this->makeVenue(null, ['name_ar' => $name]), ['slot_date' => '2026-10-04'])->load('venue');
+
+            $this->assertSame("يتوفر موعد في {$name} غداً الساعة 18:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟", $this->replies()->suggestion($slot, $today, true));
+        }
+    }
+
+    public function test_the_day_is_compared_in_the_players_timezone(): void
+    {
+        // At 00:30 in Gaza (21:30 UTC the day before), a 01:00 slot that night is today.
+        $this->seedRoles();
+        $slot = $this->makeSlot($this->makeVenue(), ['slot_date' => '2026-10-04', 'start_time' => '01:00:00', 'end_time' => '02:00:00'])->load('venue');
+        $today = CarbonImmutable::parse('2026-10-04 00:30', 'Asia/Gaza')->startOfDay();
+
+        $this->assertSame('Green Field Court is available today at 01:00 for 40 ILS/hour. Want me to book it?', $this->replies()->suggestion($slot, $today, false));
+        $this->assertSame('يتوفر موعد في ملعب الحقل الأخضر اليوم الساعة 01:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟', $this->replies()->suggestion($slot, $today, true));
     }
 
     // ---------------------------------------------------------------- not covered
@@ -71,11 +102,11 @@ class ReplyComposerTest extends TestCase
     {
         // Saturday 2026-10-03.
         return [
-            'tonight' => ['2026-10-04', '00:00:00', 'Green Field Court is available tonight after midnight (Sun 4 Oct) at 00:00 for 40 ILS/hour. Want me to book it?', 'ملعب الحقل الأخضر متاح الليلة بعد منتصف الليل (الأحد 4 أكتوبر) الساعة 00:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟'],
-            'tomorrow night' => ['2026-10-05', '01:00:00', 'Green Field Court is available tomorrow night after midnight (Mon 5 Oct) at 01:00 for 40 ILS/hour. Want me to book it?', 'ملعب الحقل الأخضر متاح بكرا بالليل بعد منتصف الليل (الإثنين 5 أكتوبر) الساعة 01:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟'],
-            'later' => ['2026-10-09', '00:00:00', 'Green Field Court is available after midnight (Fri 9 Oct) at 00:00 for 40 ILS/hour. Want me to book it?', 'ملعب الحقل الأخضر متاح بعد منتصف الليل (الجمعة 9 أكتوبر) الساعة 00:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟'],
-            'today after midnight is just today' => ['2026-10-03', '01:00:00', 'Green Field Court is available today at 01:00 for 40 ILS/hour. Want me to book it?', 'ملعب الحقل الأخضر متاح اليوم الساعة 01:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟'],
-            'evening is unchanged' => ['2026-10-04', '18:00:00', 'Green Field Court is available tomorrow at 18:00 for 40 ILS/hour. Want me to book it?', 'ملعب الحقل الأخضر متاح غداً الساعة 18:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟'],
+            'tonight' => ['2026-10-04', '00:00:00', 'Green Field Court is available tonight after midnight (Sun 4 Oct) at 00:00 for 40 ILS/hour. Want me to book it?', 'يتوفر موعد في ملعب الحقل الأخضر الليلة بعد منتصف الليل (الأحد 4 أكتوبر) الساعة 00:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟'],
+            'tomorrow night' => ['2026-10-05', '01:00:00', 'Green Field Court is available tomorrow night after midnight (Mon 5 Oct) at 01:00 for 40 ILS/hour. Want me to book it?', 'يتوفر موعد في ملعب الحقل الأخضر بكرا بالليل بعد منتصف الليل (الإثنين 5 أكتوبر) الساعة 01:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟'],
+            'later' => ['2026-10-09', '00:00:00', 'Green Field Court is available after midnight (Fri 9 Oct) at 00:00 for 40 ILS/hour. Want me to book it?', 'يتوفر موعد في ملعب الحقل الأخضر بعد منتصف الليل (الجمعة 9 أكتوبر) الساعة 00:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟'],
+            'today after midnight is just today' => ['2026-10-03', '01:00:00', 'Green Field Court is available today at 01:00 for 40 ILS/hour. Want me to book it?', 'يتوفر موعد في ملعب الحقل الأخضر اليوم الساعة 01:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟'],
+            'evening is unchanged' => ['2026-10-04', '18:00:00', 'Green Field Court is available tomorrow at 18:00 for 40 ILS/hour. Want me to book it?', 'يتوفر موعد في ملعب الحقل الأخضر غداً الساعة 18:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟'],
         ];
     }
 

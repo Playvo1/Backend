@@ -137,7 +137,7 @@ class AssistantQueryTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.parsed_sport_id', $this->football->id)
             ->assertJsonPath('data.suggested_venue_id', $this->venue->id)
-            ->assertJsonPath('data.reply_text', 'ملعب الحقل الأخضر متاح غداً الساعة 18:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟');
+            ->assertJsonPath('data.reply_text', 'يتوفر موعد في ملعب الحقل الأخضر غداً الساعة 18:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟');
     }
 
     public function test_reply_for_today_and_a_later_date(): void
@@ -278,6 +278,27 @@ class AssistantQueryTest extends TestCase
         $this->assertDatabaseHas('assistant_queries', ['query_text' => 'football tomorrow', 'parsed_hour' => null, 'suggested_venue_id' => null]);
     }
 
+    public function test_a_morning_request_is_offered_the_free_morning_hours(): void
+    {
+        config(['services.gemini.key' => null]);
+        $this->makeSlot($this->venue, ['slot_date' => '2026-10-04', 'start_time' => '09:00:00', 'end_time' => '10:00:00']);
+        $this->makeSlot($this->venue, ['slot_date' => '2026-10-04', 'start_time' => '10:00:00', 'end_time' => '11:00:00']);
+
+        $this->ask('بدي كورة بكرا الصبح')
+            ->assertOk()
+            ->assertJsonPath('data.parsed_hour', null)
+            ->assertJsonPath('data.reply_text', 'أي ساعة؟ المتاح صباحاً: 09:00 و10:00.');
+
+        $this->ask('football tomorrow morning')
+            ->assertOk()
+            ->assertJsonPath('data.reply_text', 'What time would you like to play? Free that morning: 09:00 and 10:00.');
+
+        // Without a part of the day, the evening hours are offered as before.
+        $this->ask('football tomorrow')
+            ->assertOk()
+            ->assertJsonPath('data.reply_text', 'What time would you like to play? Free that evening: 18:00.');
+    }
+
     public function test_an_hour_given_in_words_keeps_geminis_hour(): void
     {
         $this->fakeGeminiCall(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00']);
@@ -415,7 +436,7 @@ class AssistantQueryTest extends TestCase
         $this->ask('football on monday at 6pm')
             ->assertJsonPath('data.reply_text', 'Green Field Court is available on 2026-10-05 from 17:00 to 20:00 for 40 ILS/hour. Want me to book it?');
         $this->ask('كرة قدم يوم الاثنين الساعة 6')
-            ->assertJsonPath('data.reply_text', 'ملعب الحقل الأخضر متاح بتاريخ 2026-10-05 من الساعة 17:00 حتى 20:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟');
+            ->assertJsonPath('data.reply_text', 'يتوفر موعد في ملعب الحقل الأخضر بتاريخ 2026-10-05 من الساعة 17:00 حتى 20:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟');
     }
 
     public function test_a_slot_ending_at_midnight_is_one_hour(): void

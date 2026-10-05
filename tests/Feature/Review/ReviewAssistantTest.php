@@ -253,7 +253,7 @@ class ReviewAssistantTest extends TestCase
 
         $this->ask('بدي ملعب football بكرا الساعة 6 مساءً بالجلاء')
             ->assertOk()
-            ->assertJsonPath('data.reply_text', 'ملعب الحقل الأخضر متاح غداً الساعة 18:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟');
+            ->assertJsonPath('data.reply_text', 'يتوفر موعد في ملعب الحقل الأخضر غداً الساعة 18:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟');
     }
 
     public function test_past_hour_today_is_not_suggested(): void

@@ -111,17 +111,19 @@ class VenueSearchTool
 
     /**
      * Up to $limit start times (HH:mm) of free slots for the sport and day from $from on (the
-     * evening by default), so a reply that asks for the hour can offer some.
+     * evening by default) and before $until when given, so a reply that asks for the hour can
+     * offer some.
      *
      * @return list<string>
      */
-    public function freeHours(array $arguments, CarbonInterface $now, string $from = '17:00', int $limit = 3): array
+    public function freeHours(array $arguments, CarbonInterface $now, string $from = '17:00', int $limit = 3, ?string $until = null): array
     {
         if (! $this->hasOnlyStringArguments($arguments)) {
             return [];
         }
 
         return ($this->availableSlots($arguments, $now)?->where('time_slots.start_time', '>=', $from.':00')
+            ->when($until !== null, fn (Builder $q) => $q->where('time_slots.start_time', '<', $until.':00'))
             ->orderBy('time_slots.start_time')
             ->pluck('time_slots.start_time') ?? collect())
             ->map(fn ($start) => substr((string) $start, 0, 5))

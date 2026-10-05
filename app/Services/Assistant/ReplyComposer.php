@@ -22,8 +22,20 @@ class ReplyComposer
     private const NIGHT_ENDS_AT = 5;
 
     /**
+     * How the free hours offered with "which hour?" are introduced, by the part of the day
+     * the player asked for.
+     */
+    private const FREE_HOURS_LABELS = [
+        'morning' => ['المتاح صباحاً', 'Free that morning'],
+        'afternoon' => ['المتاح بعد الظهر', 'Free that afternoon'],
+        'evening' => ['المتاح مساءً', 'Free that evening'],
+    ];
+
+    /**
      * Quotes the slot's own time (what the player would book), not the minute they asked for:
-     * "at 18:00" for a one-hour slot, "from 17:00 to 20:00" for a longer one.
+     * "at 18:00" for a one-hour slot, "from 17:00 to 20:00" for a longer one. The Arabic reply
+     * is about the slot ("يتوفر موعد في ..."), so it reads right whatever the venue is called
+     * (ملعب، صالة، ساحة...). $today is the players' local date.
      */
     public function suggestion(TimeSlot $slot, CarbonImmutable $today, bool $arabic): string
     {
@@ -33,11 +45,13 @@ class ReplyComposer
         $end = substr((string) $slot->end_time, 0, 5);
         $oneHour = $this->minutesBetween($start, $end) === 60;
         $afterMidnight = (int) substr($start, 0, 2) < self::NIGHT_ENDS_AT;
+        // Slot dates are local calendar dates, so both sides are compared in the local timezone.
+        $today = CarbonImmutable::parse($today->toDateString(), config('app.local_timezone'));
 
         if ($arabic) {
             $time = $oneHour ? "الساعة {$start}" : "من الساعة {$start} حتى {$end}";
 
-            return "{$slot->venue->name_ar} متاح {$this->arabicDay($date, $today, $afterMidnight)} {$time} بسعر {$price} شيكل للساعة. هل تريد أن أحجزه لك؟";
+            return "يتوفر موعد في {$slot->venue->name_ar} {$this->arabicDay($date, $today, $afterMidnight)} {$time} بسعر {$price} شيكل للساعة. هل تريد أن أحجزه لك؟";
         }
 
         $time = $oneHour ? "at {$start}" : "from {$start} to {$end}";
@@ -54,12 +68,14 @@ class ReplyComposer
 
     /**
      * Asks only for what is missing (sport, date, hour), e.g. "أي ساعة؟". When only the hour
-     * is missing, up to three free hours that evening are offered.
+     * is missing, up to three free hours are offered, from the part of the day the player
+     * asked for (the evening unless they said the morning or the afternoon).
      *
      * @param  list<string>  $missing
      * @param  list<string>  $freeHours
+     * @param  string  $partOfDay  morning, afternoon or evening
      */
-    public function needsDetails(array $missing, bool $arabic, array $freeHours = []): string
+    public function needsDetails(array $missing, bool $arabic, array $freeHours = [], string $partOfDay = 'evening'): string
     {
         $missing = array_values(array_intersect(['sport', 'date', 'hour'], $missing));
 
@@ -69,9 +85,11 @@ class ReplyComposer
                 : ['sport' => 'Which sport would you like to play?', 'date' => 'Which day would you like to play?', 'hour' => 'What time would you like to play?'][$missing[0]];
 
             if ($missing === ['hour'] && $freeHours !== []) {
+                [$arabicLabel, $englishLabel] = self::FREE_HOURS_LABELS[$partOfDay] ?? self::FREE_HOURS_LABELS['evening'];
+
                 $question .= $arabic
-                    ? ' المتاح مساءً: '.$this->arabicList($freeHours).'.'
-                    : ' Free that evening: '.$this->englishList($freeHours).'.';
+                    ? " {$arabicLabel}: ".$this->arabicList($freeHours).'.'
+                    : " {$englishLabel}: ".$this->englishList($freeHours).'.';
             }
 
             return $question;
@@ -80,8 +98,9 @@ class ReplyComposer
         if ($arabic) {
             $names = ['sport' => 'الرياضة', 'date' => 'اليوم', 'hour' => 'الساعة'];
 
+            // No relative clause after the list, as it would have to agree with each noun.
             return 'أخبرني ب'.implode(' و', array_map(fn (string $field) => $names[$field], $missing ?: ['sport', 'date', 'hour']))
-                .' التي تريدها، مثلاً: "كرة قدم بكرا الساعة 6 مساءً".';
+                .'، مثلاً: "كرة قدم بكرا الساعة 6 مساءً".';
         }
 
         $names = ['sport' => 'sport', 'date' => 'day', 'hour' => 'hour'];
@@ -130,7 +149,7 @@ class ReplyComposer
      */
     private function englishDay(string $date, CarbonImmutable $today, bool $afterMidnight): string
     {
-        $day = CarbonImmutable::parse($date);
+        $day = CarbonImmutable::parse($date, $today->getTimezone());
         $calendar = $day->format('D j M');
 
         if ($afterMidnight && $day->gt($today)) {
@@ -150,7 +169,7 @@ class ReplyComposer
 
     private function arabicDay(string $date, CarbonImmutable $today, bool $afterMidnight): string
     {
-        $day = CarbonImmutable::parse($date);
+        $day = CarbonImmutable::parse($date, $today->getTimezone());
         $calendar = self::ARABIC_WEEKDAYS[$day->dayOfWeek].' '.$day->day.' '.self::ARABIC_MONTHS[$day->month];
 
         if ($afterMidnight && $day->gt($today)) {

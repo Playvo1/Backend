@@ -322,7 +322,10 @@ class AssistantEvaluationTest extends TestCase
         $path = storage_path('app/assistant-eval/review/run.json');
         @unlink($path);
 
-        $this->artisan('assistant:evaluate', ['--fallback' => true, '--group' => 'tuning', '--json' => 'review/run.json'])->assertSuccessful();
+        // The path is printed with the operating system's separator only.
+        $this->artisan('assistant:evaluate', ['--fallback' => true, '--group' => 'tuning', '--json' => 'review/run.json'])
+            ->expectsOutputToContain('Results written to '.str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path))
+            ->assertSuccessful();
 
         $this->assertFileExists($path);
         $this->assertFileDoesNotExist(base_path('review/run.json'));

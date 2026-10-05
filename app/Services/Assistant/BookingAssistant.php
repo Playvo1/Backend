@@ -24,6 +24,16 @@ class BookingAssistant
     private const REQUIRED_ARGUMENTS = ['sport', 'date', 'hour'];
 
     /**
+     * Where the free hours offered with "which hour?" start and end ([from, until), HH:mm),
+     * by the part of the day the player asked for.
+     */
+    private const PARTS_OF_DAY = [
+        'morning' => ['05:00', '12:00'],
+        'afternoon' => ['12:00', '17:00'],
+        'evening' => ['17:00', null],
+    ];
+
+    /**
      * What the reply did: suggested a venue, found none, asked for the sport, day or hour, or
      * said the place isn't covered.
      */
@@ -92,13 +102,16 @@ class BookingAssistant
         ]));
         $slot = $unknown === null && $missing === [] ? $this->tool->execute($arguments, $now) : null;
         $arabic = TextNormalizer::isArabic($queryText);
+        $partOfDay = $missing === ['hour'] ? ($this->rules->partOfDay($queryText) ?? 'evening') : 'evening';
+        [$from, $until] = self::PARTS_OF_DAY[$partOfDay];
 
         [$outcome, $replyText] = match (true) {
             $unknown !== null => [self::NOT_COVERED, $this->notCoveredReply($unknown, $arabic)],
             $missing !== [] => [self::NEEDS_DETAILS, $this->replies->needsDetails(
                 $missing,
                 $arabic,
-                $missing === ['hour'] ? $this->tool->freeHours($arguments, $now) : [],
+                $missing === ['hour'] ? $this->tool->freeHours($arguments, $now, $from, until: $until) : [],
+                $partOfDay,
             )],
             ! $slot => [self::NO_MATCH, $this->replies->noMatch($arabic)],
             default => [self::SUGGESTION, $this->replies->suggestion($slot, $today, $arabic)],

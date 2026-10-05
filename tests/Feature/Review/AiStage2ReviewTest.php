@@ -175,7 +175,7 @@ class AiStage2ReviewTest extends TestCase
 
     private function arSuggestion(string $day, string $hour, string $price = '40', string $name = 'ملعب الحقل الأخضر'): string
     {
-        return "{$name} متاح {$day} الساعة {$hour} بسعر {$price} شيكل للساعة. هل تريد أن أحجزه لك؟";
+        return "يتوفر موعد في {$name} {$day} الساعة {$hour} بسعر {$price} شيكل للساعة. هل تريد أن أحجزه لك؟";
     }
 
     private function enSuggestion(string $day, string $hour, string $price = '40', string $name = 'Green Field Court'): string

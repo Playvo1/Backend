@@ -205,8 +205,10 @@ class EvaluateAssistant extends Command
 
     private function writeJson(string $path, array $result, bool $useGemini, AssistantEvaluator $evaluator): void
     {
-        // A relative path is kept out of the repository, under storage/app/assistant-eval/.
+        // A relative path is kept out of the repository, under storage/app/assistant-eval/. It is
+        // printed with one kind of separator, as the operating system writes paths.
         $path = preg_match('/^([a-zA-Z]:)?[\\\\\/]/', $path) ? $path : storage_path('app/assistant-eval/'.$path);
+        $path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
 
         $document = [
             'meta' => [

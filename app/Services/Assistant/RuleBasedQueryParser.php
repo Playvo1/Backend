@@ -116,6 +116,11 @@ class RuleBasedQueryParser implements QueryParser
 
     private const AM_WORDS = ['am', 'morning', 'صباحا', 'صباح', 'الصباح', 'الصبح', 'صبح', 'الفجر', 'فجرا'];
 
+    /**
+     * The afternoon among PM_WORDS, and noon: what "which hour?" offers hours for.
+     */
+    private const AFTERNOON_WORDS = ['afternoon', 'noon', 'midday', 'العصر', 'عصرا', 'عصر', 'بعد الظهر', 'الظهر', 'ظهرا'];
+
     private const HOUR_MARKERS = ['at', 'around', 'about', 'الساعه', 'ساعه', 'عالساعه', 'حوالي'];
 
     /**
@@ -352,6 +357,24 @@ class RuleBasedQueryParser implements QueryParser
         [, $text] = $this->extractDate($this->prepare($queryText), $today->startOfDay());
 
         return $this->extractTime($text) !== null || $this->containsAnyWord($text, ['oclock', 'o clock']);
+    }
+
+    /**
+     * The part of the day the player named without an hour ("الجمعة الصبح", "tomorrow
+     * afternoon", "بكرا بالليل"): morning, afternoon or evening; null when none is named.
+     */
+    public function partOfDay(string $queryText): ?string
+    {
+        $text = $this->prepare($queryText);
+        // "am" and "pm" come with an hour, and "am" is also the English verb.
+        $words = fn (array $words) => array_values(array_diff($words, ['am', 'pm']));
+
+        return match (true) {
+            $this->containsAnyWord($text, $words(self::AM_WORDS)) => 'morning',
+            $this->containsAnyWord($text, self::AFTERNOON_WORDS) => 'afternoon',
+            $this->containsAnyWord($text, [...$words(self::PM_WORDS), ...self::NIGHT_WORDS]) => 'evening',
+            default => null,
+        };
     }
 
     /**
