@@ -28,11 +28,11 @@ class RuleBasedQueryParser implements QueryParser
      * normalised form (ة as ه, no hamza on alef). Small typos of these are accepted too.
      */
     private const SPORT_ALIASES = [
-        'football' => ['soccer', 'futsal', 'footy', 'kora', 'koora', 'kura', 'كوره', 'كوره قدم', 'كره قدم', 'فوتبول', 'فطبول', 'خماسي', 'خماسيات'],
-        'basketball' => ['basket', 'basket ball', 'باسكت', 'باسكيت', 'باسكت بول', 'كره سله', 'سله'],
-        'volleyball' => ['volley', 'volley ball', 'فولي', 'فولي بول', 'كره طايره', 'طايره'],
-        'tennis' => ['تنس', 'تنس ارضي'],
-        'padel' => ['paddle', 'بادل', 'بادل تنس'],
+        'football' => ['soccer', 'futsal', 'futbol', 'footy', 'kora', 'koora', 'kura', 'كوره', 'كوره قدم', 'كره قدم', 'فوتبول', 'فطبول', 'خماسي', 'خماسيات'],
+        'basketball' => ['basket', 'basket ball', 'bball', 'b ball', 'hoops', 'باسكت', 'باسكيت', 'باسكت بول', 'كره سله', 'سله'],
+        'volleyball' => ['volley', 'volley ball', 'vball', 'v ball', 'فولي', 'فولي بول', 'كره طايره', 'طايره'],
+        'tennis' => ['تنس', 'تينس', 'تنس ارضي'],
+        'padel' => ['paddle', 'بادل', 'باديل', 'بادل تنس'],
     ];
 
     private const DAY_AFTER_TOMORROW = ['day after tomorrow', 'بعد بكرا', 'بعد بكره', 'بعد غد', 'بعد غدا'];
@@ -236,17 +236,69 @@ class RuleBasedQueryParser implements QueryParser
     private const AT_PREFIXES = ['عال', 'ع', 'علي', 'بال'];
 
     /**
-     * Words after which a place is named, and words that follow them without being a place.
+     * Words after which a place is named ("في"/"fi"/"fe" in Arabizi, "near", "بالقرب من"...).
+     * They are never a place themselves, and a connector after them ("من", "to") is skipped.
      */
-    private const PLACE_MARKERS = ['in', 'near', 'around', 'في', 'عند', 'قرب', 'جنب', 'جمب', 'حي', 'بحي', 'منطقه', 'بمنطقه', 'مدينه', 'بمدينه'];
+    private const PLACE_MARKERS = [
+        'in', 'near', 'around', 'nearby', 'fi', 'fe',
+        'في', 'عند', 'قرب', 'بالقرب', 'قريب', 'جنب', 'جمب', 'حد', 'جوا', 'داخل', 'حي', 'بحي', 'منطقه', 'بمنطقه', 'مدينه', 'بمدينه',
+    ];
 
+    private const PLACE_CONNECTORS = ['من', 'to', 'of'];
+
+    /**
+     * Words that are never a place name, so "بالجامعة" or "near the gym" is not reported as a
+     * place we don't cover (a false "not covered" blocks a booking; ignoring a word does not).
+     * Written in normalised form without the article; grow them by category.
+     */
     private const NOT_PLACES = [
-        'the', 'a', 'an', 'my', 'me', 'this', 'that', 'some', 'any', 'one', 'court', 'courts', 'pitch', 'pitches', 'field', 'fields',
-        'stadium', 'club', 'hall', 'venue', 'place', 'time', 'hour', 'hours', 'morning', 'evening', 'afternoon', 'night', 'week',
-        'weekend', 'city', 'area', 'town', 'center', 'centre', 'english', 'arabic',
-        'ملعب', 'ملاعب', 'مكان', 'اماكن', 'وقت', 'ساعه', 'حدا', 'اشي', 'شي', 'حجز', 'مجال', 'امكانيه', 'نفس', 'هاد', 'هذا', 'هاي',
-        'ليل', 'مسا', 'مساء', 'صبح', 'صباح', 'عصر', 'ظهر', 'مغرب', 'عشا', 'فجر', 'ليله', 'نادي', 'صاله', 'منطقه', 'مدينه',
-        'عربي', 'انجليزي', 'انكليزي', 'له', 'لله', 'ضبط', 'زبط', 'نسبه', 'مره', 'دور', 'توفيق', 'كثير',
+        // Function words, pronouns and request verbs (Arabic, English, Arabizi).
+        'the', 'a', 'an', 'my', 'me', 'us', 'you', 'this', 'that', 'some', 'any', 'one', 'two', 'three', 'four', 'five', 'six', 'seven',
+        'eight', 'nine', 'ten', 'please', 'pls', 'plz', 'thanks', 'thank', 'here', 'there', 'anywhere', 'somewhere', 'everywhere',
+        'ay', 'ayy', 'ai', 'eh', 'shi', 'shu', 'sho', 'esh', 'ish', 'ishi', 'hon', 'hoon', 'hun', 'hena', 'hnak', 'kaman', 'kman',
+        'mish', 'msh', 'mesh', 'ma', 'la', 'aw', 'wala', 'yalla', 'ya', 'ana', 'enta', 'inta', 'bdi', 'bde', 'bdna', 'badi', 'baddi',
+        'mumkin', 'momken', 'shukran',
+        'حدا', 'اشي', 'شي', 'نفس', 'هاد', 'هذا', 'هاي', 'هون', 'هنا', 'هناك', 'له', 'لله', 'كثير', 'اي', 'كل', 'بعض', 'مني', 'منك', 'منا',
+        'بدي', 'بدنا', 'بدك', 'ابغي', 'نبغي', 'اريد', 'نريد', 'عاوز', 'عايز', 'حابب', 'حابين', 'ممكن', 'لو', 'سمحت', 'احجز', 'نحجز',
+        'العب', 'نلعب', 'شو', 'وين', 'هل', 'كمان', 'بس', 'ايضا', 'شكرا', 'مرحبا', 'سلام', 'يعطيك', 'عافيه',
+        // Venues and facilities.
+        'court', 'courts', 'pitch', 'pitches', 'field', 'fields', 'stadium', 'club', 'hall', 'venue', 'gym', 'arena',
+        'ملعب', 'ملاعب', 'نادي', 'صاله', 'جيم', 'ساحه', 'حجز', 'مجال', 'امكانيه',
+        // Landmarks and buildings.
+        'university', 'uni', 'college', 'school', 'mosque', 'masjid', 'church', 'hospital', 'clinic', 'pharmacy', 'house', 'home',
+        'apartment', 'flat', 'building', 'tower', 'mall', 'market', 'souq', 'souk', 'shop', 'store', 'restaurant', 'cafe', 'coffee',
+        'hotel', 'office', 'work', 'station', 'port', 'harbour', 'harbor', 'bridge', 'street', 'road', 'corner', 'roundabout',
+        'square', 'park', 'garden', 'beach', 'sea', 'coast',
+        'جامعه', 'كليه', 'مدرسه', 'مسجد', 'جامع', 'كنيسه', 'مستشفي', 'عياده', 'صيدليه', 'بيت', 'دار', 'منزل', 'شقه', 'عماره', 'برج',
+        'مول', 'سوق', 'محل', 'دكان', 'مطعم', 'كافيه', 'قهوه', 'فندق', 'مكتب', 'شغل', 'عمل', 'محطه', 'ميناء', 'جسر', 'شارع', 'طريق',
+        'دوار', 'ميدان', 'مركز', 'حديقه', 'منتزه', 'بحر', 'شاطئ', 'كورنيش',
+        // Places in general, not a name.
+        'place', 'city', 'area', 'town', 'village', 'camp', 'district', 'region', 'neighbourhood', 'neighborhood', 'hood', 'center',
+        'centre', 'downtown', 'general',
+        'مكان', 'اماكن', 'منطقه', 'مدينه', 'حي', 'حاره', 'مخيم', 'بلد', 'قريه', 'ضاحيه', 'جيران', 'اطراف', 'قرب',
+        // Times and periods.
+        'time', 'hour', 'hours', 'day', 'daytime', 'morning', 'evening', 'afternoon', 'night', 'week', 'weekend', 'month', 'holiday',
+        'وقت', 'ساعه', 'يوم', 'نهار', 'ليل', 'ليله', 'مسا', 'مساء', 'صبح', 'صباح', 'عصر', 'ظهر', 'مغرب', 'عشا', 'فجر', 'اسبوع',
+        'شهر', 'ويكند', 'عطله', 'اجازه', 'عيد',
+        // Manner: "بالضبط", "بالدور", "بالسلامة", "بالعربي".
+        'english', 'arabic', 'exactly', 'asap', 'total', 'advance',
+        'ضبط', 'ظبط', 'زبط', 'تحديد', 'نسبه', 'مره', 'دور', 'توفيق', 'سلامه', 'عربي', 'انجليزي', 'انكليزي', 'كامل', 'مجان',
+        'تقسيط', 'راحه', 'فعل', 'اول', 'اخر', 'مناسبه', 'مناسب', 'طبع', 'تاكيد', 'اضافه', 'عكس', 'سرعه', 'تمام',
+        // Paying.
+        'cash', 'price', 'card', 'visa', 'money', 'discount', 'offer', 'app', 'free',
+        'كاش', 'سعر', 'فلوس', 'مصاري', 'دفع', 'حساب', 'فيزا', 'بطاقه', 'تطبيق', 'خصم', 'عرض',
+        // People.
+        'friends', 'family', 'team', 'guys', 'kids', 'men', 'women', 'boys', 'girls', 'people', 'group',
+        'شباب', 'جماعه', 'ربع', 'اصحاب', 'صحاب', 'عيله', 'اولاد', 'ولاد', 'رجال', 'نساء', 'بنات', 'فريق', 'فرقه', 'اطفال', 'كبار',
+        'صغار', 'ناس', 'اهل', 'اخوان', 'زملاء',
+    ];
+
+    /**
+     * Everyday names of seeded cities, keyed by CITY.name_en in lower case: "الدير" is how
+     * players in Gaza name Deir al-Balah.
+     */
+    private const CITY_ALIASES = [
+        'deir al-balah' => ['الدير', 'deir'],
     ];
 
     public function parse(string $queryText, CarbonImmutable $today, ?CarbonImmutable $now = null): array
@@ -264,12 +316,14 @@ class RuleBasedQueryParser implements QueryParser
             $date = CarbonImmutable::parse($date)->addDays($time['days'])->toDateString();
         }
 
+        $known = $this->knownWords();
+
         return array_filter([
-            'sport' => $this->matchSport($text),
+            'sport' => $this->bestMention($text, $this->sportCandidates(), $known),
             'date' => $date,
             'hour' => $time['hour'] ?? null,
-            'city' => $this->matchCity($text),
-            'area' => $this->matchArea($text),
+            'city' => $this->bestMention($text, $this->cityCandidates(), $known),
+            'area' => $this->bestMention($text, $this->areaCandidates(), $known),
         ]);
     }
 
@@ -303,22 +357,31 @@ class RuleBasedQueryParser implements QueryParser
     /**
      * A place the player named that is no seeded city, area or venue ("بالقدس", "in Cairo"),
      * so the assistant can say it isn't covered instead of suggesting somewhere else. Only
-     * clear cases are reported: "بال..." or "في ال..." in Arabic, "in"/"near" in English.
+     * clear cases are reported: "بال..." or "في ال..." in Arabic, "in"/"near"/"fi" in English
+     * and Arabizi, with up to three words ("بالشيخ رضوان"). When in doubt no place is
+     * reported: a common word, a word shorter than three Latin letters, or anything that
+     * loosely spells a covered city or area is never "not covered".
      */
     public function unknownPlace(string $queryText): ?string
     {
         $words = explode(' ', $this->prepare($queryText));
         $known = $this->knownWords();
+        $covered = $this->cityCandidates()->concat($this->areaCandidates());
 
         foreach ($words as $index => $word) {
             $place = match (true) {
-                mb_strlen($word) >= 5 && str_starts_with($word, 'بال') => [mb_substr($word, 1)],
-                in_array($word, self::PLACE_MARKERS, true) => array_slice($words, $index + 1, 3),
+                in_array($word, self::PLACE_MARKERS, true) => array_slice($words, $index + 1, 4),
+                mb_strlen($word) >= 5 && str_starts_with($word, 'بال') => [mb_substr($word, 1), ...array_slice($words, $index + 1, 2)],
                 default => [],
             };
 
-            // Skip English articles. In Arabic "في" also means "is there" ("في ملعب؟"), so
-            // a place needs its article unless a place noun (حي، منطقة، مدينة) comes first.
+            // Skip a connector ("بالقرب من") and English articles. In Arabic "في" also means
+            // "is there" ("في ملعب؟"), so a place needs its article unless a place noun (حي،
+            // منطقة، مدينة) comes first.
+            if ($place !== [] && in_array($place[0], self::PLACE_CONNECTORS, true)) {
+                array_shift($place);
+            }
+
             if ($place !== [] && in_array($place[0], ['the', 'al', 'el'], true)) {
                 array_shift($place);
             }
@@ -331,15 +394,16 @@ class RuleBasedQueryParser implements QueryParser
 
             $phrase = [];
 
-            foreach ($place as $candidate) {
-                if (preg_match('/\d/', $candidate) === 1 || in_array($candidate, self::PLACE_MARKERS, true) || $this->isKnownWord($candidate, $known)) {
+            foreach (array_slice($place, 0, 3) as $candidate) {
+                if (preg_match('/\d/', $candidate) === 1 || in_array($candidate, self::PLACE_MARKERS, true)
+                    || preg_match('/^[a-z]{1,2}$/', $candidate) === 1 || $this->isKnownWord($candidate, $known)) {
                     break;
                 }
 
                 $phrase[] = $candidate;
             }
 
-            if ($phrase !== []) {
+            if ($phrase !== [] && ! $this->namesCoveredPlace(implode(' ', $phrase), $covered, $known)) {
                 return $this->originalSpelling($queryText, implode(' ', $phrase));
             }
         }
@@ -480,19 +544,16 @@ class RuleBasedQueryParser implements QueryParser
         return $words;
     }
 
-    private function matchCity(string $text): ?string
+    /**
+     * @return Collection<int, array{name: string, alias: string}>
+     */
+    private function cityCandidates(): Collection
     {
-        $candidates = City::query()->get(['name_ar', 'name_en'])->flatMap(fn (City $city) => [
-            ['name' => $city->name_en, 'alias' => $city->name_ar],
-            ['name' => $city->name_en, 'alias' => $city->name_en],
-        ]);
-
-        return $this->bestMention($text, $candidates);
-    }
-
-    private function matchSport(string $text): ?string
-    {
-        return $this->bestMention($text, $this->sportCandidates());
+        return City::query()->get(['name_ar', 'name_en'])->flatMap(fn (City $city) => collect([
+            $city->name_ar,
+            $city->name_en,
+            ...self::CITY_ALIASES[mb_strtolower($city->name_en)] ?? [],
+        ])->map(fn (string $alias) => ['name' => $city->name_en, 'alias' => $alias]));
     }
 
     /**
@@ -510,13 +571,7 @@ class RuleBasedQueryParser implements QueryParser
     /**
      * Areas are free text on VENUE, so the known ones are read from active venues. An area
      * spelled like a city is skipped: "Gaza" means the city, not one venue's area field.
-     */
-    private function matchArea(string $text): ?string
-    {
-        return $this->bestMention($text, $this->areaCandidates());
-    }
-
-    /**
+     *
      * @return Collection<int, array{name: string, alias: string}>
      */
     private function areaCandidates(): Collection
@@ -534,24 +589,28 @@ class RuleBasedQueryParser implements QueryParser
     }
 
     /**
-     * The longest exact mention wins; otherwise the closest near-miss (a typo), but only
-     * when one name is clearly closest, so a typo never silently picks a different place.
+     * In order, so a looser reading never overrides a closer one:
+     * 1. the longest exact mention, as whole words;
+     * 2. a name in another common spelling (TextNormalizer::spells(): "khanyounis",
+     *    "tel al hawa", "ghazza");
+     * 3. the closest near-miss (a typo), but only when one name is clearly closest, so a
+     *    typo never silently picks a different place, and never for a word in $known that
+     *    means something else.
      *
      * @param  Collection<int, array{name: string, alias: string}>  $candidates
+     * @param  list<string>  $known  see knownWords()
      */
-    private function bestMention(string $text, Collection $candidates): ?string
+    private function bestMention(string $text, Collection $candidates, array $known): ?string
     {
-        $exact = $candidates
-            ->sortByDesc(fn (array $candidate) => mb_strlen(TextNormalizer::loose($candidate['alias'])))
-            ->first(fn (array $candidate) => TextNormalizer::mentions($text, $candidate['alias']));
+        $byLength = $candidates->sortByDesc(fn (array $candidate) => mb_strlen(TextNormalizer::loose($candidate['alias'])));
+        $match = $byLength->first(fn (array $candidate) => TextNormalizer::mentions($text, $candidate['alias']))
+            ?? $byLength->first(fn (array $candidate) => TextNormalizer::spells($text, $candidate['alias']));
 
-        if ($exact !== null) {
-            return $exact['name'];
+        if ($match !== null) {
+            return $match['name'];
         }
 
-        $close = $candidates
-            ->map(fn (array $candidate) => [...$candidate, 'distance' => TextNormalizer::closeness($text, $candidate['alias'])])
-            ->whereNotNull('distance');
+        $close = $this->nearMisses($text, $candidates, $known);
 
         if ($close->isEmpty()) {
             return null;
@@ -564,7 +623,45 @@ class RuleBasedQueryParser implements QueryParser
     }
 
     /**
-     * Every word the parser knows, so it isn't taken for an unknown place.
+     * @param  Collection<int, array{name: string, alias: string}>  $candidates
+     * @param  list<string>  $known
+     * @return Collection<int, array{name: string, alias: string, distance: int}>
+     */
+    private function nearMisses(string $text, Collection $candidates, array $known): Collection
+    {
+        // Known words in their own sense: a word that names this very candidate stays readable.
+        $skip = fn (array $candidate) => array_values(array_diff($known, explode(' ', TextNormalizer::loose($candidate['alias']))));
+
+        return $candidates
+            ->map(fn (array $candidate) => [...$candidate, 'distance' => TextNormalizer::closeness($text, $candidate['alias'], $skip($candidate))])
+            ->whereNotNull('distance')
+            ->values();
+    }
+
+    /**
+     * Whether $phrase may name a covered city or area: in any spelling the matching accepts,
+     * even when two are equally close, or with a word one letter off a word of a covered
+     * name ("dair" for the "deir" of Deir al-Balah). Such a place is never reported as not
+     * covered, since wrongly saying so blocks a booking.
+     *
+     * @param  Collection<int, array{name: string, alias: string}>  $covered
+     * @param  list<string>  $known
+     */
+    private function namesCoveredPlace(string $phrase, Collection $covered, array $known): bool
+    {
+        $coveredWords = $covered->flatMap(fn (array $candidate) => explode(' ', TextNormalizer::loose($candidate['alias'])))->unique();
+
+        return $covered->contains(fn (array $candidate) => TextNormalizer::mentions($phrase, $candidate['alias'])
+            || TextNormalizer::spells($phrase, $candidate['alias']))
+            || $this->nearMisses($phrase, $covered, $known)->isNotEmpty()
+            || collect(explode(' ', TextNormalizer::loose($phrase)))->contains(fn (string $word) => $coveredWords->contains(
+                fn (string $coveredWord) => TextNormalizer::oneLetterOff($word, $coveredWord),
+            ));
+    }
+
+    /**
+     * Every word the parser knows, so it isn't taken for an unknown place or read as a typo
+     * of another name.
      *
      * @return list<string>
      */
@@ -573,7 +670,7 @@ class RuleBasedQueryParser implements QueryParser
         $names = [
             ...$this->sportCandidates()->pluck('alias')->all(),
             ...$this->areaCandidates()->pluck('alias')->all(),
-            ...City::query()->get(['name_ar', 'name_en'])->flatMap(fn (City $city) => [$city->name_ar, $city->name_en])->all(),
+            ...$this->cityCandidates()->pluck('alias')->all(),
             ...Venue::query()->get(['name_ar', 'name_en'])->flatMap(fn (Venue $venue) => [$venue->name_ar, $venue->name_en])->all(),
             ...self::DAY_AFTER_TOMORROW, ...self::TOMORROW, ...self::TODAY, ...self::NOW, ...self::OTHER_DATE_WORDS,
             ...array_merge(...array_values(self::WEEKDAYS)),

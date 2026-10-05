@@ -101,15 +101,23 @@ class ReplyComposerTest extends TestCase
         $this->assertSame(0, TextNormalizer::distance('غزه', 'غزه'));
     }
 
-    public function test_a_typo_needs_four_letters_the_same_first_letter_and_a_small_distance(): void
+    public function test_a_typo_keeps_the_word_recognisable(): void
     {
         $this->assertSame(1, TextNormalizer::wordDistance('fotball', 'football'));
         $this->assertSame(2, TextNormalizer::wordDistance('tommorow', 'tomorrow'));
         $this->assertSame(0, TextNormalizer::wordDistance('بالجلا', 'جلا'));
+        $this->assertSame(1, TextNormalizer::wordDistance('tenns', 'tennis'));
+        $this->assertSame(1, TextNormalizer::wordDistance('padle', 'padel'), 'two neighbours swapped');
+        $this->assertSame(1, TextNormalizer::wordDistance('شجعيه', 'شجاعيه'));
         $this->assertNull(TextNormalizer::wordDistance('سلم', 'سله'), 'too short');
         $this->assertNull(TextNormalizer::wordDistance('rootball', 'football'), 'another first letter');
         $this->assertNull(TextNormalizer::wordDistance('fooball5x', 'football'), 'too far');
-        $this->assertSame(1, TextNormalizer::wordDistance('tenns', 'tennis'));
+        // Short names and changed endings make other words: a name, a suffix.
+        $this->assertNull(TextNormalizer::wordDistance('jalal', 'jalaa'));
+        $this->assertNull(TextNormalizer::wordDistance('panel', 'padel'));
+        $this->assertNull(TextNormalizer::wordDistance('رجال', 'رمال'));
+        $this->assertNull(TextNormalizer::wordDistance('جبالي', 'جباليا'));
+        $this->assertNull(TextNormalizer::wordDistance('jabali', 'jabalia'));
     }
 
     public function test_loose_forms_fold_arabic_word_endings(): void
@@ -117,8 +125,45 @@ class ReplyComposerTest extends TestCase
         $this->assertSame(TextNormalizer::loose('الجلاء'), TextNormalizer::loose('الجلا'));
         $this->assertSame(TextNormalizer::loose('تل الهوى'), TextNormalizer::loose('تل الهوا'));
         $this->assertSame(TextNormalizer::loose('كرة الطائرة'), TextNormalizer::loose('كره الطايره'));
+        $this->assertSame(TextNormalizer::loose('كورة'), TextNormalizer::loose('كورا'));
         $this->assertTrue(TextNormalizer::mentions('كرة قدم بالجلا بكرا', 'الجلاء'));
         $this->assertSame(1, TextNormalizer::closeness('football in shejaiya', 'Shujaiya'));
         $this->assertNull(TextNormalizer::closeness('football in rafah', 'Shujaiya'));
+    }
+
+    public function test_arabic_names_are_matched_as_whole_words(): void
+    {
+        $this->assertTrue(TextNormalizer::mentions('كرة قدم بخان يونس', 'خانيونس'));
+        $this->assertTrue(TextNormalizer::mentions('كرة قدم بدير البلح', 'دير البلح'));
+        $this->assertTrue(TextNormalizer::mentions('بدي ملعب للسلة', 'سلة'));
+        $this->assertFalse(TextNormalizer::mentions('أنا جلال', 'الجلاء'));
+        $this->assertFalse(TextNormalizer::mentions('لا تنسى', 'تنس'));
+        $this->assertFalse(TextNormalizer::mentions('بدنا نتبادل', 'بادل'));
+        $this->assertFalse(TextNormalizer::mentions('بدي ملعب للرجال', 'الرمال'));
+    }
+
+    public function test_a_name_is_recognised_in_its_common_spellings(): void
+    {
+        foreach (['khanyounis', 'khan yunis', 'khanyonis', 'khan younes'] as $spelling) {
+            $this->assertTrue(TextNormalizer::spells("football in {$spelling}", 'Khan Younis'), $spelling);
+        }
+
+        $this->assertTrue(TextNormalizer::spells("football in shuja'iyya", 'Shujaiya'));
+        $this->assertTrue(TextNormalizer::spells('football in tel al-hawa', 'Tal al-Hawa'));
+        $this->assertTrue(TextNormalizer::spells('football in ghazza', 'Gaza'));
+        $this->assertTrue(TextNormalizer::spells('fe rafa7', 'Rafah'));
+        $this->assertFalse(TextNormalizer::spells('hi I am jalal', 'Al-Jalaa'));
+        $this->assertFalse(TextNormalizer::spells('hi I am bassam', 'Al-Bassa'));
+        $this->assertFalse(TextNormalizer::spells('for rafat', 'Rafah'));
+        $this->assertFalse(TextNormalizer::spells('football in nuseirat', 'Gaza'));
+    }
+
+    public function test_one_short_word_of_a_longer_name_may_be_one_letter_off(): void
+    {
+        $this->assertSame(1, TextNormalizer::closeness('ملعب كرت قدم بكرا', 'كرة قدم'));
+        $this->assertNull(TextNormalizer::closeness('ملعب كرت شحن بكرا', 'كرة قدم'), 'both words off');
+        $this->assertNull(TextNormalizer::closeness('كرت', 'كرة'), 'a one-word name');
+        // A known word in its own sense is never read as a typo.
+        $this->assertNull(TextNormalizer::closeness('football tusday', 'tuesday', ['tusday']));
     }
 }

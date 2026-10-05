@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Assistant;
 
+use App\Models\City;
 use App\Services\Assistant\RuleBasedQueryParser;
 use App\Services\Assistant\TextNormalizer;
 use Carbon\CarbonImmutable;
@@ -370,11 +371,80 @@ class RuleBasedQueryParserTest extends TestCase
 
     public function test_a_typo_never_picks_one_of_two_equally_close_places(): void
     {
-        $this->makeVenue(null, ['area_ar' => null, 'area_en' => 'Rimal']);
-        $this->makeVenue(null, ['area_ar' => null, 'area_en' => 'Rumal']);
+        $this->makeVenue(null, ['area_ar' => null, 'area_en' => 'Shamali']);
+        $this->makeVenue(null, ['area_ar' => null, 'area_en' => 'Shimali']);
 
-        $this->assertArrayNotHasKey('area', $this->parse('football in romal tomorrow'));
-        $this->assertSame('Rimal', $this->parse('football in rimal tomorrow')['area'] ?? null);
+        $this->assertArrayNotHasKey('area', $this->parse('football in shomali tomorrow'));
+        $this->assertSame('Shamali', $this->parse('football in shamali tomorrow')['area'] ?? null);
+        // "shemali" is not a typo but another spelling of Shimali (e for i).
+        $this->assertSame('Shimali', $this->parse('football in shemali tomorrow')['area'] ?? null);
+    }
+
+    /**
+     * The seeded places of the evaluation fixture that the tests below need.
+     */
+    private function seedMorePlaces(): void
+    {
+        $rafah = $this->makeCity('Rafah', 'رفح');
+        $deir = $this->makeCity('Deir al-Balah', 'دير البلح');
+        $jabalia = $this->makeCity('Jabalia', 'جباليا');
+        $gaza = City::where('name_en', 'Gaza')->first();
+        $this->makeVenue(null, ['city_id' => $gaza->id, 'area_ar' => 'تل الهوى', 'area_en' => 'Tal al-Hawa']);
+        $this->makeVenue(null, ['city_id' => $gaza->id, 'area_ar' => 'الرمال', 'area_en' => 'Al-Rimal']);
+        $this->makeVenue(null, ['city_id' => $rafah->id, 'area_ar' => 'تل السلطان', 'area_en' => 'Tal al-Sultan']);
+        $this->makeVenue(null, ['city_id' => $deir->id, 'area_ar' => 'البصة', 'area_en' => 'Al-Bassa']);
+        $this->makeVenue(null, ['city_id' => $jabalia->id, 'area_ar' => 'النزلة', 'area_en' => 'Al-Nazla']);
+    }
+
+    public static function wordsThatAreNotAPlace(): array
+    {
+        return [
+            'an Arabic name inside which الجلا is written' => ['أنا جلال بدي ملعب كورة بكرا 8 بالليل'],
+            'a Latin name one letter from Al-Jalaa' => ["hi I'm jalal, football tomorrow 8pm"],
+            'a Latin name one letter from Al-Bassa' => ['hi this is bassam, football tomorrow 8pm'],
+            'a Latin name one letter from Rafah' => ['football tomorrow 8pm for rafat'],
+            'للرجال is not الرمال' => ['بدي ملعب كورة بكرا الساعة 8 بالليل للرجال'],
+            'نزلت is not النزلة' => ['نزلت ع البلد، بدي ملعب كورة بكرا 8 بالليل'],
+            'منزله is not النزلة' => ['بدي ملعب كورة قريب من منزله بكرا 8 بالليل'],
+            'the family name الجبالي is not Jabalia' => ['احجز لابو الجبالي ملعب كورة بكرا 8 بالليل'],
+        ];
+    }
+
+    #[DataProvider('wordsThatAreNotAPlace')]
+    public function test_a_name_or_an_everyday_word_is_not_a_place(string $text): void
+    {
+        $this->seedMorePlaces();
+        $parsed = $this->parse($text);
+
+        $this->assertArrayNotHasKey('city', $parsed);
+        $this->assertArrayNotHasKey('area', $parsed);
+    }
+
+    public static function coveredPlacesInOtherSpellings(): array
+    {
+        return [
+            'khanyounis' => ['football tomorrow 6pm in khanyounis', 'city', 'Khan Younis'],
+            'khanyunis' => ['football tomorrow 6pm in khanyunis', 'city', 'Khan Younis'],
+            'khanyonis' => ['football tomorrow 6pm in khanyonis', 'city', 'Khan Younis'],
+            'khan younes' => ['football tomorrow 6pm in khan younes', 'city', 'Khan Younis'],
+            'ghazza' => ['football tomorrow 8pm in ghazza', 'city', 'Gaza'],
+            'rafa7 (Arabizi digit)' => ['tennis el yom 5 el masa fe rafa7', 'city', 'Rafah'],
+            'dair al balah' => ['football tomorrow 8pm in dair al balah', 'city', 'Deir al-Balah'],
+            'الدير (the everyday name)' => ['ملعب طايرة بالدير الاثنين الساعة 6 المسا', 'city', 'Deir al-Balah'],
+            "shuja'iyya" => ["football tomorrow 7pm in shuja'iyya", 'area', 'Shujaiya'],
+            'tel al hawa' => ['football tomorrow 8pm in tel al hawa', 'area', 'Tal al-Hawa'],
+            'tel al sultan' => ['tennis tomorrow 7pm in tel al sultan', 'area', 'Tal al-Sultan'],
+            'remal' => ['mal3ab kora fi el remal yom el a7ad 9 bel lail', 'area', 'Al-Rimal'],
+        ];
+    }
+
+    #[DataProvider('coveredPlacesInOtherSpellings')]
+    public function test_a_covered_place_is_read_in_its_common_spellings(string $text, string $field, string $place): void
+    {
+        $this->seedMorePlaces();
+
+        $this->assertSame($place, $this->parse($text)[$field] ?? null);
+        $this->assertNull((new RuleBasedQueryParser)->unknownPlace($text));
     }
 
     public static function unknownPlaces(): array
@@ -386,6 +456,10 @@ class RuleBasedQueryParserTest extends TestCase
             'in cairo' => ['football in cairo tomorrow at 6pm', 'cairo'],
             'near nablus' => ['football near nablus tomorrow', 'nablus'],
             'in al nasr' => ['football in al nasr tomorrow', 'nasr'],
+            'an area of two words after بال' => ['بدي ملعب كورة بالشيخ رضوان بكرا 8 بالليل', 'الشيخ رضوان'],
+            'after بالقرب من' => ['بدي ملعب كورة بالقرب من النصيرات بكرا', 'النصيرات'],
+            'after Arabizi fi' => ['football tomorrow 8pm fi nuseirat', 'nuseirat'],
+            'after Arabizi fe' => ['bdi mal3ab koora fe bait lahia bokra 7', 'bait lahia'],
         ];
     }
 
@@ -408,6 +482,22 @@ class RuleBasedQueryParserTest extends TestCase
             'an area in English' => ['football at 7 in al jalaa'],
             'بالعربي' => ['احكيلي بالعربي، كورة بكرا'],
             'بالساعة' => ['كورة بكرا بالساعة 7'],
+            'بالقرب من and a landmark' => ['بدي ملعب كورة بالقرب من الجامعة بكرا'],
+            'بالقرب مني' => ['بدي ملعب كورة بالقرب مني بكرا'],
+            'عند البيت' => ['بدي ملعب كورة عند البيت بكرا'],
+            'قرب البحر' => ['بدي ملعب كورة قرب البحر بكرا'],
+            'بالظبط' => ['بدي ملعب كورة بكرا الساعة 8 بالظبط'],
+            'بالنهار' => ['بدي ملعب كورة بكرا بالنهار'],
+            'بالكاش' => ['بدي ملعب كورة بكرا والدفع بالكاش'],
+            'بالسعر المناسب' => ['بدي ملعب كورة بكرا بالسعر المناسب'],
+            'بالحي' => ['بدي ملعب كورة بالحي بكرا'],
+            'بالمخيم' => ['بدي ملعب كورة بالمخيم بكرا'],
+            'near the university' => ['football near the university tomorrow'],
+            'in the gym' => ['football tomorrow in the gym'],
+            'around the corner' => ['football tomorrow around the corner'],
+            'in two weeks' => ['football in two weeks'],
+            'Arabizi fi ay' => ['fi ay mal3ab koora bokra'],
+            'a covered city in another spelling' => ['football bokra 6 masa2 fi khanyounis'],
         ];
     }
 
@@ -509,6 +599,45 @@ class RuleBasedQueryParserTest extends TestCase
     public function test_recognizes_the_sport(string $text, string $sport): void
     {
         $this->assertSame($sport, $this->parse($text)['sport'] ?? null);
+    }
+
+    public static function sportSpellings(): array
+    {
+        return [
+            'كرت قدم (construct-state spelling)' => ['بدي ملعب كرت قدم بكرا', 'Football'],
+            'كرة قدن (a slip in the second word)' => ['بدي ملعب كرة قدن بكرا', 'Football'],
+            'bball' => ['bball court day after tomorrow 7pm', 'Basketball'],
+            'b-ball' => ['b-ball tomorrow 7pm', 'Basketball'],
+            'باديل' => ['فيه ملعب باديل بكرا', 'Padel'],
+            'تينس' => ['بدي ملعب تينس بكرا', 'Tennis'],
+            'socer (one letter of a double dropped)' => ['socer tomorrow', 'Football'],
+        ];
+    }
+
+    #[DataProvider('sportSpellings')]
+    public function test_recognizes_common_sport_spellings(string $text, string $sport): void
+    {
+        $this->assertSame($sport, $this->parse($text)['sport'] ?? null);
+    }
+
+    public static function wordsThatAreNotASport(): array
+    {
+        return [
+            'كورس (a course)' => ['بدي كورس سباحة بكرا الساعة 7'],
+            'تنسى (forget)' => ['لا تنسى بكرا الساعة 7 المسا'],
+            'نتبادل (swap)' => ['بدنا نتبادل الحجز بكرا الساعة 6 المسا'],
+            'panel' => ['panel tomorrow 6pm'],
+            'كرة يد (handball, not seeded)' => ['بدي ملعب كرة يد بكرا'],
+            'كرة طاولة (table tennis, not seeded)' => ['بدي ملعب كرة طاولة بكرا'],
+        ];
+    }
+
+    #[DataProvider('wordsThatAreNotASport')]
+    public function test_a_word_containing_a_sport_name_is_not_that_sport(string $text): void
+    {
+        $this->makeSport('Volleyball', 'كرة الطائرة');
+
+        $this->assertArrayNotHasKey('sport', $this->parse($text));
     }
 
     public function test_recognizes_cities_and_areas(): void
