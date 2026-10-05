@@ -74,6 +74,7 @@ class GeminiQueryParser implements QueryParser
             "Today is {$today->englishDayOfWeek} {$today->toDateString()}; tomorrow is {$today->addDay()->toDateString()}. The local time now is {$now->format('H:i')}.",
             'Always call '.VenueSearchTool::NAME.'. Resolve relative dates (today, tonight, tomorrow, اليوم, الليلة, بكرا, بكره, غداً, بعد بكرا, bukra, weekday names) to YYYY-MM-DD.',
             'If the player names no day, leave date empty, and if they give no hour, leave hour empty: never guess them, the assistant asks the player instead.',
+            'A number is not an hour when it is a price (20 شيكل), a team size or player count (5 ضد 5, 10 لاعبين), a duration (2 hours) or a day of the month (5 أكتوبر).',
             'Give the hour in 24-hour HH:mm. مساءً, المسا, العصر and pm mean afternoon/evening; صباحاً, الصبح and am mean morning. An hour from 1 to 11 with no am/pm means the evening (e.g. 8 means 20:00). Hours may be written as words (ستة, عالتمانية, السابعة, seven).',
             'At night (بالليل, at night), 5 to 11 mean 17:00 to 23:00, while 12, midnight and 1 to 4 are after midnight: 00:00 to 04:00 on the next day\'s date (اليوم الساعة 12 بالليل is tomorrow at 00:00). Between 00:00 and 05:00, tonight or الليلة with 1 to 4 means later today.',
             'ونص adds 30 minutes, وربع adds 15 and الا ربع takes 15 away (6 الا ربع means 17:45).',

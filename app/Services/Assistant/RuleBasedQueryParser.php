@@ -12,13 +12,14 @@ use Illuminate\Support\Collection;
  * Server-side, rule-based fallback for the booking assistant (US-4.5), used when Gemini
  * is not configured, fails or times out, and to fill what Gemini left out. It understands
  * short Arabic, English and Arabizi requests: sport names from the SPORT table plus common
- * synonyms and typos, today/tomorrow/weekdays (اليوم، بكرا، بعد بكرا، الجمعة, bukra,
- * tmrw...), explicit dates, hours such as "8", "6pm", "6.30pm", "18:30", "6 المسا",
- * "الساعة ستة", "عالتمانية", "السابعة مساءً", "6 ونص", "6 الا ربع", "at seven" or
- * "12 بالليل", and city/area names from the CITY and VENUE tables.
+ * synonyms and typos, today/tomorrow/weekdays (اليوم، بكرا، بعد بكرا، الجمعة، السبت الجاي,
+ * bukra, tmrw...), explicit dates (12/10, 10 اكتوبر, oct 12), hours such as "8", "6pm",
+ * "6.30pm", "18:30", "6 المسا", "الساعة ستة", "عالتمانية", "السابعة مساءً", "6 ونص",
+ * "6 الا ربع", "at seven" or "12 بالليل", and city/area names from the CITY and VENUE tables.
  *
  * A date or hour is only returned when the text gives one: the assistant asks for the
- * missing detail instead of guessing.
+ * missing detail instead of guessing. A number is only read as the hour in a time context,
+ * never when it is a price, a count, a duration or part of a date or phone number.
  */
 class RuleBasedQueryParser implements QueryParser
 {
@@ -115,7 +116,71 @@ class RuleBasedQueryParser implements QueryParser
 
     private const AM_WORDS = ['am', 'morning', 'صباحا', 'صباح', 'الصباح', 'الصبح', 'صبح', 'الفجر', 'فجرا'];
 
-    private const HOUR_MARKERS = ['at', 'around', 'الساعه', 'ساعه', 'عالساعه', 'حوالي'];
+    private const HOUR_MARKERS = ['at', 'around', 'about', 'الساعه', 'ساعه', 'عالساعه', 'حوالي'];
+
+    /**
+     * "At" before an hour in digits ("ع 8", "عال8", "على 7"). Unlike HOUR_MARKERS they also
+     * mean "for" ("على 10 لاعبين"), so a count or price after the number still wins.
+     */
+    private const AT_WORDS = ['ع', 'عال', 'علي'];
+
+    /**
+     * Words next to a number that make it something other than an hour. A price is never an
+     * hour; a count (players, a team size, courts, a duration) is not one either unless a
+     * clock word such as "الساعة" or "at" comes first ("الساعة 8 ملعب كورة").
+     */
+    private const PRICE_WORDS = [
+        'شيكل', 'شيقل', 'شواكل', 'شيكلات', 'ش', 'ils', 'nis', 'shekel', 'shekels', 'sheqel', 'sheqels',
+        'دولار', 'dollar', 'dollars', 'usd', 'دينار', 'jod',
+    ];
+
+    private const COUNT_WORDS = [
+        // Players and people.
+        'لاعب', 'لاعبين', 'لعيبه', 'شباب', 'شب', 'اشخاص', 'شخص', 'انفار', 'نفر', 'افراد', 'ناس', 'زلم', 'رجال', 'اولاد', 'ولاد', 'بنات', 'اصحاب', 'صحاب',
+        'players', 'player', 'people', 'persons', 'person', 'guys', 'men', 'kids', 'boys', 'girls', 'friends',
+        // Team sizes ("5 ضد 5", "5 vs 5", "7 a side").
+        'ضد', 'مقابل', 'vs', 'v', 'x', 'against', 'a side', 'aside', 'side',
+        // Courts, teams and bookings.
+        'ملاعب', 'ملعب', 'فرق', 'فريق', 'حجوزات', 'مرات', 'courts', 'court', 'pitches', 'pitch', 'fields', 'field', 'teams', 'team', 'bookings', 'times',
+        // Durations ("ساعة" before the number is the clock word, after it a duration).
+        'ساعه', 'ساعات', 'دقيقه', 'دقايق', 'دقائق', 'ايام', 'اسابيع', 'شهور', 'اشهر',
+        'hours', 'hour', 'hrs', 'hr', 'minutes', 'minute', 'mins', 'min', 'days', 'weeks', 'months',
+    ];
+
+    /**
+     * Words before a number that make it something other than an hour: the second side of a
+     * team size, a court or phone number, a price, or a day of the month ("يوم 5").
+     */
+    private const NOT_HOUR_BEFORE = ['ضد', 'مقابل', 'vs', 'v', 'x', 'against', 'رقم', 'number', 'num', 'سعر', 'بسعر', 'price', 'cost', 'يوم', 'شهر'];
+
+    /**
+     * Month names, in normalised form, for "10 اكتوبر" or "oct 10". تشرين and كانون alone
+     * name two months each, so they only stop the day being read as an hour.
+     */
+    private const MONTHS = [
+        1 => ['يناير', 'كانون الثاني', 'كانون ثاني', 'كانون التاني', 'january', 'jan'],
+        2 => ['فبراير', 'شباط', 'february', 'feb'],
+        3 => ['مارس', 'اذار', 'march', 'mar'],
+        4 => ['ابريل', 'نيسان', 'april', 'apr'],
+        5 => ['مايو', 'ايار', 'may'],
+        6 => ['يونيو', 'يونيه', 'حزيران', 'june', 'jun'],
+        7 => ['يوليو', 'يوليه', 'تموز', 'july', 'jul'],
+        8 => ['اغسطس', 'اب', 'august', 'aug'],
+        9 => ['سبتمبر', 'ايلول', 'september', 'sept', 'sep'],
+        10 => ['اكتوبر', 'تشرين الاول', 'تشرين اول', 'october', 'oct'],
+        11 => ['نوفمبر', 'تشرين الثاني', 'تشرين ثاني', 'تشرين التاني', 'november', 'nov'],
+        12 => ['ديسمبر', 'كانون الاول', 'كانون اول', 'december', 'dec'],
+    ];
+
+    private const AMBIGUOUS_MONTHS = ['تشرين', 'كانون', 'شهر', 'الشهر'];
+
+    /**
+     * Said after a weekday ("السبت الجاي") or "next" before it: on that very weekday it means
+     * a week later, on any other day the coming one.
+     */
+    private const NEXT_AFTER = ['الجاي', 'الجايه', 'القادم', 'القادمه', 'المقبل', 'المقبله', 'الياي', 'اللي جاي', 'الي جاي'];
+
+    private const NEXT_BEFORE = ['next', 'coming', 'this coming'];
 
     /**
      * Minutes said after the hour ("6 ونص" is 6:30, "6 الا ربع" is 5:45).
@@ -216,25 +281,23 @@ class RuleBasedQueryParser implements QueryParser
         $text = $this->prepare($queryText);
 
         return $this->extractDate($text, $today->startOfDay())[0] !== null
-            || $this->containsAnyWord($text, self::OTHER_DATE_WORDS)
-            || preg_match('/(?<![a-z\d])\d{1,2}(?:st|nd|rd|th)(?![a-z])/', $text) === 1;
+            || $this->containsAnyWord($text, [...self::OTHER_DATE_WORDS, ...self::AMBIGUOUS_MONTHS])
+            || preg_match('/(?<![a-z\d])\d{1,2}(?:st|nd|rd|th)(?![a-z])/', $text) === 1
+            || preg_match('/(?<![\p{L}])[وبلف]?يوم\s*\d{1,2}(?![\d:\/])/u', $text) === 1;
     }
 
     /**
-     * Whether the text gives an hour at all, even one only Gemini can read. Digits inside
-     * an Arabizi word ("mal3ab") are letters, not an hour; vague words such as "evening"
-     * or "بعد المغرب" are not an hour either.
+     * Whether the text gives an hour, by the same rules as parse(): a number only counts in
+     * a time context, so a price, a team size, a duration, a day of the month or a number
+     * word such as "عشرة شباب" or "one court" is not an hour, and Gemini's hour (which mode
+     * ANY makes it fill in) is dropped for them. Digits inside an Arabizi word ("mal3ab") are
+     * letters, and vague words such as "evening" or "بعد المغرب" are not an hour either.
      */
     public function mentionsTime(string $queryText, CarbonImmutable $today): bool
     {
         [, $text] = $this->extractDate($this->prepare($queryText), $today->startOfDay());
 
-        return $this->extractTime($text) !== null
-            || $this->containsAnyWord($text, [
-                ...self::ENGLISH_HOURS, 'oclock', 'o clock', ...self::MIDNIGHT_WORDS, ...self::NOON_WORDS,
-                ...array_merge(...array_values(self::ARABIC_HOURS)),
-                ...array_map(fn (string $word) => 'ال'.$word, array_merge(...array_values(self::ARABIC_ORDINAL_HOURS))),
-            ]);
+        return $this->extractTime($text) !== null || $this->containsAnyWord($text, ['oclock', 'o clock']);
     }
 
     /**
@@ -311,10 +374,16 @@ class RuleBasedQueryParser implements QueryParser
 
     /**
      * normalize(), then slang, Arabizi and English day typos rewritten, and hours written
-     * as words turned into digits.
+     * as words turned into digits. Before normalising, symbols that carry meaning are kept
+     * as words ("@ 8" is "at 8", "20₪" a price), and a dotted date is written with slashes:
+     * a full one (12.10.2026), or a day and month after a day word ("يوم 5.10"), which
+     * TextNormalizer would otherwise read as the time 5:10.
      */
     private function prepare(string $queryText): string
     {
+        $queryText = strtr($queryText, ['@' => ' at ', '₪' => ' ils ', '$' => ' usd ']);
+        $queryText = preg_replace('/(?<![\p{Nd}.٫])(\p{Nd}{1,2})[.٫](\p{Nd}{1,2})[.٫](\p{Nd}{2,4})(?!\p{Nd})/u', '$1/$2/$3', $queryText) ?? $queryText;
+        $queryText = preg_replace('/((?<!\p{L})(?:[وب]?يوم|on|date|تاريخ|بتاريخ)\s*)(\p{Nd}{1,2})[.٫](\p{Nd}{1,2})(?![.٫]?\p{Nd})/iu', '$1$2/$3', $queryText) ?? $queryText;
         $text = TextNormalizer::normalize($queryText);
 
         foreach (self::REWRITES as $pattern => $replacement) {
@@ -358,8 +427,8 @@ class RuleBasedQueryParser implements QueryParser
      */
     private function hoursFromWords(string $text): string
     {
-        $cardinals = $this->wordsToHours(self::ARABIC_HOURS);
-        $ordinals = $this->wordsToHours(self::ARABIC_ORDINAL_HOURS);
+        $cardinals = $this->wordsToNumbers(self::ARABIC_HOURS);
+        $ordinals = $this->wordsToNumbers(self::ARABIC_ORDINAL_HOURS);
         $english = array_flip(self::ENGLISH_HOURS);
         $cardinal = $this->alternation(array_keys($cardinals));
         $ordinal = $this->alternation(array_keys($ordinals));
@@ -395,16 +464,16 @@ class RuleBasedQueryParser implements QueryParser
     }
 
     /**
-     * @param  array<int, list<string>>  $hours
+     * @param  array<int, list<string>>  $numbers  the spellings of each number (an hour, a month)
      * @return array<string, int>
      */
-    private function wordsToHours(array $hours): array
+    private function wordsToNumbers(array $numbers): array
     {
         $words = [];
 
-        foreach ($hours as $hour => $spellings) {
+        foreach ($numbers as $number => $spellings) {
             foreach ($spellings as $spelling) {
-                $words[$spelling] = $hour;
+                $words[$spelling] = $number;
             }
         }
 
@@ -551,6 +620,22 @@ class RuleBasedQueryParser implements QueryParser
             return [$this->dayMonthDate((int) $m[1], (int) $m[2], $m[3] ?? null, $today), str_replace($m[0], ' ', $text)];
         }
 
+        // "10 اكتوبر", "10 من شهر اكتوبر", "5 oct", "october 5th".
+        $months = $this->wordsToNumbers(self::MONTHS);
+        $month = $this->alternation(array_keys($months));
+
+        if (preg_match('/(?<![\p{L}\d:\/])(\d{1,2})(?:st|nd|rd|th)?\s*(?:of\s*|من\s*)?(?:شهر\s*)?('.$month.')(?![\p{L}])/u', $text, $m)
+            || preg_match('/(?<![\p{L}])('.$month.')\s*(\d{1,2})(?:st|nd|rd|th)?(?![\p{L}\d:\/])/u', $text, $m)) {
+            [$day, $name] = ctype_digit($m[1]) ? [$m[1], $m[2]] : [$m[2], $m[1]];
+
+            return [$this->dayMonthDate((int) $day, $months[$name], null, $today), str_replace($m[0], ' ', $text)];
+        }
+
+        // "5 شهر 10", "5 من الشهر 10": the day, then the month's number.
+        if (preg_match('/(?<![\p{L}\d:\/])(\d{1,2})\s*(?:من\s*)?(?:ال)?شهر\s*(\d{1,2})(?![\p{L}\d:\/])/u', $text, $m)) {
+            return [$this->dayMonthDate((int) $m[1], (int) $m[2], null, $today), str_replace($m[0], ' ', $text)];
+        }
+
         $date = $this->relativeDate($text, $today) ?? ($this->containsAnyWord($text, self::NOW) ? $today : null);
 
         return [$date?->toDateString(), $text];
@@ -583,12 +668,32 @@ class RuleBasedQueryParser implements QueryParser
         }
 
         foreach (self::WEEKDAYS as $weekday => $words) {
-            if ($this->containsAnyWord($text, $words)) {
-                return $today->englishDayOfWeek === ucfirst($weekday) ? $today : $today->modify('next '.$weekday);
+            if (! $this->containsAnyWord($text, $words)) {
+                continue;
             }
+
+            if ($today->englishDayOfWeek !== ucfirst($weekday)) {
+                return $today->modify('next '.$weekday);
+            }
+
+            // Said on that weekday, the weekday alone is today and "next" makes it a week later.
+            return $this->saysNext($text, $words) ? $today->addWeek() : $today;
         }
 
         return null;
+    }
+
+    /**
+     * "السبت الجاي", "يوم السبت القادم", "next saturday", "this coming saturday".
+     *
+     * @param  list<string>  $weekday  the ways to write the weekday
+     */
+    private function saysNext(string $text, array $weekday): bool
+    {
+        $day = '[وبلف]?(?:'.$this->alternation($weekday).')';
+
+        return preg_match('/(?<![\p{L}])'.$day.'\s+(?:'.$this->alternation(self::NEXT_AFTER).')(?![\p{L}])/u', $text) === 1
+            || preg_match('/(?<![\p{L}])(?:'.$this->alternation(self::NEXT_BEFORE).')\s+(?:on\s+)?'.$day.'(?![\p{L}])/u', $text) === 1;
     }
 
     /**
@@ -606,19 +711,17 @@ class RuleBasedQueryParser implements QueryParser
         }
 
         if (preg_match('/(?<![a-z\d])(\d{1,2})(?::(\d{2}))?\s*(am|pm)(?![a-z])/', $text, $m)) {
-            return $this->clock((int) $m[1], (int) ($m[2] ?? 0), $m[3]);
+            // "tonight at 1am" is after midnight, like "الليلة الساعة 1": the next calendar day.
+            $nightAm = $m[3] === 'am' && (int) $m[1] % 12 <= 4 && $this->containsAnyWord($text, self::NIGHT_WORDS);
+            $meridiem = $nightAm ? 'night' : $m[3];
+
+            return $this->clock((int) $m[1], (int) ($m[2] ?? 0), $meridiem);
         }
 
-        if (preg_match('/(?<![a-z\d])(\d{1,2}):(\d{2})(?!\d)/', $text, $m)) {
-            return $this->clock((int) $m[1], (int) $m[2], $this->meridiem($m[1], $text));
-        }
+        $hour = $this->numberedHour($text);
 
-        $markers = $this->alternation(self::HOUR_MARKERS);
-        $spoken = '(?:\s*('.$this->alternation(array_keys(self::SPOKEN_MINUTES)).')(?![\p{L}]))?';
-
-        if (preg_match('/(?<![\p{L}])[وبلف]?(?:'.$markers.')\s*(\d{1,2})(?![a-z\d])'.$spoken.'/u', $text, $m)
-            || preg_match('/(?<![a-z\d\/:])(\d{1,2})(?![a-z\d\/:])'.$spoken.'/u', $text, $m)) {
-            return $this->clock((int) $m[1], 0, $this->meridiem($m[1], $text), self::SPOKEN_MINUTES[$m[2] ?? ''] ?? 0);
+        if ($hour !== null) {
+            return $this->clock($hour['hour'], $hour['minute'], $this->meridiem($hour['written'], $text), $hour['spoken']);
         }
 
         return match (true) {
@@ -626,6 +729,85 @@ class RuleBasedQueryParser implements QueryParser
             $this->containsAnyWord($text, self::NOON_WORDS) => ['hour' => '12:00', 'days' => 0],
             default => null,
         };
+    }
+
+    /**
+     * The hour among the numbers of the text (without am/pm), read only in a time context:
+     * 1. after a clock word or "at" ("الساعة 8", "ع 8", "at 8", "sa3a 8"), which beats
+     *    any earlier number;
+     * 2. written as a clock time ("18:30") or before a time-of-day word ("8 بالليل",
+     *    "6 المسا", "7 ونص");
+     * 3. otherwise the only number left, as in "كورة بكرا 8".
+     * A number next to a price, a count, a team size, a duration, a month or "يوم" is never
+     * the hour, nor are the groups of a phone number ("0599 12 34 56").
+     *
+     * @return array{hour: int, minute: int, written: string, spoken: int}|null
+     */
+    private function numberedHour(string $text): ?array
+    {
+        $text = $this->withoutNonHourNumbers($text);
+        $spokenMinutes = $this->alternation(array_keys(self::SPOKEN_MINUTES));
+        $clockWord = '(?<![\p{L}])[وبلف]?(?:'.$this->alternation(self::HOUR_MARKERS).')\s*$';
+        $atWord = '(?<![\p{L}])[وبلف]?(?:'.$this->alternation(self::AT_WORDS).')\s*$';
+        $timeOfDay = '^\s*(?:[وبلف]?(?:'.$this->alternation([...self::PM_WORDS, ...self::AM_WORDS, ...self::NIGHT_WORDS, 'الظهر', 'ظهرا']).')|'
+            .$spokenMinutes.'|o\s?clock|oclock|in the (?:morning|evening|afternoon)|at night)(?![\p{L}])';
+        $price = $this->alternation(self::PRICE_WORDS);
+        $count = $this->alternation(self::COUNT_WORDS);
+        $months = $this->alternation([...array_merge(...array_values(self::MONTHS)), ...self::AMBIGUOUS_MONTHS]);
+        $notHourBefore = '(?<![\p{L}])[وبلف]?(?:'.$this->alternation(self::NOT_HOUR_BEFORE).'|'.$months.'|'.$price.')\s*$';
+        $candidates = [];
+
+        preg_match_all('/(?<![a-z\d\/:])(\d{1,2})(?::([0-5]\d))?(?![a-z\d\/:])/u', $text, $matches, PREG_SET_ORDER | PREG_OFFSET_CAPTURE);
+
+        foreach ($matches as $match) {
+            [$written, $offset] = $match[1];
+            $minute = isset($match[2]) ? (int) $match[2][0] : 0;
+            $before = substr($text, 0, $offset);
+            $after = substr($text, $offset + strlen($match[0][0]));
+            $clock = preg_match('/'.$clockWord.'/u', $before) === 1;
+
+            if ((int) $written > 23
+                || preg_match('/^\s*(?:'.$price.'|'.$months.')(?![\p{L}])/u', $after) === 1
+                || preg_match('/'.$notHourBefore.'/u', $before) === 1
+                || (! $clock && preg_match('/^\s*(?:'.$count.')(?![\p{L}])/u', $after) === 1)) {
+                continue;
+            }
+
+            preg_match('/^\s*('.$spokenMinutes.')(?![\p{L}])/u', $after, $spoken);
+
+            $candidates[] = [
+                'hour' => (int) $written,
+                'minute' => $minute,
+                'written' => $written,
+                'spoken' => self::SPOKEN_MINUTES[$spoken[1] ?? ''] ?? 0,
+                'rank' => match (true) {
+                    $clock || preg_match('/'.$atWord.'/u', $before) === 1 => 3,
+                    isset($match[2]) || preg_match('/'.$timeOfDay.'/u', $after) === 1 => 2,
+                    default => 1,
+                },
+            ];
+        }
+
+        $best = collect($candidates)->sortByDesc('rank')->first();
+
+        return $best !== null && ($best['rank'] > 1 || count($candidates) === 1) ? $best : null;
+    }
+
+    /**
+     * Removes the numbers that are never an hour as a whole: a team size ("5 ضد 5", "3 على 3",
+     * "5 on 5"), a phone number with its groups ("0599 12 34 56"), and any run of three or
+     * more numbers in a row.
+     */
+    private function withoutNonHourNumbers(string $text): string
+    {
+        $patterns = [
+            '/(?<![\p{L}\d:\/])\d{1,2}\s*(?:ضد|مقابل|vs|v|x|against)\s*\d{1,2}(?![\p{L}\d:\/])/u',
+            '/(?<![\p{L}\d:\/])(\d{1,2})\s*(?:علي|on)\s*\1(?![\p{L}\d:\/])/u',
+            '/(?<![\p{L}\d:\/])0\d{2,}(?:[\s-]+\d{2,4}(?![\p{L}\d:\/]))*/u',
+            '/(?<![\p{L}\d:\/])\d{1,4}(?:[\s-]+\d{1,4}){2,}(?![\p{L}\d:\/])/u',
+        ];
+
+        return preg_replace($patterns, ' ', $text) ?? $text;
     }
 
     /**

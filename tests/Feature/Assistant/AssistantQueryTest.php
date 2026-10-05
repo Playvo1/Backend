@@ -288,6 +288,25 @@ class AssistantQueryTest extends TestCase
             ->assertJsonPath('data.suggested_venue_id', $this->venue->id);
     }
 
+    public function test_a_number_that_is_not_an_hour_does_not_keep_geminis_hour(): void
+    {
+        // A count, a price, a day of the month or "one court" is not an hour, so the hour
+        // Gemini filled in is dropped and the player is asked for it.
+        $this->fakeGeminiCall(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00']);
+
+        foreach (['بدنا ملعب كورة بكرا لعشرة شباب', 'بدي ملعب كورة بكرا ب 20 شيكل', 'I need one football court tomorrow', 'football 5 vs 5 tomorrow'] as $text) {
+            $this->ask($text)
+                ->assertOk()
+                ->assertJsonPath('data.parsed_hour', null)
+                ->assertJsonPath('data.suggested_venue_id', null);
+        }
+
+        $this->ask('football 5 vs 5 tomorrow at 6pm')
+            ->assertOk()
+            ->assertJsonPath('data.parsed_hour', '18:00')
+            ->assertJsonPath('data.suggested_venue_id', $this->venue->id);
+    }
+
     public function test_a_day_gemini_invents_is_ignored_unless_the_player_said_now(): void
     {
         $today = $this->makeSlot($this->venue, ['slot_date' => '2026-10-03', 'hourly_price' => 30]);

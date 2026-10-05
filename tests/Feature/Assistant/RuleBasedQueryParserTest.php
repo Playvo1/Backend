@@ -194,6 +194,118 @@ class RuleBasedQueryParserTest extends TestCase
         $this->assertArrayNotHasKey('hour', $this->parse('one court tomorrow please'));
     }
 
+    public static function numbersThatAreNotAnHour(): array
+    {
+        return [
+            'a price' => ['بدي ملعب كورة بكرا ب 20 شيكل'],
+            'a price in ils' => ['football tomorrow for 20 ils'],
+            'a price with the shekel sign' => ['football tomorrow 20₪'],
+            'a price before the number' => ['ملعب بسعر 20 بكرا'],
+            'a team size' => ['ملعب خماسي 5 ضد 5 بكرا'],
+            'a team size in English' => ['football 5 vs 5 tomorrow'],
+            'a team size with على' => ['basketball 3 على 3 tomorrow'],
+            'a player count' => ['بدنا ملعب ل 10 لاعبين بكرا'],
+            'a count of courts' => ['بدي 2 ملاعب بكرا'],
+            'a duration' => ['football tomorrow for 2 hours'],
+            'a duration in Arabic' => ['ملعب كورة بكرا 2 ساعة'],
+            'a day of the month' => ['بدي ملعب كورة 5 أكتوبر'],
+            'يوم and a day of the month' => ['بدي ملعب كورة يوم 5'],
+            'a court number' => ['بدي ملعب رقم 3 بكرا'],
+            'phone number groups' => ['رقمي 0599 12 34 56 بدي ملعب بكرا'],
+            'two bare numbers' => ['football tomorrow 7 or 8'],
+        ];
+    }
+
+    #[DataProvider('numbersThatAreNotAnHour')]
+    public function test_a_number_that_is_not_an_hour_is_not_read_as_one(string $text): void
+    {
+        $this->assertArrayNotHasKey('hour', $this->parse($text));
+        $this->assertFalse((new RuleBasedQueryParser)->mentionsTime($text, CarbonImmutable::parse('2026-10-03')), 'mentionsTime');
+    }
+
+    public static function hoursNextToOtherNumbers(): array
+    {
+        return [
+            'after a team size' => ['ملعب كورة 5 ضد 5 بكرا 8 بالليل', '20:00'],
+            'after a price' => ['بدي ملعب كورة ب 50 شيكل بكرا 8 بالليل', '20:00'],
+            'before a price' => ['بدي ملعب كورة بكرا 8 بالليل ب 50 شيكل', '20:00'],
+            'after a player count' => ['بدنا ملعب كورة ل 10 لاعبين بكرا 8 بالليل', '20:00'],
+            'after phone number groups' => ['رقمي 0599 12 34 56 بدي ملعب كورة بكرا 8 بالليل', '20:00'],
+            'after a day and month' => ['بدي ملعب كورة 10 اكتوبر 8 بالليل', '20:00'],
+            'after a dotted day and month' => ['بدي ملعب كورة يوم 5.10 الساعة 8 بالليل', '20:00'],
+            'الساعة beats an earlier bare number' => ['ملعب 3 بكرا الساعة 8', '20:00'],
+            'a clock word before a count word' => ['بكرا الساعة 8 ملعب كورة', '20:00'],
+            'the only number left' => ['football 5 vs 5 tomorrow 8', '20:00'],
+            'with a duration after' => ['football tomorrow at 8 for 2 hours', '20:00'],
+            '@' => ['football tomorrow @ 8', '20:00'],
+            'ع before digits' => ['كورة بكرا ع 7', '19:00'],
+        ];
+    }
+
+    #[DataProvider('hoursNextToOtherNumbers')]
+    public function test_the_hour_is_found_next_to_numbers_that_are_not_hours(string $text, string $hour): void
+    {
+        $this->assertSame($hour, $this->parse($text)['hour'] ?? null);
+    }
+
+    public static function datesWithAMonth(): array
+    {
+        return [
+            'day and Arabic month' => ['كورة 10 اكتوبر 8 بالليل', '2026-10-10'],
+            'day and month with hamza' => ['كورة 5 أكتوبر', '2026-10-05'],
+            'Levantine month' => ['كورة 10 تشرين الاول', '2026-10-10'],
+            'English month' => ['football 12 october at 7pm', '2026-10-12'],
+            'month first' => ['football oct 12th at 7pm', '2026-10-12'],
+            'a past day means next year' => ['كورة 1 اكتوبر', '2027-10-01'],
+            'day and month number' => ['كورة 12 شهر 10', '2026-10-12'],
+            'a dotted date after يوم' => ['كورة يوم 5.10 الساعة 8', '2026-10-05'],
+            'a full dotted date' => ['كرة قدم 12.10.2026 الساعة 7', '2026-10-12'],
+        ];
+    }
+
+    #[DataProvider('datesWithAMonth')]
+    public function test_reads_a_day_with_its_month(string $text, string $date): void
+    {
+        $this->assertSame($date, $this->parse($text)['date'] ?? null);
+    }
+
+    public static function nextWeekdays(): array
+    {
+        // A Saturday.
+        return [
+            'السبت الجاي on a Saturday' => ['كورة السبت الجاي الساعة 9', '2026-10-10'],
+            'يوم السبت القادم on a Saturday' => ['كورة يوم السبت القادم', '2026-10-10'],
+            'next saturday on a Saturday' => ['football next saturday 9pm', '2026-10-10'],
+            'this coming saturday on a Saturday' => ['football this coming saturday', '2026-10-10'],
+            'السبت alone is today' => ['كورة السبت الساعة 9', '2026-10-03'],
+            'الخميس الجاي is the coming Thursday' => ['كورة الخميس الجاي', '2026-10-08'],
+            'next monday is the coming Monday' => ['football next monday', '2026-10-05'],
+        ];
+    }
+
+    #[DataProvider('nextWeekdays')]
+    public function test_next_weekday_is_a_week_later_only_on_that_weekday(string $text, string $date): void
+    {
+        $this->assertSame($date, $this->parse($text)['date'] ?? null);
+    }
+
+    public function test_tonight_with_an_am_hour_is_after_midnight(): void
+    {
+        $parser = new RuleBasedQueryParser;
+        $today = CarbonImmutable::parse('2026-10-03');
+
+        foreach (['football tonight at 1am' => '01:00', 'football tonight at 2 am' => '02:00', 'football tonight 12am' => '00:00'] as $text => $hour) {
+            $this->assertSame(['2026-10-04', $hour], [$parser->parse($text, $today)['date'], $parser->parse($text, $today)['hour']], $text);
+        }
+
+        // Already after midnight, "tonight at 1am" is later the same day; without a night word
+        // an am hour stays on the named day.
+        $early = $parser->parse('football tonight at 1am', CarbonImmutable::parse('2026-10-04'), CarbonImmutable::parse('2026-10-04 00:30'));
+        $this->assertSame('2026-10-04', $early['date']);
+        $this->assertSame('2026-10-04', $parser->parse('football tomorrow at 1am', $today)['date']);
+        $this->assertSame('2026-10-03', $parser->parse('football today at 5am', $today)['date']);
+    }
+
     public static function typosAndSlang(): array
     {
         return [
