@@ -5,6 +5,7 @@ namespace App\Services\Assistant;
 use App\Models\City;
 use App\Models\Sport;
 use App\Models\TimeSlot;
+use App\Models\Venue;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -93,13 +94,65 @@ class VenueSearchTool
             return null;
         }
 
-        $now ??= now();
+        $hour = $this->parseHour($arguments['hour'] ?? null);
+        $query = $hour ? $this->availableSlots($arguments, $now ?? now()) : null;
+
+        return $query
+            ?->where('time_slots.start_time', '<=', $hour)
+            ->where(fn (Builder $q) => $q
+                ->where('time_slots.end_time', '>', $hour)
+                ->orWhere('time_slots.end_time', self::MIDNIGHT))
+            ->orderByDesc('venues.avg_rating')
+            ->orderBy('time_slots.hourly_price')
+            ->orderBy('time_slots.id')
+            ->with('venue')
+            ->first();
+    }
+
+    /**
+     * Up to $limit start times (HH:mm) of free slots for the sport and day from $from on (the
+     * evening by default), so a reply that asks for the hour can offer some.
+     *
+     * @return list<string>
+     */
+    public function freeHours(array $arguments, CarbonInterface $now, string $from = '17:00', int $limit = 3): array
+    {
+        if (! $this->hasOnlyStringArguments($arguments)) {
+            return [];
+        }
+
+        return ($this->availableSlots($arguments, $now)?->where('time_slots.start_time', '>=', $from.':00')
+            ->orderBy('time_slots.start_time')
+            ->pluck('time_slots.start_time') ?? collect())
+            ->map(fn ($start) => substr((string) $start, 0, 5))
+            ->unique()
+            ->take($limit)
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Whether any active venue lies in this area, so an area that matches none can be
+     * reported instead of quietly searching somewhere else.
+     */
+    public function knowsArea(string $area): bool
+    {
+        $pattern = $this->areaPattern($area);
+
+        return $pattern !== null && $this->whereArea(Venue::query()->where('status', 'active'), $pattern, 'venues')->exists();
+    }
+
+    /**
+     * Available slots for the sport and date in active venues that offer the sport, within
+     * the city and area when given; null when the arguments can't match anything.
+     */
+    private function availableSlots(array $arguments, CarbonInterface $now): ?Builder
+    {
         $today = $now->toDateString();
         $sport = $this->findSport($arguments['sport'] ?? null);
         $date = $this->parseDate($arguments['date'] ?? null);
-        $hour = $this->parseHour($arguments['hour'] ?? null);
 
-        if (! $sport || ! $date || ! $hour || $date < $today) {
+        if (! $sport || ! $date || $date < $today) {
             return null;
         }
 
@@ -112,10 +165,6 @@ class VenueSearchTool
                 ->on('venue_sports.sport_id', '=', 'time_slots.sport_id'))
             ->where('time_slots.sport_id', $sport->id)
             ->whereDate('time_slots.slot_date', $date)
-            ->where('time_slots.start_time', '<=', $hour)
-            ->where(fn (Builder $q) => $q
-                ->where('time_slots.end_time', '>', $hour)
-                ->orWhere('time_slots.end_time', self::MIDNIGHT))
             ->where('time_slots.status', 'available')
             ->where('venues.status', 'active')
             // The join bypasses Venue's SoftDeletes scope, so removed venues are excluded here.
@@ -144,19 +193,19 @@ class VenueSearchTool
                 return null;
             }
 
-            $query->where(function (Builder $q) use ($pattern) {
-                foreach (['area_ar', 'area_en', 'address_ar', 'address_en'] as $column) {
-                    $q->orWhereRaw("venues.{$column} LIKE ? ESCAPE '!'", [$pattern]);
-                }
-            });
+            $this->whereArea($query, $pattern, 'venues');
         }
 
-        return $query
-            ->orderByDesc('venues.avg_rating')
-            ->orderBy('time_slots.hourly_price')
-            ->orderBy('time_slots.id')
-            ->with('venue')
-            ->first();
+        return $query;
+    }
+
+    private function whereArea(Builder $query, string $pattern, string $table): Builder
+    {
+        return $query->where(function (Builder $q) use ($pattern, $table) {
+            foreach (['area_ar', 'area_en', 'address_ar', 'address_en'] as $column) {
+                $q->orWhereRaw("{$table}.{$column} LIKE ? ESCAPE '!'", [$pattern]);
+            }
+        });
     }
 
     public function findSport(?string $name): ?Sport

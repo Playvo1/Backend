@@ -150,6 +150,195 @@ class RuleBasedQueryParserTest extends TestCase
         $this->assertSame($date, $parsed['date'] ?? null, 'date');
     }
 
+    public static function hoursWrittenAsWords(): array
+    {
+        return [
+            'الساعة ستة المسا' => ['كورة بكرا الساعة ستة المسا', '2026-10-04', '18:00'],
+            'الساعة ثمانية (evening by default)' => ['كرة قدم بكرا الساعة ثمانية', '2026-10-04', '20:00'],
+            'عالتمانية' => ['شو في ملاعب كورة اليوم عالتمانية؟', '2026-10-03', '20:00'],
+            'ع السبعة' => ['كورة بكرا ع السبعة', '2026-10-04', '19:00'],
+            'على ستة' => ['كورة بكرا على ستة', '2026-10-04', '18:00'],
+            'بالسبعة' => ['كورة بكرا بالسبعة', '2026-10-04', '19:00'],
+            'ستة المسا without a marker' => ['كورة بكرا ستة المسا', '2026-10-04', '18:00'],
+            'formal السابعة مساءً' => ['أريد ملعب كرة قدم غداً الساعة السابعة مساءً', '2026-10-04', '19:00'],
+            'formal without a marker' => ['كرة قدم بكرا السابعة مساء', '2026-10-04', '19:00'],
+            'formal عالسابعة' => ['كورة بكرا عالسابعة', '2026-10-04', '19:00'],
+            'formal على السابعة' => ['كورة بكرا على السابعة', '2026-10-04', '19:00'],
+            'formal السادسة والنصف' => ['كرة قدم بكرا الساعة السادسة والنصف مساء', '2026-10-04', '18:30'],
+            'formal الواحدة needs the marker' => ['كرة قدم بكرا الساعة الواحدة بالليل', '2026-10-05', '01:00'],
+            'حداش بالليل' => ['كرة قدم بكرا الساعة حداش بالليل', '2026-10-04', '23:00'],
+            'اطناش بالليل' => ['كرة قدم بكرا الساعة اطناش بالليل', '2026-10-05', '00:00'],
+            'سبعة ونص' => ['كورة بكرا سبعة ونص', '2026-10-04', '19:30'],
+            'تسعة الا ربع' => ['كورة بكرا الساعة تسعة الا ربع', '2026-10-04', '20:45'],
+            'at seven' => ['football tomorrow at seven', '2026-10-04', '19:00'],
+            'at seven pm' => ['football tomorrow at seven pm', '2026-10-04', '19:00'],
+            'nine am' => ['football tomorrow nine am', '2026-10-04', '09:00'],
+            'half past seven' => ['football tomorrow half past seven', '2026-10-04', '19:30'],
+            'twelve at night' => ['football tomorrow at twelve at night', '2026-10-05', '00:00'],
+        ];
+    }
+
+    #[DataProvider('hoursWrittenAsWords')]
+    public function test_reads_hours_written_as_words(string $text, string $date, string $hour): void
+    {
+        $parsed = $this->parse($text);
+
+        $this->assertSame($hour, $parsed['hour'] ?? null, 'hour');
+        $this->assertSame($date, $parsed['date'] ?? null, 'date');
+    }
+
+    public function test_a_number_word_outside_a_time_context_is_not_an_hour(): void
+    {
+        $this->assertArrayNotHasKey('hour', $this->parse('بدنا ملعب لعشرة شباب بكرا'));
+        $this->assertArrayNotHasKey('hour', $this->parse('football for five players tomorrow'));
+        $this->assertArrayNotHasKey('hour', $this->parse('one court tomorrow please'));
+    }
+
+    public static function typosAndSlang(): array
+    {
+        return [
+            'كورا' => ['بدي ملعب كورا بكرا', 'sport', 'Football'],
+            'fotball' => ['fotball tomorrow', 'sport', 'Football'],
+            'footbal' => ['footbal tomorrow', 'sport', 'Football'],
+            'socer' => ['socer tomorrow', 'sport', 'Football'],
+            'basketbal' => ['basketbal tomorrow', 'sport', 'Basketball'],
+            'tenis' => ['tenis tomorrow', 'sport', 'Tennis'],
+            'padle (swapped letters)' => ['padle tomorrow', 'sport', 'Padel'],
+            'footy' => ['any footy pitch tomorrow', 'sport', 'Football'],
+            '5-a-side' => ['need a 5-a-side pitch tomorrow', 'sport', 'Football'],
+            'five a side' => ['five a side tomorrow', 'sport', 'Football'],
+            'خماسي' => ['بدي ملعب خماسي بكرا', 'sport', 'Football'],
+            'kora (Arabizi)' => ['bde mal3ab kora bukra', 'sport', 'Football'],
+            'tomorow' => ['football tomorow', 'date', '2026-10-04'],
+            'tommorow' => ['football tommorow', 'date', '2026-10-04'],
+            'tmrw' => ['football tmrw', 'date', '2026-10-04'],
+            '2moro' => ['football 2moro', 'date', '2026-10-04'],
+            'thursdy' => ['football thursdy', 'date', '2026-10-08'],
+            'tusday is tuesday, not thursday' => ['football tusday', 'date', '2026-10-06'],
+            'tonite' => ['football tonite', 'date', '2026-10-03'],
+            'bukra' => ['kora bukra', 'date', '2026-10-04'],
+            'el yom' => ['kora el yom', 'date', '2026-10-03'],
+            'ba3d bukra' => ['kora ba3d bukra', 'date', '2026-10-05'],
+            '3al 7' => ['bde mal3ab kora bukra 3al 7', 'hour', '19:00'],
+            '3al 9 bel lel' => ['kora bukra 3al 9 bel lel', 'hour', '21:00'],
+        ];
+    }
+
+    #[DataProvider('typosAndSlang')]
+    public function test_reads_typos_slang_and_arabizi(string $text, string $field, string $value): void
+    {
+        $this->assertSame($value, $this->parse($text)[$field] ?? null);
+    }
+
+    public function test_short_words_and_other_first_letters_are_not_typos(): void
+    {
+        $this->assertArrayNotHasKey('sport', $this->parse('بدي سلم بكرا'));
+        $this->assertArrayNotHasKey('sport', $this->parse('rootball tomorrow'));
+        $this->assertArrayNotHasKey('date', $this->parse('football tmorrow2'));
+    }
+
+    public function test_digits_inside_arabizi_words_are_not_hours(): void
+    {
+        $parsed = $this->parse('bde mal3ab kora bukra');
+
+        $this->assertArrayNotHasKey('hour', $parsed);
+        $this->assertFalse((new RuleBasedQueryParser)->mentionsTime('bde mal3ab kora bukra', CarbonImmutable::parse('2026-10-03')));
+        $this->assertTrue((new RuleBasedQueryParser)->mentionsDate('bde mal3ab kora bukra', CarbonImmutable::parse('2026-10-03')));
+    }
+
+    public function test_areas_match_with_the_spelling_variants_the_search_accepts(): void
+    {
+        $this->makeVenue(null, ['area_ar' => 'تل الهوى', 'area_en' => 'Tal al-Hawa']);
+
+        $this->assertSame('الجلاء', $this->parse('كرة قدم بالجلا بكرا')['area'] ?? null);
+        $this->assertSame('تل الهوى', $this->parse('كورة بتل الهوا بكرا')['area'] ?? null);
+        $this->assertSame('Shujaiya', $this->parse('football in shejaiya tomorrow')['area'] ?? null);
+        $this->assertSame('Al-Jalaa', $this->parse('football in al jalaa tomorrow')['area'] ?? null);
+    }
+
+    public function test_a_typo_never_picks_one_of_two_equally_close_places(): void
+    {
+        $this->makeVenue(null, ['area_ar' => null, 'area_en' => 'Rimal']);
+        $this->makeVenue(null, ['area_ar' => null, 'area_en' => 'Rumal']);
+
+        $this->assertArrayNotHasKey('area', $this->parse('football in romal tomorrow'));
+        $this->assertSame('Rimal', $this->parse('football in rimal tomorrow')['area'] ?? null);
+    }
+
+    public static function unknownPlaces(): array
+    {
+        return [
+            'بالقدس' => ['كرة قدم بالقدس بكرا الساعة 6', 'القدس'],
+            'في النصر' => ['في ملعب في النصر بكرا؟', 'النصر'],
+            'بحي (quoted as the player spelt it)' => ['كورة بحي الصبرة بكرا', 'الصبرة'],
+            'in cairo' => ['football in cairo tomorrow at 6pm', 'cairo'],
+            'near nablus' => ['football near nablus tomorrow', 'nablus'],
+            'in al nasr' => ['football in al nasr tomorrow', 'nasr'],
+        ];
+    }
+
+    #[DataProvider('unknownPlaces')]
+    public function test_notices_a_place_that_is_no_seeded_city_or_area(string $text, string $place): void
+    {
+        $this->assertSame($place, (new RuleBasedQueryParser)->unknownPlace($text));
+    }
+
+    public static function notPlaces(): array
+    {
+        return [
+            'بالليل' => ['كورة بكرا الساعة 9 بالليل'],
+            'في ملعب (is there)' => ['في ملعب فاضي بكرا؟'],
+            'في بادل' => ['في بادل بكرا؟'],
+            'in the evening' => ['football tomorrow in the evening'],
+            'near me' => ['football near me tomorrow'],
+            'a seeded city' => ['football in gaza tomorrow'],
+            'a seeded area with a typo' => ['كرة قدم بالجلا بكرا'],
+            'an area in English' => ['football at 7 in al jalaa'],
+            'بالعربي' => ['احكيلي بالعربي، كورة بكرا'],
+            'بالساعة' => ['كورة بكرا بالساعة 7'],
+        ];
+    }
+
+    #[DataProvider('notPlaces')]
+    public function test_ordinary_words_after_in_or_bal_are_not_places(string $text): void
+    {
+        $this->assertNull((new RuleBasedQueryParser)->unknownPlace($text));
+    }
+
+    public function test_after_midnight_tonight_at_1_is_the_current_day(): void
+    {
+        $parser = new RuleBasedQueryParser;
+
+        // 00:30 on the 4th: "tonight at 1" is in half an hour.
+        $early = $parser->parse('كورة الليلة الساعة 1', CarbonImmutable::parse('2026-10-04'), CarbonImmutable::parse('2026-10-04 00:30'));
+        $this->assertSame(['2026-10-04', '01:00'], [$early['date'], $early['hour']]);
+
+        // 22:00 on the 3rd: "tonight at 1" is after midnight, on the 4th.
+        $evening = $parser->parse('كورة الليلة الساعة 1', CarbonImmutable::parse('2026-10-03'), CarbonImmutable::parse('2026-10-03 22:00'));
+        $this->assertSame(['2026-10-04', '01:00'], [$evening['date'], $evening['hour']]);
+
+        // "tomorrow at 1 at night" stays the night after tomorrow, whatever the time now.
+        $tomorrow = $parser->parse('football tomorrow at 1 at night', CarbonImmutable::parse('2026-10-04'), CarbonImmutable::parse('2026-10-04 00:30'));
+        $this->assertSame('2026-10-06', $tomorrow['date']);
+    }
+
+    public function test_hours_written_as_words_count_as_an_hour_for_gemini(): void
+    {
+        $parser = new RuleBasedQueryParser;
+        $today = CarbonImmutable::parse('2026-10-03');
+
+        foreach (['كورة بكرا الساعة ستة', 'بدي ملعب كورة بكرا عالسبعة', 'كرة قدم غداً الساعة السابعة مساءً', 'football tomorrow at seven pm', 'كرة قدم بكرا السادسة والنصف'] as $text) {
+            $this->assertTrue($parser->mentionsTime($text, $today), $text);
+        }
+
+        foreach (['كرة قدم بكرا بعد المغرب', 'football tomorrow evening', 'كورة الليلة'] as $text) {
+            $this->assertFalse($parser->mentionsTime($text, $today), $text);
+        }
+
+        $this->assertTrue($parser->mentionsDate('footy tmrw 9pm', $today));
+        $this->assertTrue($parser->mentionsDate('fotball tomorow at 7pm', $today));
+    }
+
     public function test_a_dotted_date_is_not_read_as_a_time(): void
     {
         $this->assertSame('كره قدم 12 10 2026', TextNormalizer::normalize('كرة قدم 12.10.2026'));

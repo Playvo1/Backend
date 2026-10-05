@@ -22,7 +22,7 @@ class GeminiQueryParser implements QueryParser
         return filled(config('services.gemini.key'));
     }
 
-    public function parse(string $queryText, CarbonImmutable $today): ?array
+    public function parse(string $queryText, CarbonImmutable $today, ?CarbonImmutable $now = null): ?array
     {
         if (! $this->isConfigured()) {
             return null;
@@ -35,7 +35,7 @@ class GeminiQueryParser implements QueryParser
                 ->connectTimeout(3)
                 ->timeout(config('services.gemini.timeout'))
                 ->acceptJson()
-                ->post('models/'.config('services.gemini.model').':generateContent', $this->payload($queryText, $today))
+                ->post('models/'.config('services.gemini.model').':generateContent', $this->payload($queryText, $now ?? $today))
                 ->throw();
         } catch (ConnectionException|RequestException $e) {
             Log::warning('Gemini request failed; the assistant falls back to the rule-based parser.', [
@@ -51,10 +51,10 @@ class GeminiQueryParser implements QueryParser
     /**
      * @return array<string, mixed>
      */
-    private function payload(string $queryText, CarbonImmutable $today): array
+    private function payload(string $queryText, CarbonImmutable $now): array
     {
         return [
-            'systemInstruction' => ['parts' => [['text' => $this->systemInstruction($today)]]],
+            'systemInstruction' => ['parts' => [['text' => $this->systemInstruction($now)]]],
             'contents' => [['role' => 'user', 'parts' => [['text' => $queryText]]]],
             'tools' => [['functionDeclarations' => [$this->tool->declaration()]]],
             'toolConfig' => ['functionCallingConfig' => [
@@ -65,14 +65,17 @@ class GeminiQueryParser implements QueryParser
         ];
     }
 
-    private function systemInstruction(CarbonImmutable $today): string
+    private function systemInstruction(CarbonImmutable $now): string
     {
+        $today = $now->startOfDay();
+
         return implode("\n", [
-            'You are the Playvo booking assistant for sports venues in Palestine. Players write short requests in Arabic (often Palestinian dialect) or English.',
-            "Today is {$today->englishDayOfWeek} {$today->toDateString()}; tomorrow is {$today->addDay()->toDateString()}.",
-            'Always call '.VenueSearchTool::NAME.'. Resolve relative dates (today, tonight, tomorrow, اليوم, الليلة, بكرا, بكره, غداً, بعد بكرا, weekday names) to YYYY-MM-DD; if no date is given use today.',
-            'Give the hour in 24-hour HH:mm. مساءً, المسا, العصر and pm mean afternoon/evening; صباحاً, الصبح and am mean morning. An hour from 1 to 11 with no am/pm means the evening (e.g. 8 means 20:00).',
-            'At night (بالليل, at night), 5 to 11 mean 17:00 to 23:00, while 12, midnight and 1 to 4 are after midnight: 00:00 to 04:00 on the next day\'s date (اليوم الساعة 12 بالليل is tomorrow at 00:00).',
+            'You are the Playvo booking assistant for sports venues in Palestine. Players write short requests in Arabic (often Palestinian dialect), English or Arabizi.',
+            "Today is {$today->englishDayOfWeek} {$today->toDateString()}; tomorrow is {$today->addDay()->toDateString()}. The local time now is {$now->format('H:i')}.",
+            'Always call '.VenueSearchTool::NAME.'. Resolve relative dates (today, tonight, tomorrow, اليوم, الليلة, بكرا, بكره, غداً, بعد بكرا, bukra, weekday names) to YYYY-MM-DD.',
+            'If the player names no day, leave date empty, and if they give no hour, leave hour empty: never guess them, the assistant asks the player instead.',
+            'Give the hour in 24-hour HH:mm. مساءً, المسا, العصر and pm mean afternoon/evening; صباحاً, الصبح and am mean morning. An hour from 1 to 11 with no am/pm means the evening (e.g. 8 means 20:00). Hours may be written as words (ستة, عالتمانية, السابعة, seven).',
+            'At night (بالليل, at night), 5 to 11 mean 17:00 to 23:00, while 12, midnight and 1 to 4 are after midnight: 00:00 to 04:00 on the next day\'s date (اليوم الساعة 12 بالليل is tomorrow at 00:00). Between 00:00 and 05:00, tonight or الليلة with 1 to 4 means later today.',
             'ونص adds 30 minutes, وربع adds 15 and الا ربع takes 15 away (6 الا ربع means 17:45).',
             'Use the exact enum values for sport and city. Put a neighbourhood or area such as الجلاء or Al-Rimal in area, not in city.',
         ]);

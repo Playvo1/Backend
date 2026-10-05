@@ -55,21 +55,148 @@ class TextNormalizer
     }
 
     /**
-     * normalize() without articles ("ال", "al", "el"), for comparing place and sport names.
+     * normalize() without articles ("ال", "al", "el") and with Arabic word endings folded,
+     * for comparing place and sport names: a dropped final hamza (الجلا = الجلاء) and a
+     * final ى, ي or ا written for one another (الهوا = الهوى).
      */
     public static function loose(string $text): string
     {
         $words = array_filter(
             explode(' ', self::normalize($text)),
-            fn (string $word) => $word !== 'al' && $word !== 'el',
+            fn (string $word) => $word !== '' && $word !== 'al' && $word !== 'el',
         );
 
         $words = array_map(
-            fn (string $word) => mb_strlen($word) > 3 && str_starts_with($word, 'ال') ? mb_substr($word, 2) : $word,
+            fn (string $word) => self::foldEnding(mb_strlen($word) > 3 && str_starts_with($word, 'ال') ? mb_substr($word, 2) : $word),
             $words,
         );
 
         return implode(' ', $words);
+    }
+
+    private static function foldEnding(string $word): string
+    {
+        if (preg_match('/\p{Arabic}/u', $word) !== 1) {
+            return $word;
+        }
+
+        $word = preg_replace('/ء$/u', '', $word) ?? $word;
+
+        return preg_replace('/ي$/u', 'ا', $word) ?? $word;
+    }
+
+    /**
+     * How close $text comes to mentioning $name, allowing a small typo in each word: 0 for
+     * an exact mention, the total edit distance for a close one, null when none is close.
+     * See wordDistance() for what counts as close.
+     */
+    public static function closeness(string $text, string $name): ?int
+    {
+        if (self::mentions($text, $name)) {
+            return 0;
+        }
+
+        $nameWords = array_values(array_filter(explode(' ', self::loose($name))));
+        $textWords = array_values(array_filter(explode(' ', self::loose($text))));
+        $best = null;
+
+        for ($start = 0; $nameWords !== [] && $start + count($nameWords) <= count($textWords); $start++) {
+            $total = 0;
+
+            foreach ($nameWords as $offset => $word) {
+                $distance = self::wordDistance($textWords[$start + $offset], $word);
+
+                if ($distance === null) {
+                    continue 2;
+                }
+
+                $total += $distance;
+            }
+
+            $best = $best === null ? $total : min($best, $total);
+        }
+
+        return $best;
+    }
+
+    /**
+     * 0 when $word is $target (an Arabic word may carry a glued prefix such as ب، بال، و، ع),
+     * the edit distance when it is a likely typo of it, otherwise null. A typo needs four
+     * letters or more on both sides and the same first letter, and may be one edit away
+     * (two from eight letters on), so short words never match by accident.
+     */
+    public static function wordDistance(string $word, string $target): ?int
+    {
+        $best = null;
+        $length = mb_strlen($target);
+
+        foreach (self::withoutPrefixes($word) as $candidate) {
+            if ($candidate === $target) {
+                return 0;
+            }
+
+            if ($length < 4 || mb_strlen($candidate) < 4 || mb_substr($candidate, 0, 1) !== mb_substr($target, 0, 1)) {
+                continue;
+            }
+
+            $distance = self::distance($candidate, $target);
+
+            if ($distance <= ($length >= 8 ? 2 : 1) && ($best === null || $distance < $best)) {
+                $best = $distance;
+            }
+        }
+
+        return $best;
+    }
+
+    /**
+     * Edit distance over characters (not bytes) where swapping two neighbours is one edit.
+     */
+    public static function distance(string $a, string $b): int
+    {
+        $a = mb_str_split($a);
+        $b = mb_str_split($b);
+        $rows = [];
+
+        for ($i = 0; $i <= count($a); $i++) {
+            for ($j = 0; $j <= count($b); $j++) {
+                $rows[$i][$j] = match (true) {
+                    $i === 0 => $j,
+                    $j === 0 => $i,
+                    default => min(
+                        $rows[$i - 1][$j] + 1,
+                        $rows[$i][$j - 1] + 1,
+                        $rows[$i - 1][$j - 1] + ($a[$i - 1] === $b[$j - 1] ? 0 : 1),
+                    ),
+                };
+
+                if ($i > 1 && $j > 1 && $a[$i - 1] === $b[$j - 2] && $a[$i - 2] === $b[$j - 1]) {
+                    $rows[$i][$j] = min($rows[$i][$j], $rows[$i - 2][$j - 2] + 1);
+                }
+            }
+        }
+
+        return $rows[count($a)][count($b)];
+    }
+
+    /**
+     * The word, and for Arabic the word without a glued prefix.
+     *
+     * @return list<string>
+     */
+    private static function withoutPrefixes(string $word): array
+    {
+        $variants = [$word];
+
+        if (preg_match('/^\p{Arabic}/u', $word) === 1) {
+            foreach (['وبال', 'بال', 'وال', 'فال', 'عال', 'لل', 'ال', 'و', 'ب', 'ل', 'ف', 'ع'] as $prefix) {
+                if (str_starts_with($word, $prefix) && mb_strlen($word) - mb_strlen($prefix) >= 2) {
+                    $variants[] = mb_substr($word, mb_strlen($prefix));
+                }
+            }
+        }
+
+        return $variants;
     }
 
     /**

@@ -16,5 +16,5 @@ interface QueryParser
      *
      * @return array<string, string>|null
      */
-    public function parse(string $queryText, CarbonImmutable $today): ?array;
+    public function parse(string $queryText, CarbonImmutable $today, ?CarbonImmutable $now = null): ?array;
 }

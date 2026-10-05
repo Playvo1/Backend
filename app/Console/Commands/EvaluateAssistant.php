@@ -20,9 +20,9 @@ class EvaluateAssistant extends Command
 
     protected $signature = 'assistant:evaluate
         {--fallback : Use only the rule-based fallback parser, never Gemini}
-        {--group=all : Which cases to run: tuning, held_out or all}
+        {--group=all : Which cases to run: tuning, held_out, unseen_r1 or all}
         {--min=90 : Minimum accuracy (%) every reported group must reach for the command to succeed}
-        {--json= : Also write the full results as JSON to this path}';
+        {--json= : Also write the full results as JSON to this path (a relative one goes under storage/app/assistant-eval/)}';
 
     protected $description = 'Measure the booking assistant against the approved test-case set';
 
@@ -31,7 +31,16 @@ class EvaluateAssistant extends Command
         $group = (string) $this->option('group');
 
         if (! in_array($group, [...AssistantEvaluator::GROUPS, 'all'], true)) {
-            $this->error('--group must be tuning, held_out or all.');
+            $this->error('--group must be '.implode(', ', AssistantEvaluator::GROUPS).' or all.');
+
+            return self::INVALID;
+        }
+
+        // (float) "abc" is 0, which would let any accuracy pass, so --min must be a real percentage.
+        $min = $this->option('min');
+
+        if (! is_numeric($min) || (float) $min < 0 || (float) $min > 100) {
+            $this->error('--min must be a number from 0 to 100.');
 
             return self::INVALID;
         }
@@ -51,10 +60,17 @@ class EvaluateAssistant extends Command
             return $evaluator->evaluate($useGemini, $group);
         });
 
-        $passed = $this->report($result, $useGemini);
+        $passed = $this->report($result, $useGemini, (float) $min);
 
         if ($path = $this->option('json')) {
             $this->writeJson($path, $result, $useGemini, $evaluator);
+        }
+
+        // With a key, an evaluation in which Gemini answered nothing measured only the fallback.
+        if ($useGemini && $gemini->isConfigured() && $result['gemini_answers'] === 0) {
+            $this->error('Gemini answered none of the cases, so these results are the fallback\'s alone. Check GEMINI_API_KEY, GEMINI_MODEL and the network, or run with --fallback.');
+
+            return self::FAILURE;
         }
 
         return $passed ? self::SUCCESS : self::FAILURE;
@@ -106,11 +122,12 @@ class EvaluateAssistant extends Command
     }
 
     /**
+     * The unrounded accuracy is compared with --min; it is rounded only for display.
+     *
      * @return bool whether every reported group reached --min
      */
-    private function report(array $result, bool $useGemini): bool
+    private function report(array $result, bool $useGemini, float $min): bool
     {
-        $min = (float) $this->option('min');
         $misses = array_values(array_filter($result['cases'], fn (array $case) => ! $case['correct']));
 
         if ($misses !== []) {
@@ -151,7 +168,9 @@ class EvaluateAssistant extends Command
         foreach ($result['groups'] as $name => $group) {
             $line = "Accuracy ({$name}): {$group['passed']}/{$group['total']} ({$group['accuracy']}%) — target {$min}%";
 
-            if ($group['accuracy'] >= $min) {
+            $exact = $group['total'] === 0 ? 0.0 : $group['passed'] / $group['total'] * 100;
+
+            if ($exact >= $min) {
                 $this->info($line);
             } else {
                 $this->error($line);
@@ -186,7 +205,8 @@ class EvaluateAssistant extends Command
 
     private function writeJson(string $path, array $result, bool $useGemini, AssistantEvaluator $evaluator): void
     {
-        $path = preg_match('/^([a-zA-Z]:)?[\\\\\/]/', $path) ? $path : base_path($path);
+        // A relative path is kept out of the repository, under storage/app/assistant-eval/.
+        $path = preg_match('/^([a-zA-Z]:)?[\\\\\/]/', $path) ? $path : storage_path('app/assistant-eval/'.$path);
 
         $document = [
             'meta' => [

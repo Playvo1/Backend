@@ -168,10 +168,10 @@ class AssistantEvaluationTest extends TestCase
             $this->assertSame(! in_array(false, $case['checks'], true), $case['correct'], $case['id']);
         }
 
-        $this->assertSame(['tuning', 'held_out', 'all'], array_keys($result['groups']));
+        $this->assertSame(['tuning', 'held_out', 'unseen_r1', 'all'], array_keys($result['groups']));
         $this->assertSame(['sport', 'date', 'hour', 'place', 'venue'], array_keys($result['groups']['all']['fields']));
         $this->assertSame(
-            $result['groups']['tuning']['total'] + $result['groups']['held_out']['total'],
+            $result['groups']['tuning']['total'] + $result['groups']['held_out']['total'] + $result['groups']['unseen_r1']['total'],
             $result['groups']['all']['total'],
         );
     }
@@ -180,10 +180,11 @@ class AssistantEvaluationTest extends TestCase
 
     public function test_without_an_api_key_the_command_says_it_falls_back(): void
     {
-        $this->artisan('assistant:evaluate')
+        $this->artisan('assistant:evaluate --min=0')
             ->expectsOutputToContain('GEMINI_API_KEY is not set')
             ->expectsOutputToContain('Accuracy (tuning):')
             ->expectsOutputToContain('Accuracy (held_out):')
+            ->expectsOutputToContain('Accuracy (unseen_r1):')
             ->expectsOutputToContain('Accuracy (all):')
             ->assertSuccessful();
 
@@ -194,7 +195,7 @@ class AssistantEvaluationTest extends TestCase
     {
         config(['services.gemini.key' => 'test-key']);
 
-        $this->artisan('assistant:evaluate --fallback')
+        $this->artisan('assistant:evaluate --fallback --group=tuning')
             ->expectsOutputToContain('rule-based fallback parser only')
             ->assertSuccessful();
 
@@ -217,16 +218,32 @@ class AssistantEvaluationTest extends TestCase
         Http::assertSent(fn (Request $request) => str_contains($request['systemInstruction']['parts'][0]['text'], 'Today is Saturday 2026-10-03'));
     }
 
-    public function test_failed_gemini_calls_fall_back_per_case(): void
+    public function test_failed_gemini_calls_fall_back_per_case_and_the_run_fails(): void
     {
         config(['services.gemini.key' => 'test-key']);
         Http::fake(['*' => Http::response(['error' => ['message' => 'unavailable']], 503)]);
         $total = $this->cases()->count();
 
-        $this->artisan('assistant:evaluate')
+        // Every case is still answered (by the fallback), but a Gemini run that Gemini never
+        // answered must not pass as a Gemini measurement.
+        $this->artisan('assistant:evaluate --min=0')
             ->expectsOutputToContain("Gemini answered 0 of {$total} cases")
             ->expectsOutputToContain('Accuracy (all):')
-            ->assertSuccessful();
+            ->expectsOutputToContain('Gemini answered none of the cases')
+            ->assertFailed();
+    }
+
+    public function test_guards_that_discard_every_gemini_value_count_as_the_fallback(): void
+    {
+        config(['services.gemini.key' => 'test-key']);
+        $this->evaluator()->seedReferenceData();
+        // An unseeded sport, a past day, and an hour the text never gives: all three are dropped.
+        Http::fake(fn () => Http::response(['candidates' => [['content' => ['parts' => [['functionCall' => ['name' => VenueSearchTool::NAME, 'args' => ['sport' => 'Cricket', 'date' => '2025-01-01', 'hour' => '18:00']]]]]]]]));
+
+        $answer = $this->app->make(BookingAssistant::class)->respond('football tomorrow', $this->evaluator()->referenceNow());
+
+        $this->assertSame(BookingAssistant::FROM_FALLBACK, $answer['source']);
+        $this->assertSame(BookingAssistant::NEEDS_DETAILS, $answer['outcome']);
     }
 
     public function test_the_group_option_limits_the_cases(): void
@@ -266,17 +283,26 @@ class AssistantEvaluationTest extends TestCase
             ->assertFailed();
     }
 
+    public function test_the_minimum_must_be_a_percentage(): void
+    {
+        foreach (['abc', '-1', '100.1', '', '90%'] as $min) {
+            $this->artisan('assistant:evaluate', ['--fallback' => true, '--min' => $min])
+                ->expectsOutputToContain('--min must be a number from 0 to 100')
+                ->assertExitCode(2);
+        }
+    }
+
     public function test_the_minimum_is_configurable(): void
     {
         $this->artisan('assistant:evaluate --fallback --min=101')->assertFailed();
-        $this->artisan('assistant:evaluate --fallback --min=50')->assertSuccessful();
+        $this->artisan('assistant:evaluate --fallback --group=tuning --min=50')->assertSuccessful();
     }
 
     public function test_results_can_be_written_as_json(): void
     {
         $path = $this->scratch('assistant-evaluation.json');
 
-        $this->artisan('assistant:evaluate', ['--fallback' => true, '--json' => $path])
+        $this->artisan('assistant:evaluate', ['--fallback' => true, '--min' => '0', '--json' => $path])
             ->expectsOutputToContain('Results written to')
             ->assertSuccessful();
 
@@ -285,17 +311,30 @@ class AssistantEvaluationTest extends TestCase
 
         $this->assertSame('fallback', $document['meta']['mode']);
         $this->assertSame('draft — pending team approval', $document['meta']['cases']['status']);
-        $this->assertSame(['tuning', 'held_out', 'all'], array_keys($document['groups']));
+        $this->assertSame(['tuning', 'held_out', 'unseen_r1', 'all'], array_keys($document['groups']));
         $this->assertCount($this->cases()->count(), $document['cases']);
         $this->assertArrayHasKey('expected', $document['cases'][0]);
         $this->assertArrayHasKey('actual', $document['cases'][0]);
+    }
+
+    public function test_a_relative_json_path_goes_under_storage(): void
+    {
+        $path = storage_path('app/assistant-eval/review/run.json');
+        @unlink($path);
+
+        $this->artisan('assistant:evaluate', ['--fallback' => true, '--group' => 'tuning', '--json' => 'review/run.json'])->assertSuccessful();
+
+        $this->assertFileExists($path);
+        $this->assertFileDoesNotExist(base_path('review/run.json'));
+        @unlink($path);
+        @rmdir(dirname($path));
     }
 
     public function test_the_command_never_touches_the_application_database(): void
     {
         $default = config('database.default');
 
-        $this->artisan('assistant:evaluate --fallback')->assertSuccessful();
+        $this->artisan('assistant:evaluate --fallback --min=0')->assertSuccessful();
 
         $this->assertSame($default, config('database.default'));
         $this->assertDatabaseCount('venues', 0);

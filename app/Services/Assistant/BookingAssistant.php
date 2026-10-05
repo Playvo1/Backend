@@ -9,6 +9,7 @@ use App\Models\TimeSlot;
 use App\Models\User;
 use App\Support\LocalClock;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 
 /**
  * Answers a player's booking question (US-4.5): understands it with Gemini when
@@ -23,13 +24,19 @@ class BookingAssistant
     private const REQUIRED_ARGUMENTS = ['sport', 'date', 'hour'];
 
     /**
-     * What the reply did: suggested a venue, found none, or asked for the sport, day or hour.
+     * What the reply did: suggested a venue, found none, asked for the sport, day or hour, or
+     * said the place isn't covered.
      */
     public const SUGGESTION = 'suggestion';
 
     public const NO_MATCH = 'no_match';
 
     public const NEEDS_DETAILS = 'needs_details';
+
+    /**
+     * The city or area the player named has no venues (yet).
+     */
+    public const NOT_COVERED = 'not_covered';
 
     /**
      * Who understood the question.
@@ -76,14 +83,23 @@ class BookingAssistant
     public function respond(string $queryText, CarbonImmutable $now, bool $useGemini = true): array
     {
         $today = $now->startOfDay();
-        ['arguments' => $arguments, 'source' => $source] = $this->interpret($queryText, $today, $useGemini);
+        ['arguments' => $arguments, 'source' => $source, 'unknown' => $unknown] = $this->interpret($queryText, $now, $useGemini);
         $sport = $this->tool->findSport($arguments['sport'] ?? null);
-        $complete = $sport && isset($arguments['date'], $arguments['hour']);
-        $slot = $complete ? $this->tool->execute($arguments, $now) : null;
+        $missing = array_keys(array_filter([
+            'sport' => ! $sport,
+            'date' => ! isset($arguments['date']),
+            'hour' => ! isset($arguments['hour']),
+        ]));
+        $slot = $unknown === null && $missing === [] ? $this->tool->execute($arguments, $now) : null;
         $arabic = TextNormalizer::isArabic($queryText);
 
         [$outcome, $replyText] = match (true) {
-            ! $complete => [self::NEEDS_DETAILS, $this->replies->needsDetails($arabic)],
+            $unknown !== null => [self::NOT_COVERED, $this->notCoveredReply($unknown, $arabic)],
+            $missing !== [] => [self::NEEDS_DETAILS, $this->replies->needsDetails(
+                $missing,
+                $arabic,
+                $missing === ['hour'] ? $this->tool->freeHours($arguments, $now) : [],
+            )],
             ! $slot => [self::NO_MATCH, $this->replies->noMatch($arabic)],
             default => [self::SUGGESTION, $this->replies->suggestion($slot, $today, $arabic)],
         };
@@ -100,26 +116,29 @@ class BookingAssistant
 
     /**
      * Gemini's reading wins; the rule-based reading is the fallback when Gemini is
-     * unavailable and fills any required argument Gemini didn't return.
+     * unavailable and fills any argument Gemini didn't return.
      *
      * @return array<string, string>
      */
-    public function understand(string $queryText, CarbonImmutable $today, bool $useGemini = true): array
+    public function understand(string $queryText, CarbonImmutable $now, bool $useGemini = true): array
     {
-        return $this->interpret($queryText, $today, $useGemini)['arguments'];
+        return $this->interpret($queryText, $now, $useGemini)['arguments'];
     }
 
     /**
-     * @return array{arguments: array<string, string>, source: string} the source is "gemini"
-     *                                                                 when Gemini answered
+     * The source is "gemini" only when a sport, date or hour from Gemini survived the checks
+     * below; unknown is a city or area the player named that isn't covered.
+     *
+     * @return array{arguments: array<string, string>, source: string, unknown: ?array{kind: string, name: string}}
      */
-    private function interpret(string $queryText, CarbonImmutable $today, bool $useGemini): array
+    private function interpret(string $queryText, CarbonImmutable $now, bool $useGemini): array
     {
-        $fallback = $this->rules->parse($queryText, $today);
-        $fromGemini = $useGemini ? $this->gemini->parse($queryText, $today) : null;
+        $today = $now->startOfDay();
+        $fallback = $this->rules->parse($queryText, $today, $now);
+        $fromGemini = $useGemini ? $this->gemini->parse($queryText, $today, $now) : null;
 
         if ($fromGemini === null) {
-            return ['arguments' => $fallback, 'source' => self::FROM_FALLBACK];
+            return ['arguments' => $fallback, 'source' => self::FROM_FALLBACK, 'unknown' => $this->unknownPlace($queryText, $fallback)];
         }
 
         $fromGemini = $this->onlyValid($fromGemini, $today);
@@ -139,13 +158,11 @@ class BookingAssistant
             unset($fromGemini['sport']);
         }
 
-        $fromGemini = $this->resolvePlace($fromGemini, $fallback);
-        $missing = array_diff_key(array_flip(self::REQUIRED_ARGUMENTS), $fromGemini);
+        $source = array_intersect_key($fromGemini, array_flip(self::REQUIRED_ARGUMENTS)) === [] ? self::FROM_FALLBACK : self::FROM_GEMINI;
+        ['arguments' => $fromGemini, 'unknown' => $unknown] = $this->resolvePlace($fromGemini, $fallback);
+        $arguments = [...$fromGemini, ...array_diff_key($fallback, $fromGemini)];
 
-        return [
-            'arguments' => [...$fromGemini, ...array_intersect_key($fallback, $missing)],
-            'source' => self::FROM_GEMINI,
-        ];
+        return ['arguments' => $arguments, 'source' => $source, 'unknown' => $unknown ?? $this->unknownPlace($queryText, $arguments)];
     }
 
     /**
@@ -177,27 +194,92 @@ class BookingAssistant
     }
 
     /**
-     * Gemini's optional city and area are hard filters, so one that names no seeded city must
-     * not hide a real match. An unknown city is replaced by the rule-based reading of the text
-     * (which finds "Gaza" in "Gaza City") or dropped; an area that is really a city name is
-     * used as the city instead.
+     * Gemini's optional city and area are hard filters, so one that names nothing seeded must
+     * not hide a real match or quietly search elsewhere:
+     * - an unknown city is replaced by the rule-based reading of the text (which finds "Gaza"
+     *   in "Gaza City"); when that finds none either, the city is reported as not covered;
+     * - an area that is really a city name is used as the city;
+     * - an area no venue is in is replaced by the rule-based reading, or reported.
      *
      * @param  array<string, string>  $arguments
      * @param  array<string, string>  $fallback
-     * @return array<string, string>
+     * @return array{arguments: array<string, string>, unknown: ?array{kind: string, name: string}}
      */
     private function resolvePlace(array $arguments, array $fallback): array
     {
+        $unknown = null;
+
         if (isset($arguments['city'])) {
-            $arguments['city'] = $this->cityNamed($arguments['city'])?->name_en ?? $fallback['city'] ?? null;
+            $city = $this->cityNamed($arguments['city'])?->name_en ?? $fallback['city'] ?? null;
+            $unknown = $city === null ? ['kind' => 'city', 'name' => $this->shown($arguments['city'])] : null;
+            $arguments['city'] = $city;
         }
 
         if (isset($arguments['area']) && ($city = $this->cityNamed($arguments['area']))) {
             unset($arguments['area']);
             $arguments['city'] ??= $city->name_en;
+        } elseif (isset($arguments['area']) && ! $this->tool->knowsArea($arguments['area'])) {
+            // Kept when the text names no known area either, so the search finds nothing
+            // rather than looking everywhere.
+            $area = $arguments['area'];
+            $arguments['area'] = $fallback['area'] ?? $area;
+
+            if (! isset($fallback['area']) && $unknown === null && preg_match('/\p{L}/u', $area) === 1) {
+                $unknown = ['kind' => 'area', 'name' => $this->shown($area)];
+            }
         }
 
-        return array_filter($arguments);
+        return ['arguments' => array_filter($arguments), 'unknown' => $unknown];
+    }
+
+    /**
+     * A place the player named that no seeded city, area or venue matches.
+     *
+     * @param  array<string, string>  $arguments
+     * @return ?array{kind: string, name: string}
+     */
+    private function unknownPlace(string $queryText, array $arguments): ?array
+    {
+        if (isset($arguments['area'])) {
+            return null;
+        }
+
+        $place = $this->rules->unknownPlace($queryText);
+
+        if ($place === null) {
+            return null;
+        }
+
+        // Inside a known city it is an area there; otherwise a city we don't cover.
+        return ['kind' => isset($arguments['city']) ? 'area' : 'city', 'name' => $this->shown($place)];
+    }
+
+    /**
+     * @param  array{kind: string, name: string}  $unknown
+     */
+    private function notCoveredReply(array $unknown, bool $arabic): string
+    {
+        if ($unknown['kind'] === 'area') {
+            return $this->replies->unknownArea($unknown['name'], $arabic);
+        }
+
+        $cities = City::query()->orderBy('id')->get(['name_ar', 'name_en'])
+            ->map(fn (City $city) => $arabic ? $city->name_ar : $city->name_en)
+            ->unique()
+            ->values()
+            ->all();
+
+        return $this->replies->notCovered($unknown['name'], $cities, $arabic);
+    }
+
+    /**
+     * A place name as it is quoted back to the player.
+     */
+    private function shown(string $place): string
+    {
+        $place = Str::limit(trim(preg_replace('/\s+/u', ' ', $place) ?? $place), 60);
+
+        return preg_match('/^[a-z ]+$/', $place) === 1 ? ucwords($place) : $place;
     }
 
     /**

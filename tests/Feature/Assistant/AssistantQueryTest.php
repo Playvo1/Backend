@@ -267,12 +267,13 @@ class AssistantQueryTest extends TestCase
             ->assertJsonPath('data.parsed_date', '2026-10-04')
             ->assertJsonPath('data.parsed_hour', null)
             ->assertJsonPath('data.suggested_venue_id', null)
-            ->assertJsonPath('data.reply_text', 'Tell me the sport, day and hour you want, for example: "Football tomorrow at 6pm".');
+            // Only the hour is missing, so only the hour is asked for, with the free hours that evening.
+            ->assertJsonPath('data.reply_text', 'What time would you like to play? Free that evening: 18:00.');
 
         $this->ask('بدي كورة بكرا')
             ->assertOk()
             ->assertJsonPath('data.parsed_hour', null)
-            ->assertJsonPath('data.reply_text', 'أخبرني بالرياضة واليوم والساعة التي تريدها، مثلاً: "كرة قدم بكرا الساعة 6 مساءً".');
+            ->assertJsonPath('data.reply_text', 'أي ساعة؟ المتاح مساءً: 18:00.');
 
         $this->assertDatabaseHas('assistant_queries', ['query_text' => 'football tomorrow', 'parsed_hour' => null, 'suggested_venue_id' => null]);
     }
@@ -297,7 +298,7 @@ class AssistantQueryTest extends TestCase
             ->assertJsonPath('data.parsed_date', null)
             ->assertJsonPath('data.parsed_hour', '18:00')
             ->assertJsonPath('data.suggested_venue_id', null)
-            ->assertJsonPath('data.reply_text', 'Tell me the sport, day and hour you want, for example: "Football tomorrow at 6pm".');
+            ->assertJsonPath('data.reply_text', 'Which day would you like to play?');
 
         $this->ask('هلق بدي كورة الساعة 6')
             ->assertOk()
@@ -313,7 +314,7 @@ class AssistantQueryTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.parsed_date', null)
             ->assertJsonPath('data.parsed_hour', '18:00')
-            ->assertJsonPath('data.reply_text', 'أخبرني بالرياضة واليوم والساعة التي تريدها، مثلاً: "كرة قدم بكرا الساعة 6 مساءً".');
+            ->assertJsonPath('data.reply_text', 'أي يوم؟');
     }
 
     // ---------------------------------------------------------------- city and area from Gemini
@@ -327,13 +328,22 @@ class AssistantQueryTest extends TestCase
             ->assertJsonPath('data.suggested_venue_id', $this->venue->id);
     }
 
-    public function test_an_unknown_city_is_dropped_when_the_text_names_no_seeded_city(): void
+    public function test_an_unknown_city_is_not_covered_instead_of_suggesting_another_city(): void
     {
         $this->fakeGeminiCall(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00', 'city' => 'Jerusalem']);
 
         $this->ask('football tomorrow at 6pm in Jerusalem')
             ->assertOk()
-            ->assertJsonPath('data.suggested_venue_id', $this->venue->id);
+            ->assertJsonPath('data.suggested_venue_id', null)
+            ->assertJsonPath('data.reply_text', "We don't cover Jerusalem yet — we currently cover: Gaza.");
+
+        // The fallback notices the place too.
+        config(['services.gemini.key' => null]);
+
+        $this->ask('بدي ملعب كرة قدم بكرا الساعة 6 بالقدس')
+            ->assertOk()
+            ->assertJsonPath('data.suggested_venue_id', null)
+            ->assertJsonPath('data.reply_text', 'لا نغطي القدس بعد — نغطي حالياً: غزة.');
     }
 
     public function test_a_city_given_as_the_area_does_not_override_a_different_city(): void
@@ -346,6 +356,25 @@ class AssistantQueryTest extends TestCase
         $this->ask('football tomorrow at 6pm in Khan Younis')
             ->assertOk()
             ->assertJsonPath('data.suggested_venue_id', $south->id);
+    }
+
+    public function test_an_area_gemini_names_that_no_venue_is_in_uses_the_fallback_reading(): void
+    {
+        $this->fakeGeminiCall(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00', 'area' => 'Jalaa Stadium Street']);
+
+        $this->ask('football tomorrow at 6pm near al jalaa')
+            ->assertOk()
+            ->assertJsonPath('data.suggested_venue_id', $this->venue->id);
+    }
+
+    public function test_an_unknown_area_in_a_known_city_is_said_plainly(): void
+    {
+        config(['services.gemini.key' => null]);
+
+        $this->ask('كورة بكرا الساعة 6 بحي الصبرة بغزة')
+            ->assertOk()
+            ->assertJsonPath('data.suggested_venue_id', null)
+            ->assertJsonPath('data.reply_text', 'لم أجد ملعباً في الصبرة — جرّب منطقة أخرى أو اطلب بدون تحديد المنطقة.');
     }
 
     // ---------------------------------------------------------------- the slot's own time in the reply

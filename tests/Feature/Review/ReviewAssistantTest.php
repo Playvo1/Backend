@@ -222,7 +222,7 @@ class ReviewAssistantTest extends TestCase
 
         $this->ask('بكرا الساعة 6 مساءً بالجلاء')
             ->assertOk()
-            ->assertJsonPath('data.reply_text', 'أخبرني بالرياضة واليوم والساعة التي تريدها، مثلاً: "كرة قدم بكرا الساعة 6 مساءً".');
+            ->assertJsonPath('data.reply_text', 'أي رياضة؟');
     }
 
     public function test_english_query_replies_in_english(): void

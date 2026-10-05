@@ -390,7 +390,8 @@ class AiStage2ReviewTest extends TestCase
             'parsed_date' => '2026-10-05',
             'parsed_hour' => '19:00',
             'suggested_venue_id' => null,
-            'reply_text' => 'أخبرني بالرياضة واليوم والساعة التي تريدها، مثلاً: "كرة قدم بكرا الساعة 6 مساءً".',
+            // Only the sport is missing, so only the sport is asked for (Stage 3 review decision).
+            'reply_text' => 'أي رياضة؟',
         ]);
     }
 
@@ -806,7 +807,8 @@ class AiStage2ReviewTest extends TestCase
     public function test_an_injected_area_or_city_never_produces_a_made_up_suggestion(): void
     {
         $this->geminiCall(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00', 'area' => 'Fake Arena']);
-        $this->assertAnswer($this->ask('football tomorrow at 6pm at Fake Arena'), ['suggested_venue_id' => null, 'reply_text' => self::EN_NO_MATCH]);
+        // An area no venue is in is said plainly (Stage 3 review decision), never searched elsewhere.
+        $this->assertAnswer($this->ask('football tomorrow at 6pm at Fake Arena'), ['suggested_venue_id' => null, 'reply_text' => "I couldn't find a venue in Fake Arena — try another area, or leave the area out."]);
 
         $this->geminiCall(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00', 'area' => "%' OR '1'='1"]);
         $this->assertAnswer($this->ask('football tomorrow at 6pm'), ['suggested_venue_id' => null]);

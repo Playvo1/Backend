@@ -27,7 +27,7 @@ class AssistantEvaluator
 {
     public const FIXTURE = 'assistant/evaluation-cases.json';
 
-    public const GROUPS = ['tuning', 'held_out'];
+    public const GROUPS = ['tuning', 'held_out', 'unseen_r1'];
 
     public const FIELDS = ['sport', 'date', 'hour', 'place', 'venue'];
 
