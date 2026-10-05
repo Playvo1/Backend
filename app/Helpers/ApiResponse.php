@@ -8,12 +8,14 @@ class ApiResponse
         bool $success,
         int $statusCode,
         string $message,
-        mixed $data = null
+        mixed $data = null,
+        mixed $errors = null
     ) {
         return response()->json([
             'success' => $success,
             'message' => $message,
             'data' => $data,
+            'errors' => $errors,
         ], $statusCode);
     }
 }
