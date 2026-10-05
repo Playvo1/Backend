@@ -2,11 +2,17 @@
 
 namespace App\Models;
 
+use App\Models\User;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Favorite extends Model
 {
+       protected $fillable = [
+        'user_id',
+        'venue_id',
+    ];
     /**
      * The user who favorited the venue.
      */
@@ -23,3 +29,4 @@ class Favorite extends Model
         return $this->belongsTo(Venue::class, 'venue_id');
     }
 }
+

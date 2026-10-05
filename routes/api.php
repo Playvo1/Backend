@@ -85,8 +85,6 @@ Route::get('/bookings/share/{share_token}',[BookingController::class, 'share']);
             Route::put('admin/venues/{id}/status', [AdminVenueController::class, 'updateStatus']);
             Route::post('admin/venues', [AdminVenueController::class, 'store']);
 
-            Route::put('admin/venues/{id}/status', [AdminVenueController::class, 'updateStatus']);
-
             Route::get('payment-receipts', [AdminPaymentReceiptController::class, 'index']);
             Route::put('payment-receipts/{id}/verify', [AdminPaymentReceiptController::class, 'verify']);
             Route::put('payment-receipts/{id}/reject', [AdminPaymentReceiptController::class, 'reject']);

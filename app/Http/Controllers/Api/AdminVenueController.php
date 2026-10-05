@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use App\Models\User;
 use App\Models\Booking;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
 class AdminVenueController extends Controller
 {
     public function store(AdminVenueRequest $request): JsonResponse
@@ -54,35 +55,24 @@ class AdminVenueController extends Controller
             'errors' => null,
         ], 201);
     }
-    public function updateStatus(int $id): JsonResponse
+  public function updateStatus(Request $request, int $id): JsonResponse
 {
+    $request->validate([
+        'status' => ['required', 'in:active,inactive'],
+    ]);
+
     $venue = Venue::findOrFail($id);
 
-    $hasUpcomingBookings = Booking::where('status', 'confirmed')
-        ->whereHas('timeSlot', function ($query) use ($venue) {
-            $query->where('venue_id', $venue->id)
-                ->where('slot_date', '>', Carbon::today());
-        })
-        ->exists();
-
-    if ($hasUpcomingBookings) {
-        return response()->json([
-            'success' => false,
-            'data' => null,
-            'message' => 'Resolve this venue\'s upcoming bookings before removing it.',
-            'errors' => null,
-        ], 422);
-    }
-
-    $venue->status = 'inactive';
+    $venue->status = $request->status;
     $venue->save();
-
-    $venue->delete();
 
     return response()->json([
         'success' => true,
-        'data' => null,
-        'message' => 'Venue removed successfully.',
+        'data' => [
+            'id' => $venue->id,
+            'status' => $venue->status,
+        ],
+        'message' => 'Venue status updated successfully.',
         'errors' => null,
     ]);
 }

@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use App\Http\Requests\Api\UpdateVenueRequest;
 use App\Models\Image;
 use Illuminate\Support\Facades\Storage;
+use App\Models\User;
 class VenueController extends Controller
 {
     public function index(VenueFilterRequest $request): JsonResponse
