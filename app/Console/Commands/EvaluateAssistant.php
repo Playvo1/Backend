@@ -9,10 +9,10 @@ use Illuminate\Support\Facades\DB;
 
 /**
  * Runs the approved assistant test cases (US-5.4) through the booking assistant and
- * prints the suggestion accuracy for the tuning and held-out groups against the SRS's
- * 90% target. By default the assistant uses live Gemini when GEMINI_API_KEY is set;
- * --fallback measures the rule-based parser alone. The fixture is loaded into a
- * throwaway in-memory SQLite database, so the configured database is never touched.
+ * prints the suggestion accuracy for each group of cases against the SRS's 90% target.
+ * By default the assistant uses live Gemini when GEMINI_API_KEY is set; --fallback
+ * measures the rule-based parser alone. The fixture is loaded into a throwaway in-memory
+ * SQLite database, so the configured database is never touched.
  */
 class EvaluateAssistant extends Command
 {
@@ -20,7 +20,7 @@ class EvaluateAssistant extends Command
 
     protected $signature = 'assistant:evaluate
         {--fallback : Use only the rule-based fallback parser, never Gemini}
-        {--group=all : Which cases to run: tuning, held_out, unseen_r1 or all}
+        {--group=all : Which cases to run: tuning, held_out, unseen_r1, blind_r2 or all}
         {--min=90 : Minimum accuracy (%) every reported group must reach for the command to succeed}
         {--json= : Also write the full results as JSON to this path (a relative one goes under storage/app/assistant-eval/)}';
 

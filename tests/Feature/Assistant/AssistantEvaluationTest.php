@@ -83,7 +83,11 @@ class AssistantEvaluationTest extends TestCase
         $this->assertLessThanOrEqual(0.65, $arabic / $cases->count());
 
         foreach ($cases as $case) {
-            $this->assertSame($case['language'] === 'ar', TextNormalizer::isArabic($case['query']), "{$case['id']} language");
+            // A mixed-language case may lean either way; the others follow their majority script.
+            if ($case['language'] !== 'mixed') {
+                $this->assertSame($case['language'] === 'ar', TextNormalizer::isArabic($case['query']), "{$case['id']} language");
+            }
+
             $this->assertSame(['sport', 'date', 'hour', 'city', 'area', 'outcome', 'venue'], array_keys($case['expected']), "{$case['id']} fields");
         }
     }
@@ -116,6 +120,13 @@ class AssistantEvaluationTest extends TestCase
 
         foreach ($this->cases() as $case) {
             $expected = $case['expected'];
+
+            // A place that is not covered is not a search argument, so there is nothing to search.
+            if ($expected['outcome'] === BookingAssistant::NOT_COVERED) {
+                $this->assertNull($expected['venue'], $case['id']);
+
+                continue;
+            }
 
             if ($expected['outcome'] === BookingAssistant::NEEDS_DETAILS) {
                 $this->assertTrue($expected['sport'] === null || $expected['date'] === null || $expected['hour'] === null, "{$case['id']} misses a detail");
@@ -151,6 +162,18 @@ class AssistantEvaluationTest extends TestCase
         $this->assertGreaterThanOrEqual(90, $result['groups']['held_out']['accuracy'], $this->misses($result));
     }
 
+    public function test_the_fallback_reaches_90_percent_on_the_reviewers_sets(): void
+    {
+        $this->evaluator()->seedReferenceData();
+
+        // Written blind by the reviewer; known now, so they guard against regressions.
+        foreach (['unseen_r1', 'blind_r2'] as $group) {
+            $result = $this->evaluator()->evaluate(useGemini: false, group: $group);
+
+            $this->assertGreaterThanOrEqual(90, $result['groups'][$group]['accuracy'], $this->misses($result));
+        }
+    }
+
     private function misses(array $result): string
     {
         $misses = array_filter($result['cases'], fn (array $case) => ! $case['correct']);
@@ -168,10 +191,10 @@ class AssistantEvaluationTest extends TestCase
             $this->assertSame(! in_array(false, $case['checks'], true), $case['correct'], $case['id']);
         }
 
-        $this->assertSame(['tuning', 'held_out', 'unseen_r1', 'all'], array_keys($result['groups']));
+        $this->assertSame(['tuning', 'held_out', 'unseen_r1', 'blind_r2', 'all'], array_keys($result['groups']));
         $this->assertSame(['sport', 'date', 'hour', 'place', 'venue'], array_keys($result['groups']['all']['fields']));
         $this->assertSame(
-            $result['groups']['tuning']['total'] + $result['groups']['held_out']['total'] + $result['groups']['unseen_r1']['total'],
+            array_sum(array_map(fn (string $group) => $result['groups'][$group]['total'], AssistantEvaluator::GROUPS)),
             $result['groups']['all']['total'],
         );
     }
@@ -185,6 +208,7 @@ class AssistantEvaluationTest extends TestCase
             ->expectsOutputToContain('Accuracy (tuning):')
             ->expectsOutputToContain('Accuracy (held_out):')
             ->expectsOutputToContain('Accuracy (unseen_r1):')
+            ->expectsOutputToContain('Accuracy (blind_r2):')
             ->expectsOutputToContain('Accuracy (all):')
             ->assertSuccessful();
 
@@ -311,7 +335,7 @@ class AssistantEvaluationTest extends TestCase
 
         $this->assertSame('fallback', $document['meta']['mode']);
         $this->assertSame('draft — pending team approval', $document['meta']['cases']['status']);
-        $this->assertSame(['tuning', 'held_out', 'unseen_r1', 'all'], array_keys($document['groups']));
+        $this->assertSame(['tuning', 'held_out', 'unseen_r1', 'blind_r2', 'all'], array_keys($document['groups']));
         $this->assertCount($this->cases()->count(), $document['cases']);
         $this->assertArrayHasKey('expected', $document['cases'][0]);
         $this->assertArrayHasKey('actual', $document['cases'][0]);

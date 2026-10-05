@@ -18,16 +18,16 @@ use Illuminate\Support\Str;
  * at least 90% correct suggestions). Every case runs through BookingAssistant at the
  * fixture's fixed reference time, with Gemini or with the rule-based fallback alone.
  *
- * A case is correct only when the outcome matches (the expected venue, no match, or a
- * request for the missing details) and the sport, date and hour, plus the city or area
- * when the case expects one, were understood as expected. The tuning and held-out groups
- * are reported separately, as is the accuracy of each field.
+ * A case is correct only when the outcome matches (the expected venue, no match, a request
+ * for the missing details, or a place that is not covered) and the sport, date and hour,
+ * plus the city or area when the case expects one, were understood as expected. Each group
+ * (GROUPS) is reported separately, as is the accuracy of each field.
  */
 class AssistantEvaluator
 {
     public const FIXTURE = 'assistant/evaluation-cases.json';
 
-    public const GROUPS = ['tuning', 'held_out', 'unseen_r1'];
+    public const GROUPS = ['tuning', 'held_out', 'unseen_r1', 'blind_r2'];
 
     public const FIELDS = ['sport', 'date', 'hour', 'place', 'venue'];
 

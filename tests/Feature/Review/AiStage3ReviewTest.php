@@ -282,6 +282,11 @@ class AiStage3ReviewTest extends TestCase
                 }
             }
 
+            // Stage 4: "tonight at 1am" (an am hour from 12 to 4) is after midnight too.
+            if (str_contains($case['query'], 'tonight') && preg_match('/(?<!\d)(?:12|0?[1-4])\s*am(?![a-z])/', $case['query'])) {
+                $date = $date->addDay();
+            }
+
             $this->assertSame($date->toDateString(), $expectedDate, "{$case['id']} ({$case['query']})");
         }
     }
