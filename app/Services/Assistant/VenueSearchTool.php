@@ -7,6 +7,8 @@ use App\Models\Sport;
 use App\Models\TimeSlot;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Query\JoinClause;
 
 /**
  * The single function Gemini may call for the booking assistant (US-4.5).
@@ -15,12 +17,25 @@ use Illuminate\Database\Eloquent\Builder;
  * always picked from real, available time slots here, never invented by the
  * model. Sport and city are offered as enums of the seeded names so the model
  * can only answer with values that exist in the SPORT and CITY tables.
+ *
+ * The argument names are kept short for the model; they map to the ERD as:
+ * - sport: SPORT.name_ar / name_en, logged as ASSISTANT_QUERY.parsed_sport_id
+ * - date:  TIME_SLOT.slot_date, logged as ASSISTANT_QUERY.parsed_date
+ * - hour:  inside TIME_SLOT.start_time..end_time, logged as ASSISTANT_QUERY.parsed_hour
+ * - city:  CITY.name_ar / name_en, matched against VENUE.city_id
+ * - area:  VENUE.area_ar / area_en / address_ar / address_en
+ * The venue found is logged as ASSISTANT_QUERY.suggested_venue_id.
  */
 class VenueSearchTool
 {
     public const NAME = 'search_available_venues';
 
     private const ARGUMENTS = ['sport', 'date', 'hour', 'city', 'area'];
+
+    /**
+     * A slot that ends at midnight is stored with this end_time.
+     */
+    private const MIDNIGHT = '00:00:00';
 
     /**
      * Gemini function declaration (OpenAPI subset used by function calling).
@@ -88,31 +103,45 @@ class VenueSearchTool
         $query = TimeSlot::query()
             ->select('time_slots.*')
             ->join('venues', 'venues.id', '=', 'time_slots.venue_id')
+            // Like GET /venues: the venue must offer the sport, not only have a slot for it.
+            ->join('venue_sports', fn (JoinClause $join) => $join
+                ->on('venue_sports.venue_id', '=', 'venues.id')
+                ->on('venue_sports.sport_id', '=', 'time_slots.sport_id'))
             ->where('time_slots.sport_id', $sport->id)
             ->whereDate('time_slots.slot_date', $date)
             ->where('time_slots.start_time', '<=', $hour)
-            ->where('time_slots.end_time', '>', $hour)
+            ->where(fn (Builder $q) => $q
+                ->where('time_slots.end_time', '>', $hour)
+                ->orWhere('time_slots.end_time', self::MIDNIGHT))
             ->where('time_slots.status', 'available')
             ->where('venues.status', 'active')
             ->when($date === $today, fn (Builder $q) => $q->where('time_slots.start_time', '>', $now->format('H:i:s')));
 
-        if (! empty($arguments['city'])) {
-            $city = $this->findByName(City::query(), $arguments['city']);
+        $city = $this->filledArgument($arguments, 'city');
 
-            if (! $city) {
+        if ($city !== null) {
+            // A city name can exist in several countries (e.g. Rafah), so every match is searched.
+            $cityIds = $this->matchingByName(City::query(), $city)->modelKeys();
+
+            if ($cityIds === []) {
                 return null;
             }
 
-            $query->where('venues.city_id', $city->id);
+            $query->whereIn('venues.city_id', $cityIds);
         }
 
-        if (! empty($arguments['area'])) {
-            // "!" is used as the LIKE escape character because it means the same on MySQL and SQLite.
-            $area = '%'.str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $arguments['area']).'%';
+        $area = $this->filledArgument($arguments, 'area');
 
-            $query->where(function (Builder $q) use ($area) {
+        if ($area !== null) {
+            $pattern = $this->areaPattern($area);
+
+            if ($pattern === null) {
+                return null;
+            }
+
+            $query->where(function (Builder $q) use ($pattern) {
                 foreach (['area_ar', 'area_en', 'address_ar', 'address_en'] as $column) {
-                    $q->orWhereRaw("venues.{$column} LIKE ? ESCAPE '!'", [$area]);
+                    $q->orWhereRaw("venues.{$column} LIKE ? ESCAPE '!'", [$pattern]);
                 }
             });
         }
@@ -127,7 +156,7 @@ class VenueSearchTool
 
     public function findSport(?string $name): ?Sport
     {
-        return $this->findByName(Sport::query(), $name);
+        return $this->matchingByName(Sport::query(), $name)->first();
     }
 
     /**
@@ -142,6 +171,16 @@ class VenueSearchTool
         }
 
         return true;
+    }
+
+    /**
+     * An optional argument, trimmed; null when it is missing or blank.
+     */
+    private function filledArgument(array $arguments, string $key): ?string
+    {
+        $value = trim($arguments[$key] ?? '');
+
+        return $value === '' ? null : $value;
     }
 
     /**
@@ -164,20 +203,47 @@ class VenueSearchTool
             ->all();
     }
 
-    private function findByName(Builder $query, ?string $name)
+    /**
+     * Rows whose Arabic or English name equals $name once both are normalised. The SPORT
+     * and CITY tables are small, so they are compared in PHP and behave the same on every database.
+     */
+    private function matchingByName(Builder $query, ?string $name): Collection
     {
-        if (! $name) {
+        $wanted = TextNormalizer::normalize($name ?? '');
+
+        if ($wanted === '') {
+            return new Collection;
+        }
+
+        return $query->orderBy('id')->get()
+            ->filter(fn ($row) => TextNormalizer::normalize($row->name_ar) === $wanted
+                || TextNormalizer::normalize($row->name_en) === $wanted)
+            ->values();
+    }
+
+    /**
+     * LIKE pattern for the free-text area. Wildcards typed by the player are escaped
+     * ("!" is the escape character because it means the same on MySQL and SQLite),
+     * harakat are dropped, and each letter that players swap (ا/أ/إ/آ, ة/ه, ى/ي)
+     * becomes the single-character wildcard, so "الشجاعيه" finds "الشجاعية".
+     * Returns null when nothing but those letters is left, as it would match any area.
+     */
+    private function areaPattern(string $area): ?string
+    {
+        $area = trim(TextNormalizer::stripDiacritics($area));
+
+        if (trim(str_replace(TextNormalizer::AMBIGUOUS_LETTERS, '', $area)) === '') {
             return null;
         }
 
-        return $query->where('name_ar', $name)
-            ->orWhereRaw('LOWER(name_en) = ?', [mb_strtolower($name)])
-            ->first();
+        $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $area);
+
+        return '%'.str_replace(TextNormalizer::AMBIGUOUS_LETTERS, '_', $escaped).'%';
     }
 
     private function parseDate(?string $date): ?string
     {
-        if (! $date || ! preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date, $m)
+        if (! $date || ! preg_match('/^(\d{4})-(\d{2})-(\d{2})$/D', $date, $m)
             || ! checkdate((int) $m[2], (int) $m[3], (int) $m[1])) {
             return null;
         }
@@ -187,7 +253,7 @@ class VenueSearchTool
 
     private function parseHour(?string $hour): ?string
     {
-        if (! $hour || ! preg_match('/^([01]?\d|2[0-3]):([0-5]\d)$/', $hour, $m)) {
+        if (! $hour || ! preg_match('/^([01]?\d|2[0-3]):([0-5]\d)$/D', $hour, $m)) {
             return null;
         }
 
