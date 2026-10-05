@@ -14,7 +14,13 @@ class Venue extends Model
 {
       use SoftDeletes;
     protected $guarded = [];
-
+    protected $casts = [
+        'latitude' => 'float',
+        'longitude' => 'float',
+        'length_m' => 'float',
+        'width_m' => 'float',
+        'min_hourly_price' => 'float',
+    ];
 
     /**
      * The user who owns this venue.
