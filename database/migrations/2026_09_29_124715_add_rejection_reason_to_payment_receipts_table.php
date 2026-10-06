@@ -8,15 +8,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('payment_receipts', function (Blueprint $table) {
-            $table->text('rejection_reason')->nullable()->after('verified_at');
-        });
+        if (!Schema::hasColumn('payment_receipts', 'rejection_reason')) {
+            Schema::table('payment_receipts', function (Blueprint $table) {
+                $table->text('rejection_reason')->nullable()->after('verified_at');
+            });
+        }
     }
 
     public function down(): void
     {
-        Schema::table('payment_receipts', function (Blueprint $table) {
-            $table->dropColumn('rejection_reason');
-        });
+        if (Schema::hasColumn('payment_receipts', 'rejection_reason')) {
+            Schema::table('payment_receipts', function (Blueprint $table) {
+                $table->dropColumn('rejection_reason');
+            });
+        }
     }
 };
