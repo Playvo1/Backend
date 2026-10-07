@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             CitySeeder::class,
             InitialAdminSeeder::class,
+            SportSeeder::class,
 
         ]);
 
