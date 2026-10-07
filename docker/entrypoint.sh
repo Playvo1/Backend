@@ -24,6 +24,7 @@ php artisan view:cache
 php artisan migrate --force
 php artisan db:seed --class=RoleSeeder --force
 php artisan db:seed --class=InitialAdminSeeder --force
+php artisan db:seed --class=CitySeeder --force
 php artisan storage:link || true
 
 # Runs scheduled commands (bookings:expire every minute) alongside the web server.
