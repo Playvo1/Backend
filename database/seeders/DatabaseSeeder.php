@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             CitySeeder::class,
             InitialAdminSeeder::class,
-
+            SportSeeder::class,
         ]);
 
         // User::factory(10)->create();
