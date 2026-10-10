@@ -172,6 +172,18 @@ class VenueSearchToolTest extends TestCase
         $this->assertTrue($literal->is($this->search(['area' => '5%_!A'])));
     }
 
+    public function test_a_removed_venue_is_never_suggested(): void
+    {
+        $removed = $this->venue(['name_en' => 'Removed Court', 'avg_rating' => 5]);
+        $this->slot($removed);
+        $removed->delete();
+
+        $kept = $this->venue(['name_en' => 'Kept Court', 'avg_rating' => 3]);
+        $this->slot($kept);
+
+        $this->assertSame($kept->id, $this->search()?->venue_id);
+    }
+
     public function test_prefers_the_higher_rated_then_cheaper_venue(): void
     {
         $this->slot($this->venue(['avg_rating' => 3]), ['hourly_price' => 20]);

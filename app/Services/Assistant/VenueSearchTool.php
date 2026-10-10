@@ -118,6 +118,8 @@ class VenueSearchTool
                 ->orWhere('time_slots.end_time', self::MIDNIGHT))
             ->where('time_slots.status', 'available')
             ->where('venues.status', 'active')
+            // The join bypasses Venue's SoftDeletes scope, so removed venues are excluded here.
+            ->whereNull('venues.deleted_at')
             ->when($date === $today, fn (Builder $q) => $q->where('time_slots.start_time', '>', $now->format('H:i:s')));
 
         $city = $this->filledArgument($arguments, 'city');
