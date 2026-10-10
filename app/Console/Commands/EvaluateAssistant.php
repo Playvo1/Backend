@@ -22,6 +22,7 @@ class EvaluateAssistant extends Command
         {--fallback : Use only the rule-based fallback parser, never Gemini}
         {--group=all : Which cases to run: tuning, held_out, unseen_r1, blind_r2 or all}
         {--min=90 : Minimum accuracy (%) every reported group must reach for the command to succeed}
+        {--pace=0 : Seconds to wait between Gemini calls, to stay under the per-minute limit (4 for 15 a minute)}
         {--json= : Also write the full results as JSON to this path (a relative one goes under storage/app/assistant-eval/)}';
 
     protected $description = 'Measure the booking assistant against the approved test-case set';
@@ -45,6 +46,14 @@ class EvaluateAssistant extends Command
             return self::INVALID;
         }
 
+        $pace = $this->option('pace');
+
+        if (! is_numeric($pace) || (float) $pace < 0 || (float) $pace > 60) {
+            $this->error('--pace must be a number of seconds from 0 to 60.');
+
+            return self::INVALID;
+        }
+
         if (! extension_loaded('pdo_sqlite')) {
             $this->error('The pdo_sqlite PHP extension is required to run the evaluation.');
 
@@ -54,10 +63,10 @@ class EvaluateAssistant extends Command
         $useGemini = ! $this->option('fallback');
         $this->describeMode($useGemini, $gemini, $evaluator);
 
-        $result = $this->inScratchDatabase(function () use ($evaluator, $useGemini, $group) {
+        $result = $this->inScratchDatabase(function () use ($evaluator, $useGemini, $group, $pace) {
             $evaluator->seedReferenceData();
 
-            return $evaluator->evaluate($useGemini, $group);
+            return $evaluator->evaluate($useGemini, $group, (float) $pace);
         });
 
         $passed = $this->report($result, $useGemini, (float) $min);

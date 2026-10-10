@@ -11,6 +11,7 @@ use App\Models\Venue;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Sleep;
 use Illuminate\Support\Str;
 
 /**
@@ -113,12 +114,17 @@ class AssistantEvaluator
     /**
      * @return array{groups: array<string, array<string, mixed>>, cases: list<array<string, mixed>>, gemini_answers: int}
      */
-    public function evaluate(bool $useGemini, string $group = 'all'): array
+    public function evaluate(bool $useGemini, string $group = 'all', float $pace = 0): array
     {
         $now = $this->referenceNow();
         $results = [];
 
-        foreach ($this->cases($group) as $case) {
+        foreach ($this->cases($group) as $index => $case) {
+            // The free tier limits Gemini requests per minute, so live runs can be spaced out.
+            if ($useGemini && $pace > 0 && $index > 0) {
+                Sleep::for((int) round($pace * 1000))->milliseconds();
+            }
+
             $answer = $this->assistant->respond($case['query'], $now, $useGemini);
             $actual = $this->actual($answer);
             $checks = $this->checks($case['expected'], $actual);

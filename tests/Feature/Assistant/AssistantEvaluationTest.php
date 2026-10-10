@@ -10,6 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Sleep;
 use Tests\TestCase;
 
 class AssistantEvaluationTest extends TestCase
@@ -284,6 +285,38 @@ class AssistantEvaluationTest extends TestCase
         Http::assertSentCount($heldOut);
 
         $this->artisan('assistant:evaluate --group=everything')->assertExitCode(2);
+    }
+
+    public function test_pace_waits_between_gemini_calls(): void
+    {
+        Sleep::fake();
+        config(['services.gemini.key' => 'test-key']);
+        $this->fakeGeminiAnsweringAsExpected();
+        $heldOut = $this->cases('held_out')->count();
+
+        $this->artisan('assistant:evaluate --group=held_out --pace=4')->assertSuccessful();
+
+        // No wait before the first case, then one 4-second wait before each later one.
+        Sleep::assertSleptTimes($heldOut - 1);
+        Sleep::assertSequence(array_fill(0, $heldOut - 1, Sleep::for(4000)->milliseconds()));
+    }
+
+    public function test_pace_never_waits_without_gemini(): void
+    {
+        Sleep::fake();
+
+        $this->artisan('assistant:evaluate --fallback --group=held_out --pace=4')->assertSuccessful();
+
+        Sleep::assertNeverSlept();
+    }
+
+    public function test_pace_must_be_a_number_of_seconds(): void
+    {
+        foreach (['abc', '-1', '61'] as $pace) {
+            $this->artisan('assistant:evaluate', ['--fallback' => true, '--pace' => $pace])
+                ->expectsOutputToContain('--pace must be a number of seconds from 0 to 60')
+                ->assertExitCode(2);
+        }
     }
 
     public function test_below_the_minimum_the_command_fails_and_lists_the_misses(): void
