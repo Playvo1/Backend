@@ -57,7 +57,7 @@ class AssistantConfigTest extends TestCase
         $services = $this->services();
 
         $this->assertSame(8, $services['gemini']['timeout']);
-        $this->assertSame('gemini-2.5-flash', $services['gemini']['model']);
+        $this->assertSame('gemini-3.5-flash-lite', $services['gemini']['model']);
         $this->assertSame('https://generativelanguage.googleapis.com/v1beta', $services['gemini']['base_url']);
         $this->assertSame(20, $services['assistant']['hourly_limit']);
     }
@@ -66,13 +66,13 @@ class AssistantConfigTest extends TestCase
     {
         $this->setVariable('GEMINI_TIMEOUT', '5');
         $this->setVariable('ASSISTANT_HOURLY_LIMIT', '30');
-        $this->setVariable('GEMINI_MODEL', 'gemini-2.5-flash-lite');
+        $this->setVariable('GEMINI_MODEL', 'gemini-3.8-flash');
 
         $services = $this->services();
 
         $this->assertSame(5, $services['gemini']['timeout']);
         $this->assertSame(30, $services['assistant']['hourly_limit']);
-        $this->assertSame('gemini-2.5-flash-lite', $services['gemini']['model']);
+        $this->assertSame('gemini-3.8-flash', $services['gemini']['model']);
     }
 
     public function test_tests_never_have_a_gemini_key(): void
