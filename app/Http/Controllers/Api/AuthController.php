@@ -74,80 +74,107 @@ class AuthController extends Controller
 
     }
 
-    public function googleAuth(googleAuthRequest $request)
-    {
-        $client = new GoogleClient([
-            'client_id' => config('services.google.client_id'),
-        ]);
+public function googleAuth(googleAuthRequest $request)
+{
+    $mode = $request->input('mode');
 
-        try {
-            $payload = $client->verifyIdToken($request->id_token);
-        } catch (\Throwable $e) {
-            $payload = false;
-        }
+    if (! in_array($mode, ['register', 'login'], true)) {
+        return $this->apiResponse(
+            false,
+            422,
+            'Mode must be register or login.',
+            null,
+            ['mode' => ['The mode field must be register or login.']]
+        );
+    }
 
-        if (! $payload) {
+    $client = new GoogleClient([
+        'client_id' => config('services.google.client_id'),
+    ]);
+
+    try {
+        $payload = $client->verifyIdToken($request->id_token);
+    } catch (\Throwable $e) {
+        $payload = false;
+    }
+
+    if (
+        ! $payload ||
+        empty($payload['sub']) ||
+        empty($payload['email']) ||
+        empty($payload['email_verified'])
+    ) {
+        return $this->apiResponse(
+            false,
+            401,
+            'Invalid Google token or unverified email.'
+        );
+    }
+
+    $googleId = $payload['sub'];
+    $email = $payload['email'];
+    $name = $payload['name'] ?? 'Google User';
+
+    $user = User::where('google_id', $googleId)->first();
+
+    if ($mode === 'register') {
+        if ($user || User::where('email', $email)->exists()) {
             return $this->apiResponse(
                 false,
-                401,
-                'Invalid Google token.'
+                409,
+                'This account is already registered. Please log in.'
             );
         }
 
-        $googleId = $payload['sub'];
-        $email = $payload['email'];
-        $name = $payload['name'] ?? 'Google User';
+        $user = User::create([
+            'name' => $name,
+            'email' => $email,
+            'password' => null,
+            'google_id' => $googleId,
+            'email_verified_at' => now(),
+            'status' => 'active',
+        ]);
 
-        // البحث عن حساب Google
-        $user = User::where('google_id', $googleId)->first();
-
+        $user->assignRole('player');
+    } else {
         if (! $user) {
-
-            // البحث عن حساب بنفس الإيميل
-            $user = User::where('email', $email)->first();
-
-            if ($user) {
-
-                // ربط حساب Google بالحساب الموجود
-                $user->update([
-                    'google_id' => $googleId,
-                    'email_verified_at' => $user->email_verified_at ?? now(),
-                ]);
-
-            } else {
-
-                // إنشاء مستخدم جديد
-                $user = User::create([
-                    'name' => $name,
-                    'email' => $email,
-                    'password' => null,
-                    'google_id' => $googleId,
-                    'email_verified_at' => now(),
-                    'status' => 'active',
-                ]);
-
-                $user->assignRole('player');
-            }
+            return $this->apiResponse(
+                false,
+                404,
+                'Google account not found. Please register first.'
+            );
         }
+    }
 
-        // إنشاء Sanctum token
-        $token = $user->createToken('auth_token')->plainTextToken;
-
+    if ($user->status !== 'active') {
         return $this->apiResponse(
-            true,
-            200,
-            'Logged in',
-            [
-                'token' => $token,
-                'user' => [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    'roles' => $user->getRoleNames(),
-                ],
-            ]
+            false,
+            403,
+            'This account is not active.'
         );
     }
+
+    $token = $user->createToken('auth_token')->plainTextToken;
+
+    return $this->apiResponse(
+        true,
+        200,
+        $mode === 'register'
+            ? 'Google account created successfully.'
+            : 'Logged in successfully.',
+        [
+            'action' => $mode,
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'roles' => $user->getRoleNames(),
+            ],
+        ]
+    );
+}
+
 
     public function sendOtp(Request $request)
     {

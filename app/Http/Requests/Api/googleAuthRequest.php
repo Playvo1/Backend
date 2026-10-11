@@ -2,8 +2,7 @@
 
 namespace App\Http\Requests\Api;
 
-
- use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Foundation\Http\FormRequest;
 
 class googleAuthRequest extends FormRequest
 {
@@ -16,6 +15,7 @@ class googleAuthRequest extends FormRequest
     {
         return [
             'id_token' => ['required', 'string'],
+            'mode' => ['required', 'string', 'in:register,login'],
         ];
     }
 }
