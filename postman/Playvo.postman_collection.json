@@ -2017,7 +2017,6 @@
           "response": []
         },
         {
-
           "name": "updatevenue",
           "request": {
             "auth": {
@@ -2026,7 +2025,6 @@
                   "key": "token",
                   "type": "string",
                   "value": "{{vault:auth_secret_0yzj}}"
-                  "value": "{{auth_secret_0yzj}}"
                 }
               ],
               "type": "bearer"
@@ -2224,11 +2222,7 @@
                 {
                   "key": "token",
                   "type": "string",
-<<<<<<< HEAD
                   "value": "{{vault:auth_secret_0yzj}}"
-=======
-                  "value": "{{auth_secret_0yzj}}"
->>>>>>> origin/main
                 }
               ],
               "type": "bearer"
@@ -2441,11 +2435,7 @@
                 {
                   "key": "token",
                   "type": "string",
-
                   "value": "{{vault:auth_secret_196j}}"
-
-                  "value": "{{auth_secret_196j}}"
-
                 }
               ],
               "type": "bearer"
@@ -2635,10 +2625,7 @@
                 {
                   "key": "token",
                   "type": "string",
-
                   "value": "{{vault:auth_secret_196j}}"
-                  "value": "{{auth_secret_196j}}"
-
                 }
               ],
               "type": "bearer"
@@ -2826,7 +2813,6 @@
                   "key": "token",
                   "type": "string",
                   "value": "{{vault:auth_secret_06qb}}"
-                  "value": "{{auth_secret_06qb}}"
                 }
               ],
               "type": "bearer"
@@ -3136,8 +3122,6 @@
                   "key": "token",
                   "type": "string",
                   "value": "{{vault:auth_secret_0oth}}"
-                  "value": "{{auth_secret_0oth}}"
-
                 }
               ],
               "type": "bearer"
@@ -3399,7 +3383,6 @@
                   "key": "token",
                   "type": "string",
                   "value": "{{vault:auth_secret_0oth}}"
-                  "value": "{{auth_secret_0oth}}"
                 }
               ],
               "type": "bearer"
@@ -3519,7 +3502,6 @@
                   "key": "token",
                   "type": "string",
                   "value": "{{vault:auth_secret_1a17}}"
-                  "value": "{{auth_secret_1a17}}"
                 }
               ],
               "type": "bearer"
@@ -3618,7 +3600,6 @@
                   "key": "token",
                   "type": "string",
                   "value": "{{vault:auth_secret_06z0}}"
-                  "value": "{{auth_secret_06z0}}"
                 }
               ],
               "type": "bearer"
@@ -3811,10 +3792,7 @@
                 {
                   "key": "token",
                   "type": "string",
-<<<<<<< HEAD
                   "value": "{{vault:auth_secret_0bhp}}"
-=======
-                  "value": "{{auth_secret_0bhp}}"
                 }
               ],
               "type": "bearer"
@@ -4001,7 +3979,6 @@
                   "key": "token",
                   "type": "string",
                   "value": "{{vault:auth_secret_0ppw}}"
-                  "value": "{{auth_secret_0ppw}}"
                 }
               ],
               "type": "bearer"
@@ -4195,7 +4172,6 @@
                   "key": "token",
                   "type": "string",
                   "value": "{{vault:auth_secret_11od}}"
-                  "value": "{{auth_secret_11od}}"
                 }
               ],
               "type": "bearer"
@@ -4236,10 +4212,7 @@
                 {
                   "key": "token",
                   "type": "string",
-
                   "value": "{{vault:auth_secret_11od}}"
-
-                  "value": "{{auth_secret_11od}}"
                 }
               ],
               "type": "bearer"
@@ -4399,10 +4372,7 @@
                 {
                   "key": "token",
                   "type": "string",
-
                   "value": "{{vault:auth_secret_11od}}"
-                  "value": "{{auth_secret_11od}}"
-
                 }
               ],
               "type": "bearer"
@@ -4606,217 +4576,8 @@
         }
       ],
       "name": "Admin"
-    },
-    {
-      "name": "Assistant",
-      "item": [
-        {
-          "name": "assistant query (English)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"query_text\": \"Football court tomorrow at 6pm near Gaza City\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{playvo}}/api/v1/assistant/query",
-              "host": [
-                "{{playvo}}"
-              ],
-              "raw": "{{playvo}}/api/v1/admin/payment-receipts/1/reject"
-            }
-          },
-          "response": [
-            {
-              "_postman_previewlanguage": "json",
-              "body": "{\n  \"success\": true,\n  \"message\": \"Payment receipt rejected.\",\n  \"data\": {\n    \"receipt_id\": 2,\n    \"reason\": \"Receipt image is unclear\"\n  },\n  \"errors\": null\n}",
-              "code": 200,
-              "cookie": [],
-              "header": [
-                {
-                  "key": "host",
-                  "value": "127.0.0.1:8000"
-                },
-                {
-                  "key": "connection",
-                  "value": "close"
-                },
-                {
-                  "key": "x-powered-by",
-                  "value": "PHP/8.2.12"
-                },
-                {
-                  "key": "cache-control",
-                  "value": "no-cache, private"
-                },
-                {
-                  "key": "date",
-                  "value": "Thu, 01 Oct 2026 19:15:33 GMT"
-                },
-                {
-                  "key": "content-type",
-                  "value": "application/json"
-                },
-                {
-                  "key": "access-control-allow-origin",
-                  "value": "*"
-                }
-              ],
-              "name": "success true",
-              "originalRequest": {
-                "body": {
-                  "mode": "raw",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  },
-                  "raw": "{\r\n    \"reason\": \"Receipt image is unclear\"\r\n}"
-                },
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "method": "PUT",
-                "url": {
-                  "host": [
-                    "{{playvo}}"
-                  ],
-                  "path": [
-                    "api",
-                    "v1",
-                    "admin",
-                    "payment-receipts",
-                    "2",
-                    "reject"
-                  ],
-                  "raw": "{{playvo}}/api/v1/admin/payment-receipts/2/reject"
-                }
-              },
-              "status": "OK"
-            },
-            {
-              "_postman_previewlanguage": "json",
-              "body": "{\n  \"success\": false,\n  \"data\": null,\n  \"message\": \"Resource not found.\",\n  \"errors\": null\n}",
-              "code": 404,
-              "cookie": [],
-              "header": [
-                {
-                  "key": "host",
-                  "value": "127.0.0.1:8000"
-                },
-                {
-                  "key": "connection",
-                  "value": "close"
-                },
-                {
-                  "key": "x-powered-by",
-                  "value": "PHP/8.2.12"
-                },
-                {
-                  "key": "cache-control",
-                  "value": "no-cache, private"
-                },
-                {
-                  "key": "date",
-                  "value": "Thu, 01 Oct 2026 19:42:45 GMT"
-                },
-                {
-                  "key": "content-type",
-                  "value": "application/json"
-                },
-                {
-                  "key": "access-control-allow-origin",
-                  "value": "*"
-                }
-              ],
-              "name": "success false",
-              "originalRequest": {
-                "body": {
-                  "mode": "raw",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  },
-                  "raw": "{\r\n    \"reason\": \"Receipt image is unclear\"\r\n}"
-                },
-                "header": [
-                  {
-                    "key": "Accept",
-                    "value": "application/json"
-                  },
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "method": "PUT",
-                "url": {
-                  "host": [
-                    "{{playvo}}"
-                  ],
-                  "path": [
-                    "api",
-                    "v1",
-                    "admin",
-                    "payment-receipts",
-                    "255",
-                    "reject"
-                  ],
-                  "raw": "{{playvo}}/api/v1/admin/payment-receipts/255/reject"
-                }
-              },
-              "status": "Not Found"
-            }
-          ]
-        },
-        {
-          "name": "dashbord",
-          "request": {
-            "header": [],
-            "method": "GET",
-            "url": {
-              "raw": ""
-            }
-          },
-          "response": []
-        }
-      ],
-      "name": "Admin"
     }
-    ],
+  ],
   "variable": [
     {
       "key": "playvo",
