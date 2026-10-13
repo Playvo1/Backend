@@ -12,6 +12,8 @@ use App\Http\Requests\Api\UpdateVenueRequest;
 use App\Models\Image;
 use Illuminate\Support\Facades\Storage;
 use App\Models\User;
+use App\Models\VenueRating;
+
 class VenueController extends Controller
 {
     public function index(VenueFilterRequest $request): JsonResponse
@@ -250,4 +252,45 @@ public function uploadImage(Request $request, int $id): JsonResponse
         'errors' => null,
     ], 201);
 }
+
+public function ratings(Request $request, int $id): JsonResponse
+{
+    $user = $request->user();
+
+    $venue = Venue::where('id', $id)
+        ->where('owner_id', $user->id)
+        ->first();
+
+    if (!$venue) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'Venue not found or access denied.',
+            'errors' => null,
+        ], 404);
+    }
+
+    $ratings = VenueRating::where('venue_id', $venue->id)
+        ->latest()
+        ->paginate(10);
+
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'venue' => [
+                'id' => $venue->id,
+                'name' => $venue->name_en,
+                'avg_rating' => $venue->avg_rating,
+                'ratings_count' => VenueRating::where(
+                    'venue_id',
+                    $venue->id
+                )->count(),
+            ],
+            'ratings' => $ratings,
+        ],
+        'message' => 'Venue ratings retrieved successfully.',
+        'errors' => null,
+    ]);
+}
+
 }

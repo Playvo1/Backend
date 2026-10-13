@@ -81,10 +81,8 @@ Route::prefix('v1')->group(function () {
 
             Route::put('owner/time-slots/{id}',   [TimeSlotController::class, 'update']);
 
-            Route::get(
-                'owner/bookings',
-                [OwnerBookingController::class, 'index']
-            );
+            Route::get( 'owner/venues/{id}/ratings', [VenueController::class, 'ratings']);
+            Route::get(  'owner/bookings',  [OwnerBookingController::class, 'index'] );
         });
 
 
