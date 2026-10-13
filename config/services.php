@@ -28,17 +28,33 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
-'slack' => [
-    'notifications' => [
-        'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
-        'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
+    'slack' => [
+        'notifications' => [
+            'bot_user_oauth_token' => env('SLACK_BOT_USER_OAUTH_TOKEN'),
+            'channel' => env('SLACK_BOT_USER_DEFAULT_CHANNEL'),
+        ],
     ],
-],
 
-'google' => [
-    'client_id' => env('GOOGLE_CLIENT_ID'),
-],
-'firebase' => [
-    'credentials' => storage_path('app/firebase/palyvo-cc91c-firebase-adminsdk-fbsvc-e36e3ac9fb.json'),
-],
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+    ],
+
+    'firebase' => [
+        'credentials' => storage_path('app/firebase/palyvo-cc91c-firebase-adminsdk-fbsvc-e36e3ac9fb.json'),
+    ],
+
+    // Booking assistant (US-4.5). Without a key the rule-based parser answers alone.
+    // "?:" so an empty value in the environment (e.g. GEMINI_TIMEOUT=) keeps the default.
+    'gemini' => [
+        'key' => env('GEMINI_API_KEY'),
+        'model' => env('GEMINI_MODEL') ?: 'gemini-3.5-flash-lite',
+        'base_url' => env('GEMINI_BASE_URL') ?: 'https://generativelanguage.googleapis.com/v1beta',
+        'timeout' => (int) (env('GEMINI_TIMEOUT') ?: 8),
+    ],
+
+    // Guidelines 2.4: assistant questions per player per hour.
+    'assistant' => [
+        'hourly_limit' => (int) (env('ASSISTANT_HOURLY_LIMIT') ?: 20),
+    ],
+
 ];

@@ -68,6 +68,14 @@ return [
     'timezone' => 'UTC',
 
     /*
+    | Players live in this timezone. Stored timestamps stay in UTC (above); this one
+    | decides what "today" means for the booking assistant, whose slot dates and
+    | times are local wall-clock values.
+    */
+
+    'local_timezone' => env('APP_LOCAL_TIMEZONE', 'Asia/Gaza'),
+
+    /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration
     |--------------------------------------------------------------------------
