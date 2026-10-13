@@ -172,6 +172,18 @@ class VenueSearchToolTest extends TestCase
         $this->assertTrue($literal->is($this->search(['area' => '5%_!A'])));
     }
 
+    public function test_a_removed_venue_is_never_suggested(): void
+    {
+        $removed = $this->venue(['name_en' => 'Removed Court', 'avg_rating' => 5]);
+        $this->slot($removed);
+        $removed->delete();
+
+        $kept = $this->venue(['name_en' => 'Kept Court', 'avg_rating' => 3]);
+        $this->slot($kept);
+
+        $this->assertSame($kept->id, $this->search()?->venue_id);
+    }
+
     public function test_prefers_the_higher_rated_then_cheaper_venue(): void
     {
         $this->slot($this->venue(['avg_rating' => 3]), ['hourly_price' => 20]);
@@ -295,6 +307,20 @@ class VenueSearchToolTest extends TestCase
         $this->assertTrue($slot->is($this->search(['city' => '  ', 'area' => ' '])));
         $this->assertNull($this->search(['area' => 'ه']));
         $this->assertNull($this->search(['area' => 'ا ي']));
+    }
+
+    public function test_hyphens_and_spaces_in_the_area_match_either(): void
+    {
+        $hyphen = $this->slot($this->venue(['avg_rating' => 5]));
+        $spaced = $this->slot($this->venue(['area_en' => 'Tal al Hawa', 'avg_rating' => 3]));
+
+        $this->assertTrue($hyphen->is($this->search(['area' => 'Al Jalaa'])));
+        $this->assertTrue($hyphen->is($this->search(['area' => 'al-jalaa'])));
+        $this->assertTrue($spaced->is($this->search(['area' => 'Tal al-Hawa'])));
+        $this->assertTrue($spaced->is($this->search(['area' => 'tal  al   hawa'])));
+        $this->assertNull($this->search(['area' => 'AlJalaa']));
+        $this->assertNull($this->search(['area' => '-']));
+        $this->assertNull($this->search(['area' => ' - - ']));
     }
 
     public function test_trailing_newlines_are_rejected(): void

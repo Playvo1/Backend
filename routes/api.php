@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\AdminAccountController;
 use App\Http\Controllers\Api\AdminDashboardController;
 use App\Http\Controllers\Api\AdminPaymentReceiptController;
 use App\Http\Controllers\Api\AdminVenueController;
+use App\Http\Controllers\Api\AssistantController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BookingController;
 use App\Http\Controllers\Api\DeviceTokenController;
@@ -89,6 +90,9 @@ Route::prefix('v1')->group(function () {
 
 
 
+
+    Route::post('assistant/query', [AssistantController::class, 'query'])
+        ->middleware(['auth:sanctum', 'role:player', 'throttle:assistant']);
 
     Route::prefix('admin')
         ->middleware(['auth:sanctum', 'role:admin'])

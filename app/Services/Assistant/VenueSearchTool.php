@@ -30,7 +30,10 @@ class VenueSearchTool
 {
     public const NAME = 'search_available_venues';
 
-    private const ARGUMENTS = ['sport', 'date', 'hour', 'city', 'area'];
+    /**
+     * Every argument the declaration offers.
+     */
+    public const ARGUMENTS = ['sport', 'date', 'hour', 'city', 'area'];
 
     /**
      * A slot that ends at midnight is stored with this end_time.
@@ -115,6 +118,8 @@ class VenueSearchTool
                 ->orWhere('time_slots.end_time', self::MIDNIGHT))
             ->where('time_slots.status', 'available')
             ->where('venues.status', 'active')
+            // The join bypasses Venue's SoftDeletes scope, so removed venues are excluded here.
+            ->whereNull('venues.deleted_at')
             ->when($date === $today, fn (Builder $q) => $q->where('time_slots.start_time', '>', $now->format('H:i:s')));
 
         $city = $this->filledArgument($arguments, 'city');
@@ -157,6 +162,14 @@ class VenueSearchTool
     public function findSport(?string $name): ?Sport
     {
         return $this->matchingByName(Sport::query(), $name)->first();
+    }
+
+    /**
+     * The first seeded city with this name (the search itself uses every city sharing it).
+     */
+    public function findCity(?string $name): ?City
+    {
+        return $this->matchingByName(City::query(), $name)->first();
     }
 
     /**
@@ -224,21 +237,23 @@ class VenueSearchTool
     /**
      * LIKE pattern for the free-text area. Wildcards typed by the player are escaped
      * ("!" is the escape character because it means the same on MySQL and SQLite),
-     * harakat are dropped, and each letter that players swap (ا/أ/إ/آ, ة/ه, ى/ي)
-     * becomes the single-character wildcard, so "الشجاعيه" finds "الشجاعية".
-     * Returns null when nothing but those letters is left, as it would match any area.
+     * harakat are dropped, and each letter that players swap (ا/أ/إ/آ, ة/ه, ى/ي), each
+     * hyphen and each space becomes the single-character wildcard, so "الشجاعيه" finds
+     * "الشجاعية" and "Al Jalaa" finds "Al-Jalaa".
+     * Returns null when only those characters are left, as it would match any area.
      */
     private function areaPattern(string $area): ?string
     {
-        $area = trim(TextNormalizer::stripDiacritics($area));
+        $area = preg_replace('/\s+/u', ' ', trim(TextNormalizer::stripDiacritics($area))) ?? '';
+        $interchangeable = [...TextNormalizer::AMBIGUOUS_LETTERS, '-', ' '];
 
-        if (trim(str_replace(TextNormalizer::AMBIGUOUS_LETTERS, '', $area)) === '') {
+        if (str_replace($interchangeable, '', $area) === '') {
             return null;
         }
 
         $escaped = str_replace(['!', '%', '_'], ['!!', '!%', '!_'], $area);
 
-        return '%'.str_replace(TextNormalizer::AMBIGUOUS_LETTERS, '_', $escaped).'%';
+        return '%'.str_replace($interchangeable, '_', $escaped).'%';
     }
 
     private function parseDate(?string $date): ?string
