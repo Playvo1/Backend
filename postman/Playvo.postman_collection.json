@@ -2006,6 +2006,17 @@
     {
       "item": [
         {
+          "name": "myvenues",
+          "request": {
+            "header": [],
+            "method": "GET",
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        },
+        {
           "name": "updatevenue",
           "request": {
             "auth": {
@@ -2013,7 +2024,7 @@
                 {
                   "key": "token",
                   "type": "string",
-                  "value": "{{auth_secret_0yzj}}"
+                  "value": "{{vault:auth_secret_0yzj}}"
                 }
               ],
               "type": "bearer"
@@ -2211,7 +2222,7 @@
                 {
                   "key": "token",
                   "type": "string",
-                  "value": "{{auth_secret_0yzj}}"
+                  "value": "{{vault:auth_secret_0yzj}}"
                 }
               ],
               "type": "bearer"
@@ -2424,7 +2435,7 @@
                 {
                   "key": "token",
                   "type": "string",
-                  "value": "{{auth_secret_196j}}"
+                  "value": "{{vault:auth_secret_196j}}"
                 }
               ],
               "type": "bearer"
@@ -2614,7 +2625,7 @@
                 {
                   "key": "token",
                   "type": "string",
-                  "value": "{{auth_secret_196j}}"
+                  "value": "{{vault:auth_secret_196j}}"
                 }
               ],
               "type": "bearer"
@@ -2801,7 +2812,7 @@
                 {
                   "key": "token",
                   "type": "string",
-                  "value": "{{auth_secret_06qb}}"
+                  "value": "{{vault:auth_secret_06qb}}"
                 }
               ],
               "type": "bearer"
@@ -3110,7 +3121,7 @@
                 {
                   "key": "token",
                   "type": "string",
-                  "value": "{{auth_secret_0oth}}"
+                  "value": "{{vault:auth_secret_0oth}}"
                 }
               ],
               "type": "bearer"
@@ -3371,7 +3382,7 @@
                 {
                   "key": "token",
                   "type": "string",
-                  "value": "{{auth_secret_0oth}}"
+                  "value": "{{vault:auth_secret_0oth}}"
                 }
               ],
               "type": "bearer"
@@ -3490,7 +3501,7 @@
                 {
                   "key": "token",
                   "type": "string",
-                  "value": "{{auth_secret_1a17}}"
+                  "value": "{{vault:auth_secret_1a17}}"
                 }
               ],
               "type": "bearer"
@@ -3588,7 +3599,7 @@
                 {
                   "key": "token",
                   "type": "string",
-                  "value": "{{auth_secret_06z0}}"
+                  "value": "{{vault:auth_secret_06z0}}"
                 }
               ],
               "type": "bearer"
@@ -3781,7 +3792,7 @@
                 {
                   "key": "token",
                   "type": "string",
-                  "value": "{{auth_secret_0bhp}}"
+                  "value": "{{vault:auth_secret_0bhp}}"
                 }
               ],
               "type": "bearer"
@@ -3967,7 +3978,7 @@
                 {
                   "key": "token",
                   "type": "string",
-                  "value": "{{auth_secret_0ppw}}"
+                  "value": "{{vault:auth_secret_0ppw}}"
                 }
               ],
               "type": "bearer"
@@ -4160,7 +4171,7 @@
                 {
                   "key": "token",
                   "type": "string",
-                  "value": "{{auth_secret_11od}}"
+                  "value": "{{vault:auth_secret_11od}}"
                 }
               ],
               "type": "bearer"
@@ -4201,7 +4212,7 @@
                 {
                   "key": "token",
                   "type": "string",
-                  "value": "{{auth_secret_11od}}"
+                  "value": "{{vault:auth_secret_11od}}"
                 }
               ],
               "type": "bearer"
@@ -4361,7 +4372,7 @@
                 {
                   "key": "token",
                   "type": "string",
-                  "value": "{{auth_secret_11od}}"
+                  "value": "{{vault:auth_secret_11od}}"
                 }
               ],
               "type": "bearer"
@@ -4565,109 +4576,8 @@
         }
       ],
       "name": "Admin"
-    },
-    {
-      "name": "Assistant",
-      "item": [
-        {
-          "name": "assistant query (English)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"query_text\": \"Football court tomorrow at 6pm near Gaza City\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{playvo}}/api/v1/assistant/query",
-              "host": [
-                "{{playvo}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "assistant",
-                "query"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "assistant query (Arabic)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"query_text\": \"بدي ملعب كرة قدم بكرا الساعة 6 مساءً بالجلاء\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{playvo}}/api/v1/assistant/query",
-              "host": [
-                "{{playvo}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "assistant",
-                "query"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
     }
-    ],
+  ],
   "variable": [
     {
       "key": "playvo",
