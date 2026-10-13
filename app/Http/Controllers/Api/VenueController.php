@@ -292,5 +292,17 @@ public function ratings(Request $request, int $id): JsonResponse
         'errors' => null,
     ]);
 }
+public function myVenues(Request $request)
+{
+    $venues = Venue::where('owner_id', $request->user()->id)
+        ->latest()
+        ->get();
 
+    return response()->json([
+        'success' => true,
+        'data' => $venues,
+        'message' => 'Owner venues retrieved successfully',
+        'errors' => null,
+    ]);
+}
 }
