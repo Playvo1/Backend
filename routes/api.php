@@ -70,6 +70,7 @@ Route::prefix('v1')->group(function () {
     Route::prefix('venue_owner')
         ->middleware(['auth:sanctum', 'role:venue_owner'])
         ->group(function () {
+            Route::get('/owner/myvenues',[VenueController::class, 'myVenues']);
 
             Route::put('owner/venues/{id}',  [VenueController::class, 'update']);
 
