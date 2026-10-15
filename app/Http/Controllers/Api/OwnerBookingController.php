@@ -10,86 +10,95 @@ use Illuminate\Http\Request;
 
 class OwnerBookingController extends Controller
 {
-    public function index(Request $request): JsonResponse
-    {
-        $user = $request->user();
 
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'data' => null,
-                'message' => 'Unauthenticated.',
-                'errors' => null,
-            ], 401);
-        }
+public function index(Request $request): JsonResponse
+{
+    $user = $request->user();
 
-        $request->validate([
-            'venue_id' => ['required', 'integer', 'exists:venues,id'],
-            'status' => ['nullable', 'in:pending_payment,confirmed,cancelled'],
-        ]);
-
-        $venue = Venue::find($request->venue_id);
-
-        if (!$venue) {
-            return response()->json([
-                'success' => false,
-                'data' => null,
-                'message' => 'Venue not found.',
-                'errors' => null,
-            ], 404);
-        }
-
-        if ((int) $venue->owner_id !== (int) $user->id) {
-            return response()->json([
-                'success' => false,
-                'data' => null,
-                'message' => 'You are not authorized to view these bookings.',
-                'errors' => null,
-            ], 403);
-        }
-
-        $query = Booking::query()
-            ->whereHas('timeSlot', function ($q) use ($venue) {
-                $q->where('venue_id', $venue->id);
-            })
-            ->with([
-                'timeSlot',
-                'captain',
-            ])
-            ->latest();
-
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        $bookings = $query->paginate(10);
-
-        $weekStart = now()->startOfWeek();
-        $weekEnd = now()->endOfWeek();
-
-        $weeklyBookingsQuery = Booking::query()
-            ->whereHas('timeSlot', function ($q) use ($venue) {
-                $q->where('venue_id', $venue->id);
-            })
-            ->whereBetween('created_at', [$weekStart, $weekEnd]);
-
-        $weeklyBookings = (clone $weeklyBookingsQuery)->count();
-
-        $weeklyIncome = (clone $weeklyBookingsQuery)
-            ->where('status', 'confirmed')
-            ->sum('total_price');
-
+    if (!$user) {
         return response()->json([
-            'success' => true,
-            'data' => [
-                'bookings' => $bookings,
-                'weekly_stats' => [
-                    'total_bookings' => $weeklyBookings,
-                    'income' => $weeklyIncome,
-                ],
-            ],
-            'message' => 'Owner bookings retrieved successfully.',
+            'success' => false,
+            'data' => null,
+            'message' => 'Unauthenticated.',
             'errors' => null,
-        ]);
+        ], 401);
     }
+
+    $validated = $request->validate([
+        'venue_id' => ['nullable', 'integer', 'exists:venues,id'],
+        'status' => [
+            'nullable',
+            'in:pending_payment,confirmed,cancelled',
+        ],
+    ]);
+
+    // Get all venues belonging to the authenticated owner.
+    $venuesQuery = Venue::where('owner_id', $user->id);
+
+    // Optionally filter by a specific venue.
+    if (!empty($validated['venue_id'])) {
+        $venuesQuery->where('id', $validated['venue_id']);
+    }
+
+    $venues = $venuesQuery->get();
+
+    if ($venues->isEmpty()) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'No venues found for this owner.',
+            'errors' => null,
+        ], 404);
+    }
+
+    $venueIds = $venues->pluck('id');
+
+    // Get bookings for all the owner's venues.
+    $query = Booking::query()
+        ->whereHas('timeSlot', function ($q) use ($venueIds) {
+            $q->whereIn('venue_id', $venueIds);
+        })
+        ->with([
+            'timeSlot.venue',
+            'captain',
+        ])
+        ->latest();
+
+    if (!empty($validated['status'])) {
+        $query->where('status', $validated['status']);
+    }
+
+    $bookings = $query->paginate(10);
+
+    // Weekly statistics across all the owner's venues.
+    $weekStart = now()->startOfWeek();
+    $weekEnd = now()->endOfWeek();
+
+    $weeklyBookingsQuery = Booking::query()
+        ->whereHas('timeSlot', function ($q) use ($venueIds) {
+            $q->whereIn('venue_id', $venueIds);
+        })
+        ->whereBetween('created_at', [$weekStart, $weekEnd]);
+
+    $weeklyBookings = (clone $weeklyBookingsQuery)->count();
+
+    $weeklyIncome = (clone $weeklyBookingsQuery)
+        ->where('status', 'confirmed')
+        ->sum('total_price');
+
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'venues' => $venues,
+            'bookings' => $bookings,
+            'weekly_stats' => [
+                'total_bookings' => $weeklyBookings,
+                'income' => $weeklyIncome,
+            ],
+        ],
+        'message' => 'Owner bookings retrieved successfully.',
+        'errors' => null,
+    ]);
+}
+
 }
