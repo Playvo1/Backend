@@ -23,30 +23,21 @@ class OwnerBookingController extends Controller
             ], 401);
         }
 
-        $request->validate([
-            'venue_id' => ['required', 'integer', 'exists:venues,id'],
-            'status' => ['nullable', 'in:pending_payment,confirmed,cancelled'],
-        ]);
-
-        $venue = Venue::find($request->venue_id);
+        // Get the venue belonging to the logged-in owner.
+        $venue = Venue::where('owner_id', $user->id)->first();
 
         if (!$venue) {
             return response()->json([
                 'success' => false,
                 'data' => null,
-                'message' => 'Venue not found.',
+                'message' => 'No venue found for this owner.',
                 'errors' => null,
             ], 404);
         }
 
-        if ((int) $venue->owner_id !== (int) $user->id) {
-            return response()->json([
-                'success' => false,
-                'data' => null,
-                'message' => 'You are not authorized to view these bookings.',
-                'errors' => null,
-            ], 403);
-        }
+        $request->validate([
+            'status' => ['nullable', 'in:pending_payment,confirmed,cancelled'],
+        ]);
 
         $query = Booking::query()
             ->whereHas('timeSlot', function ($q) use ($venue) {
