@@ -97,7 +97,8 @@ class VenueSearchToolTest extends TestCase
         $this->assertSame(VenueSearchTool::NAME, $declaration['name']);
         $this->assertSame('search_available_venues', $declaration['name']);
         $this->assertSame('OBJECT', $parameters['type']);
-        $this->assertSame(['sport', 'date', 'hour', 'city', 'area'], array_keys($properties));
+        // Assistant v2 adds the optional period and intent readings.
+        $this->assertSame(['sport', 'date', 'hour', 'city', 'area', 'period', 'intent'], array_keys($properties));
         $this->assertSame(['sport', 'date', 'hour'], $parameters['required']);
         $this->assertEqualsCanonicalizing(['كرة القدم', 'Football'], $properties['sport']['enum']);
         $this->assertEqualsCanonicalizing(['غزة', 'Gaza', 'خانيونس', 'Khan Younis'], $properties['city']['enum']);
