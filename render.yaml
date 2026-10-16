@@ -75,6 +75,15 @@ services:
       # Comma-separated web dashboard origins, e.g. https://playvo-dashboard.vercel.app
       - key: CORS_ALLOWED_ORIGINS
         sync: false
+      # Comma-separated regexes for origins that change per deploy (the dashboard's Vercel previews)
+      - key: CORS_ALLOWED_ORIGIN_PATTERNS
+        value: '#^https://frontend[a-z0-9-]*-playvo\.vercel\.app$#'
+
+      # Demo venues and slots on start (DemoDataSeeder); the demo owners' password
+      - key: SEED_DEMO_DATA
+        value: "false"
+      - key: DEMO_OWNER_PASSWORD
+        sync: false
 
       # Booking assistant (Google Gemini). Without a key the rule-based parser answers alone.
       - key: GEMINI_API_KEY

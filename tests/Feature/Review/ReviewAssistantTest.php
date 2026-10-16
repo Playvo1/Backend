@@ -182,7 +182,9 @@ class ReviewAssistantTest extends TestCase
     {
         $this->fakeArgs(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00', 'area' => '%']);
 
-        $this->ask('football tomorrow at 6pm in %')->assertOk()->assertJsonPath('data.suggested_venue_id', null);
+        // Assistant v2 review: "%" names no place, so Gemini's "%" area is ignored and nothing matches "everything" through LIKE.
+        $response = $this->ask('football tomorrow at 6pm in %')->assertOk();
+        $this->assertSame((new VenueSearchTool)->execute(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00'])?->venue_id, $response->json('data.suggested_venue_id'));
     }
 
     public function test_sql_injection_in_area_and_city_is_harmless(): void
@@ -219,10 +221,12 @@ class ReviewAssistantTest extends TestCase
     public function test_arabic_query_without_sport_asks_for_details_in_arabic(): void
     {
         config(['services.gemini.key' => null]);
+        // Assistant v2 assumes the only sport on offer, so a second one keeps "which sport?" asked here.
+        $this->makeSlot($this->makeVenue(null, ['name_en' => 'Hoops Hall']), ['sport_id' => $this->makeSport('Basketball', 'كرة السلة')->id]);
 
         $this->ask('بكرا الساعة 6 مساءً بالجلاء')
             ->assertOk()
-            ->assertJsonPath('data.reply_text', 'أخبرني بالرياضة واليوم والساعة التي تريدها، مثلاً: "كرة قدم بكرا الساعة 6 مساءً".');
+            ->assertJsonPath('data.reply_text', 'أي رياضة؟');
     }
 
     public function test_english_query_replies_in_english(): void
@@ -253,7 +257,7 @@ class ReviewAssistantTest extends TestCase
 
         $this->ask('بدي ملعب football بكرا الساعة 6 مساءً بالجلاء')
             ->assertOk()
-            ->assertJsonPath('data.reply_text', 'ملعب الحقل الأخضر متاح غداً الساعة 18:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟');
+            ->assertJsonPath('data.reply_text', 'يتوفر موعد في ملعب الحقل الأخضر غداً الساعة 18:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟');
     }
 
     public function test_past_hour_today_is_not_suggested(): void

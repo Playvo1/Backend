@@ -4576,6 +4576,399 @@
         }
       ],
       "name": "Admin"
+    },
+    {
+      "item": [
+        {
+          "name": "assistant query (English)",
+          "request": {
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": ""
+                }
+              ],
+              "type": "bearer"
+            },
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n    \"query_text\": \"Football court tomorrow at 6pm near Gaza City\"\n}"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "assistant",
+                "query"
+              ],
+              "raw": "{{playvo}}/api/v1/assistant/query"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "assistant query (Arabic)",
+          "request": {
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": ""
+                }
+              ],
+              "type": "bearer"
+            },
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n    \"query_text\": \"بدي ملعب كرة قدم بكرا الساعة 6 مساءً بالجلاء\"\n}"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "assistant",
+                "query"
+              ],
+              "raw": "{{playvo}}/api/v1/assistant/query"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "assistant follow-up (conversation_id)",
+          "request": {
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": ""
+                }
+              ],
+              "type": "bearer"
+            },
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n    \"query_text\": \"8\",\n    \"conversation_id\": \"paste data.conversation_id here\"\n}"
+            },
+            "description": "Send first {\"query_text\": \"بدي ملعب كورة بكرا\"}, then this with the conversation_id the first answer returned: \"8\" is read as tomorrow at 20:00.",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "assistant",
+                "query"
+              ],
+              "raw": "{{playvo}}/api/v1/assistant/query"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "assistant this week (date range)",
+          "request": {
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": ""
+                }
+              ],
+              "type": "bearer"
+            },
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n    \"query_text\": \"كورة هالأسبوع\"\n}"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "assistant",
+                "query"
+              ],
+              "raw": "{{playvo}}/api/v1/assistant/query"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "assistant near me (coordinates)",
+          "request": {
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": ""
+                }
+              ],
+              "type": "bearer"
+            },
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n    \"query_text\": \"ابحث عن ملاعب قريبة مني\",\n    \"latitude\": 31.5095,\n    \"longitude\": 34.4625\n}"
+            },
+            "description": "Without latitude/longitude the assistant asks for the location (outcome needs_location) with quick replies.",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "assistant",
+                "query"
+              ],
+              "raw": "{{playvo}}/api/v1/assistant/query"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "assistant quick reply (option_id)",
+          "request": {
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": ""
+                }
+              ],
+              "type": "bearer"
+            },
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n    \"option_id\": \"all_venues\",\n    \"conversation_id\": \"paste data.conversation_id here\"\n}"
+            },
+            "description": "A tap on a button from data.options: use_location (send latitude/longitude too), pick_area, all_venues, cheapest, best_rated, new_search or city_<id>. query_text may be left out.",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "assistant",
+                "query"
+              ],
+              "raw": "{{playvo}}/api/v1/assistant/query"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "assistant question (prices)",
+          "request": {
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": ""
+                }
+              ],
+              "type": "bearer"
+            },
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n    \"query_text\": \"ما هي أسعار الملاعب؟\"\n}"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "assistant",
+                "query"
+              ],
+              "raw": "{{playvo}}/api/v1/assistant/query"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "assistant feedback",
+          "request": {
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": ""
+                }
+              ],
+              "type": "bearer"
+            },
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n    \"rating\": 5,\n    \"liked_aspects\": [\n        \"booking_ease\",\n        \"info_accuracy\"\n    ],\n    \"comment\": \"ممتاز\",\n    \"conversation_id\": \"paste data.conversation_id here\"\n}"
+            },
+            "description": "The rate-your-experience screen. Only rating (1-5) is required; liked_aspects keys: booking_ease, venue_variety, info_accuracy, app_experience, prices, customer_service.",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "assistant",
+                "feedback"
+              ],
+              "raw": "{{playvo}}/api/v1/assistant/feedback"
+            }
+          },
+          "response": []
+        }
+      ],
+      "name": "Assistant"
     }
   ],
   "variable": [
