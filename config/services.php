@@ -59,6 +59,8 @@ return [
         'option_hourly_limit' => (int) (env('ASSISTANT_OPTION_HOURLY_LIMIT') ?: 60),
         // A conversation idle for longer starts afresh (assistant v2).
         'conversation_minutes' => (int) (env('ASSISTANT_CONVERSATION_MINUTES') ?: 30),
+        // Ratings of the assistant per player per hour.
+        'feedback_hourly_limit' => (int) (env('ASSISTANT_FEEDBACK_HOURLY_LIMIT') ?: 10),
     ],
 
     // DemoDataSeeder: the password of the demo venue owners. Empty: a random one, so they can't log in.

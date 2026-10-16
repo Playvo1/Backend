@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\AssistantFeedbackRequest;
 use App\Http\Requests\Api\AssistantQueryRequest;
+use App\Models\AssistantFeedback;
 use App\Models\TimeSlot;
 use App\Services\Assistant\AssistantConversations;
 use Illuminate\Http\JsonResponse;
@@ -58,6 +60,37 @@ class AssistantController extends Controller
             'parsed_date_range' => $period === null ? null : ['period' => $period['name'], 'from' => $period['from'], 'to' => $period['to']],
             'suggestions' => array_map(fn (array $option) => $this->suggestion($option['slot'], $option['distance_km'], $option['exact']), $answer['suggestions']),
             'options' => $answer['options'],
+        ]);
+    }
+
+    /**
+     * The "rate your experience" screen (assistant v2): a rating, the aspects liked and a
+     * comment, about the player's own conversation when one is given.
+     */
+    public function feedback(AssistantFeedbackRequest $request): JsonResponse
+    {
+        $conversationId = $request->validated('conversation_id');
+        $conversation = $conversationId === null ? null : $this->conversations->find($request->user(), $conversationId);
+        $aspects = array_values(array_unique($request->validated('liked_aspects') ?? []));
+
+        $feedback = AssistantFeedback::create([
+            'user_id' => $request->user()->id,
+            'assistant_conversation_id' => $conversation?->id,
+            'rating' => (int) $request->validated('rating'),
+            'liked_aspects' => $aspects,
+            'comment' => filled($request->validated('comment')) ? $request->validated('comment') : null,
+        ]);
+
+        return ApiResponse::send(true, 201, 'Thank you for your feedback.', [
+            'feedback_id' => $feedback->id,
+            'rating' => $feedback->rating,
+            'liked_aspects' => array_map(fn (string $key) => [
+                'key' => $key,
+                'label_ar' => AssistantFeedback::ASPECTS[$key][0],
+                'label_en' => AssistantFeedback::ASPECTS[$key][1],
+            ], $aspects),
+            'comment' => $feedback->comment,
+            'conversation_id' => $conversation?->public_id,
         ]);
     }
 

@@ -54,5 +54,17 @@ class AppServiceProvider extends ServiceProvider
                     "You've reached the limit of {$limit} assistant questions per hour. Please try again later.",
                 )->withHeaders($headers));
         });
+
+        RateLimiter::for('assistant-feedback', function (Request $request) {
+            $limit = config('services.assistant.feedback_hourly_limit');
+
+            return Limit::perHour($limit)
+                ->by('assistant-feedback:'.($request->user()?->id ?? $request->ip()))
+                ->response(fn (Request $request, array $headers) => ApiResponse::send(
+                    false,
+                    429,
+                    "You've reached the limit of {$limit} ratings per hour. Please try again later.",
+                )->withHeaders($headers));
+        });
     }
 }
