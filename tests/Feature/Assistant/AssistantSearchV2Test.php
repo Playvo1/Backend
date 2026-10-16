@@ -115,6 +115,31 @@ class AssistantSearchV2Test extends TestCase
         $this->ask('football at 8pm')->assertJsonPath('data.parsed_date_range', null)->assertJsonPath('data.reply_text', 'Which day would you like to play?');
     }
 
+    public function test_span_words_are_never_taken_for_a_place(): void
+    {
+        $this->slotsTomorrow();
+
+        foreach (['football in the coming days in Gaza', 'كورة في الأيام الجاية', 'football in the next few days'] as $text) {
+            $this->newConversation();
+            $this->ask($text)->assertJsonPath('data.outcome', 'suggestion');
+        }
+    }
+
+    public function test_any_time_keeps_the_day_and_alone_means_any_day(): void
+    {
+        $this->slotsTomorrow();
+
+        $this->ask('football tomorrow at 10pm')->assertJsonPath('data.outcome', 'no_match');
+        $anyTime = $this->ask('any time')
+            ->assertJsonPath('data.parsed_date', '2026-10-04')
+            ->assertJsonPath('data.parsed_hour', null)
+            ->assertJsonPath('data.parsed_date_range', null);
+        $this->assertCount(4, $anyTime->json('data.suggestions'));
+
+        $this->newConversation();
+        $this->ask('كورة بأي وقت')->assertJsonPath('data.parsed_date_range.period', 'any');
+    }
+
     public function test_a_span_can_be_narrowed_by_a_follow_up_hour(): void
     {
         $this->slotsTomorrow();

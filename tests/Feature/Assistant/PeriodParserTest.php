@@ -101,7 +101,8 @@ class PeriodParserTest extends TestCase
 
     public function test_a_single_day_or_no_day_is_no_span(): void
     {
-        foreach (['كورة بكرا الساعة 8', 'football on friday', 'السبت الجاي', 'any football pitch free tomorrow at 7pm?', 'anything free tomorrow', 'hello', ''] as $text) {
+        // "Any time" is any hour of a day (read by IntentClassifier), not a span by itself.
+        foreach (['كورة بكرا الساعة 8', 'football on friday', 'السبت الجاي', 'any football pitch free tomorrow at 7pm?', 'anything free tomorrow', 'any time', 'أي وقت', 'hello', ''] as $text) {
             $this->assertNull($this->parse($text), $text);
         }
     }

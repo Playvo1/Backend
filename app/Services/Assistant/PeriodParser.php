@@ -58,8 +58,8 @@ class PeriodParser
             '(?:the\s+)?(?:next|coming|upcoming)\s+(?:few\s+)?days', 'soon', '(?:el\s+)?ayam\s+(?:el\s+)?(?:jaye|jay)',
         ],
         'any' => [
-            '[بف]?(?:اي|ايه)\s+(?:يوم|وقت|موعد)', 'متي\s+ما\s+كان', 'باي\s+وقت', 'في\s+اي\s+وقت',
-            'any\s?(?:day|time)', 'whenever', 'ay\s+(?:yom|youm|yoom|wa2t)',
+            // "Any time" is any hour of the day already named (IntentClassifier); alone it means any day too.
+            '[بف]?(?:اي|ايه)\s+(?:يوم|موعد)', 'متي\s+ما\s+كان', 'any\s?day', 'whenever', 'ay\s+(?:yom|youm|yoom)',
         ],
     ];
 

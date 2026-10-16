@@ -231,8 +231,13 @@ class BookingAssistant
             'mode' => $listMode ? 'list' : null,
         ]);
 
+        // "Any time": any hour of the day asked for, or of any day when none was.
         if ($read['any_hour']) {
             $turn->state = $turn->state->with(['hour' => null, 'part_of_day' => null]);
+
+            if (! $turn->state->has('date') && ! $turn->state->has('period')) {
+                $turn->state = $turn->state->with(['period' => $this->periods->span('any', $now->startOfDay())]);
+            }
         }
 
         $turn->intent = $read['list'] || ($extras['intent'] ?? null) === IntentClassifier::AVAILABILITY ? IntentClassifier::AVAILABILITY : IntentClassifier::BOOKING_SEARCH;
@@ -476,6 +481,8 @@ class BookingAssistant
         $sport = $this->tool->findSport($parsed['sport'] ?? null);
         $offered = $this->tool->offeredSports();
         $sport ??= $offered->count() === 1 ? $offered->first() : null;
+        // Logged as the parsed sport, like a search; the conversation's request is left as it was.
+        $turn->sport = $sport;
         $arguments = array_filter(['sport' => $sport?->name_en, 'city' => $parsed['city'] ?? null, 'area' => $parsed['area'] ?? null]);
         $city = $this->tool->findCity($parsed['city'] ?? null);
         $place = $parsed['area'] ?? ($city === null ? null : ($arabic ? $city->name_ar : $city->name_en));
