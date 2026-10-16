@@ -54,9 +54,11 @@ class AssistantEvaluationTest extends TestCase
     {
         $expected = $this->cases()->pluck('expected', 'query');
 
+        // The latest message is the last content (v2 sends earlier turns first); an earlier
+        // turn of a v2 conversation gets an empty call, so the fallback reads it.
         Http::fake(fn (Request $request) => Http::response(['candidates' => [['content' => ['parts' => [[
             'functionCall' => ['name' => VenueSearchTool::NAME, 'args' => array_filter(
-                collect($expected[$request['contents'][0]['parts'][0]['text']])->only(['sport', 'date', 'hour', 'city', 'area'])->all(),
+                collect($expected[collect($request['contents'])->last()['parts'][0]['text']] ?? [])->only(['sport', 'date', 'hour', 'city', 'area'])->all(),
             )],
         ]]]]]]));
     }
@@ -86,11 +88,15 @@ class AssistantEvaluationTest extends TestCase
 
         foreach ($cases as $case) {
             // A mixed-language case may lean either way; the others follow their majority script.
+            // A v2 case may be a conversation; its language is that of all its messages.
             if ($case['language'] !== 'mixed') {
-                $this->assertSame($case['language'] === 'ar', TextNormalizer::isArabic($case['query']), "{$case['id']} language");
+                $conversation = implode(' ', [...array_column($case['turns'] ?? [], 'query'), $case['query']]);
+                $this->assertSame($case['language'] === 'ar', TextNormalizer::isArabic($conversation), "{$case['id']} language");
             }
 
-            $this->assertSame(['sport', 'date', 'hour', 'city', 'area', 'outcome', 'venue'], array_keys($case['expected']), "{$case['id']} fields");
+            // v2 cases also expect the intent and the span of days.
+            $fields = ['sport', 'date', 'hour', 'city', 'area', 'outcome', 'venue', ...($case['group'] === 'v2' ? ['intent', 'period'] : [])];
+            $this->assertSame($fields, array_keys($case['expected']), "{$case['id']} fields");
         }
     }
 
@@ -129,7 +135,8 @@ class AssistantEvaluationTest extends TestCase
         $evaluator->seedReferenceData();
         $tool = new VenueSearchTool;
 
-        foreach ($this->cases() as $case) {
+        // v2 cases span days, list options and hold conversations; the evaluation itself checks them.
+        foreach ($this->cases()->where('group', '!=', 'v2') as $case) {
             $expected = $case['expected'];
 
             // A place that is not covered is not a search argument, so there is nothing to search.
@@ -185,6 +192,42 @@ class AssistantEvaluationTest extends TestCase
         }
     }
 
+    public function test_the_v2_conversations_carry_their_state_and_reach_90_percent(): void
+    {
+        $this->evaluator()->seedReferenceData();
+
+        $result = $this->evaluator()->evaluate(useGemini: false, group: 'v2');
+        $this->assertGreaterThanOrEqual(90, $result['groups']['v2']['accuracy'], $this->misses($result));
+
+        // "8" is read against the earlier "بدي ملعب كورة بكرا".
+        $followUp = collect($result['cases'])->firstWhere('id', 'v2-ar-01');
+        $this->assertSame(['Football', '2026-10-04', '20:00', 'booking_search', null], [
+            $followUp['actual']['sport'], $followUp['actual']['date'], $followUp['actual']['hour'], $followUp['actual']['intent'], $followUp['actual']['period'],
+        ]);
+        $this->assertTrue($followUp['correct']);
+
+        // A quick reply after a quick reply: pick an area, then Deir al-Balah.
+        $this->assertTrue(collect($result['cases'])->firstWhere('id', 'v2-ar-23')['correct']);
+
+        $this->artisan('assistant:evaluate --fallback --group=v2')
+            ->expectsOutputToContain('Accuracy (v2):')
+            ->doesntExpectOutputToContain('Accuracy (tuning):')
+            ->assertSuccessful();
+    }
+
+    public function test_a_v2_case_is_wrong_when_the_intent_or_the_span_is(): void
+    {
+        $checks = new \ReflectionMethod(AssistantEvaluator::class, 'checks');
+        $expected = ['sport' => null, 'date' => null, 'hour' => null, 'city' => null, 'area' => null, 'outcome' => 'answer', 'venue' => null, 'intent' => 'prices', 'period' => null];
+        $actual = ['sport' => null, 'date' => null, 'hour' => null, 'city' => null, 'area' => null, 'outcome' => 'answer', 'venue' => null];
+
+        $this->assertFalse($checks->invoke($this->evaluator(), $expected, [...$actual, 'intent' => 'greeting', 'period' => null])['intent']);
+        $this->assertFalse($checks->invoke($this->evaluator(), $expected, [...$actual, 'intent' => 'prices', 'period' => 'this_week'])['period']);
+        $this->assertNotContains(false, $checks->invoke($this->evaluator(), $expected, [...$actual, 'intent' => 'prices', 'period' => null]));
+        // A single-message case without them is checked as before.
+        $this->assertArrayNotHasKey('intent', $checks->invoke($this->evaluator(), array_slice($expected, 0, 7), $actual));
+    }
+
     private function misses(array $result): string
     {
         $misses = array_filter($result['cases'], fn (array $case) => ! $case['correct']);
@@ -202,7 +245,8 @@ class AssistantEvaluationTest extends TestCase
             $this->assertSame(! in_array(false, $case['checks'], true), $case['correct'], $case['id']);
         }
 
-        $this->assertSame(['tuning', 'held_out', 'unseen_r1', 'blind_r2', 'all'], array_keys($result['groups']));
+        // Assistant v2 added the v2 group.
+        $this->assertSame(['tuning', 'held_out', 'unseen_r1', 'blind_r2', 'v2', 'all'], array_keys($result['groups']));
         $this->assertSame(['sport', 'date', 'hour', 'place', 'venue'], array_keys($result['groups']['all']['fields']));
         $this->assertSame(
             array_sum(array_map(fn (string $group) => $result['groups'][$group]['total'], AssistantEvaluator::GROUPS)),
@@ -243,13 +287,19 @@ class AssistantEvaluationTest extends TestCase
         $this->fakeGeminiAnsweringAsExpected();
         $total = $this->cases()->count();
 
+        // v2 questions, small talk and quick replies are answered without Gemini, so Gemini
+        // answers every single-message case and only some of the v2 ones.
+        $singleMessage = $this->cases()->where('group', '!=', 'v2')->count();
+
         $this->artisan('assistant:evaluate')
             ->expectsOutputToContain('live Gemini (gemini-test)')
-            ->expectsOutputToContain("Gemini answered {$total} of {$total} cases")
+            ->expectsOutputToContain("of {$total} cases; the rest used the fallback.")
             ->expectsOutputToContain("Accuracy (all): {$total}/{$total} (100%)")
             ->assertSuccessful();
 
-        Http::assertSentCount($total);
+        $this->assertGreaterThanOrEqual($singleMessage, count(Http::recorded()));
+        $this->evaluator()->seedReferenceData();
+        $this->assertGreaterThanOrEqual($singleMessage, $this->evaluator()->evaluate(useGemini: true)['gemini_answers']);
         Http::assertSent(fn (Request $request) => str_contains($request['systemInstruction']['parts'][0]['text'], 'Today is Saturday 2026-10-03'));
     }
 
@@ -378,7 +428,8 @@ class AssistantEvaluationTest extends TestCase
 
         $this->assertSame('fallback', $document['meta']['mode']);
         $this->assertSame('draft — pending team approval', $document['meta']['cases']['status']);
-        $this->assertSame(['tuning', 'held_out', 'unseen_r1', 'blind_r2', 'all'], array_keys($document['groups']));
+        // Assistant v2 added the v2 group.
+        $this->assertSame(['tuning', 'held_out', 'unseen_r1', 'blind_r2', 'v2', 'all'], array_keys($document['groups']));
         $this->assertCount($this->cases()->count(), $document['cases']);
         $this->assertArrayHasKey('expected', $document['cases'][0]);
         $this->assertArrayHasKey('actual', $document['cases'][0]);

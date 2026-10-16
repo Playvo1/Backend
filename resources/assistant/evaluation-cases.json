@@ -2,7 +2,7 @@
     "meta": {
         "title": "Playvo booking assistant: suggestion accuracy test cases (US-5.4, SRS specific objective 4)",
         "status": "draft — pending team approval",
-        "version": 3,
+        "version": 4,
         "reference_date": "2026-10-03",
         "reference_weekday": "Saturday",
         "reference_time": "12:00",
@@ -12,14 +12,18 @@
             "tuning": "Cases the rule-based fallback may be tuned against.",
             "held_out": "Written before any tuning of the fallback (commit 626f6c4) and never used to tune it. The reviewer found they are not independent of the Sprint 4 parser work (19/23 with the parser at 1dc4882), so they overstate accuracy on new phrasings.",
             "unseen_r1": "45 phrasings the reviewer wrote without the developer seeing them (round 1, Stage 3 review): 30/45 on the fallback at a202957. They are known now, so from here on they count as tuning material, not as a blind measure; a fresh blind set will measure accuracy honestly.",
-            "blind_r2": "68 phrasings (39 Arabic, 17 English, 12 Arabizi or mixed) the reviewer wrote blind, from this fixture and meta only, at ea90d84 (Stage 4 review): 61/68 (89.7%) on the fallback there. They are known now, so from here on they count as tuning material, not as a blind measure. A case marked debatable has an expectation the reviewer considered open to dispute."
+            "blind_r2": "68 phrasings (39 Arabic, 17 English, 12 Arabizi or mixed) the reviewer wrote blind, from this fixture and meta only, at ea90d84 (Stage 4 review): 61/68 (89.7%) on the fallback there. They are known now, so from here on they count as tuning material, not as a blind measure. A case marked debatable has an expectation the reviewer considered open to dispute.",
+            "v2": "Assistant v2 cases written by the developer for the v2 features (tuning material, not a blind measure): spans of days, lists ranked by rating, price or distance, follow-ups in one conversation (turns before the final query, with the state carried over), quick replies (option_id) and a shared location (latitude/longitude), and the questions around a booking. They also expect the intent and the span of days (period, a PeriodParser name); venue is the top suggestion."
         },
         "scoring": "A case is correct only when the outcome matches (the expected venue, no match, or a request for the missing details) and the sport, date, hour, and the city or area when one is expected, are all understood as expected.",
         "outcomes": {
             "suggestion": "The assistant suggests the expected venue.",
             "no_match": "Everything is understood but no available slot fits, so the no-match reply is given.",
             "needs_details": "The sport, day or hour is missing, so the assistant asks for it.",
-            "not_covered": "The player named a city or area with no venues, so the assistant says it is not covered instead of suggesting a venue elsewhere."
+            "not_covered": "The player named a city or area with no venues, so the assistant says it is not covered instead of suggesting a venue elsewhere.",
+            "needs_location": "v2: the player asked for venues near them without sharing a location, so the assistant asks for it.",
+            "not_offered": "v2: the sport named is not offered by any venue yet.",
+            "answer": "v2: a question answered without a search (prices, working hours, policies, small talk); for prices the venue is the cheapest one."
         }
     },
     "sports": [
@@ -39,7 +43,7 @@
     "venues": [
         {
             "name_en": "Green Field Court", "name_ar": "ملعب الحقل الأخضر", "city": "Gaza",
-            "area_en": "Al-Rimal", "area_ar": "الرمال", "avg_rating": 4.6, "sports": ["Football"],
+            "area_en": "Al-Rimal", "area_ar": "الرمال", "avg_rating": 4.6, "latitude": 31.5218, "longitude": 34.444, "sports": ["Football"],
             "slots": [
                 {"sport": "Football", "date": "2026-10-03", "start": "10:00", "end": "11:00", "price": 40},
                 {"sport": "Football", "date": "2026-10-03", "start": "21:00", "end": "22:00", "price": 45},
@@ -51,7 +55,7 @@
         },
         {
             "name_en": "Al-Jalaa Stadium", "name_ar": "ملعب الجلاء", "city": "Gaza",
-            "area_en": "Al-Jalaa", "area_ar": "الجلاء", "avg_rating": 4.2, "sports": ["Football"],
+            "area_en": "Al-Jalaa", "area_ar": "الجلاء", "avg_rating": 4.2, "latitude": 31.5167, "longitude": 34.457, "sports": ["Football"],
             "slots": [
                 {"sport": "Football", "date": "2026-10-03", "start": "20:00", "end": "21:00", "price": 35},
                 {"sport": "Football", "date": "2026-10-04", "start": "18:00", "end": "19:00", "price": 40},
@@ -62,7 +66,7 @@
         },
         {
             "name_en": "Shujaiya Arena", "name_ar": "ساحة الشجاعية", "city": "Gaza",
-            "area_en": "Shujaiya", "area_ar": "الشجاعية", "avg_rating": 3.9, "sports": ["Football", "Volleyball"],
+            "area_en": "Shujaiya", "area_ar": "الشجاعية", "avg_rating": 3.9, "latitude": 31.505, "longitude": 34.48, "sports": ["Football", "Volleyball"],
             "slots": [
                 {"sport": "Football", "date": "2026-10-03", "start": "20:00", "end": "21:00", "price": 30},
                 {"sport": "Football", "date": "2026-10-04", "start": "19:00", "end": "20:00", "price": 30},
@@ -74,7 +78,7 @@
         },
         {
             "name_en": "Tal al-Hawa Club", "name_ar": "نادي تل الهوى", "city": "Gaza",
-            "area_en": "Tal al-Hawa", "area_ar": "تل الهوى", "avg_rating": 4.4, "sports": ["Football", "Basketball"],
+            "area_en": "Tal al-Hawa", "area_ar": "تل الهوى", "avg_rating": 4.4, "latitude": 31.501, "longitude": 34.444, "sports": ["Football", "Basketball"],
             "slots": [
                 {"sport": "Football", "date": "2026-10-04", "start": "20:00", "end": "21:00", "price": 45},
                 {"sport": "Basketball", "date": "2026-10-05", "start": "19:00", "end": "20:00", "price": 30}
@@ -82,7 +86,7 @@
         },
         {
             "name_en": "South Court", "name_ar": "الملعب الجنوبي", "city": "Khan Younis",
-            "area_en": "Bani Suheila", "area_ar": "بني سهيلا", "avg_rating": 4.8, "sports": ["Football", "Basketball"],
+            "area_en": "Bani Suheila", "area_ar": "بني سهيلا", "avg_rating": 4.8, "latitude": 31.344, "longitude": 34.324, "sports": ["Football", "Basketball"],
             "slots": [
                 {"sport": "Football", "date": "2026-10-04", "start": "18:00", "end": "19:00", "price": 60},
                 {"sport": "Football", "date": "2026-10-04", "start": "19:00", "end": "20:00", "price": 60},
@@ -93,7 +97,7 @@
         },
         {
             "name_en": "Khan Younis Sports Hall", "name_ar": "صالة خانيونس الرياضية", "city": "Khan Younis",
-            "area_en": "City Center", "area_ar": "وسط البلد", "avg_rating": 4.0, "sports": ["Basketball", "Volleyball"],
+            "area_en": "City Center", "area_ar": "وسط البلد", "avg_rating": 4.0, "latitude": 31.346, "longitude": 34.306, "sports": ["Basketball", "Volleyball"],
             "slots": [
                 {"sport": "Basketball", "date": "2026-10-05", "start": "19:00", "end": "20:00", "price": 25},
                 {"sport": "Volleyball", "date": "2026-10-08", "start": "17:00", "end": "18:00", "price": 20},
@@ -102,7 +106,7 @@
         },
         {
             "name_en": "Deir Beach Court", "name_ar": "ملعب شاطئ الدير", "city": "Deir al-Balah",
-            "area_en": "Al-Bassa", "area_ar": "البصة", "avg_rating": 4.1, "sports": ["Football", "Volleyball"],
+            "area_en": "Al-Bassa", "area_ar": "البصة", "avg_rating": 4.1, "latitude": 31.418, "longitude": 34.35, "sports": ["Football", "Volleyball"],
             "slots": [
                 {"sport": "Football", "date": "2026-10-04", "start": "17:00", "end": "18:00", "price": 35},
                 {"sport": "Volleyball", "date": "2026-10-05", "start": "18:00", "end": "19:00", "price": 25},
@@ -111,7 +115,7 @@
         },
         {
             "name_en": "Rafah Padel Club", "name_ar": "نادي رفح للبادل", "city": "Rafah",
-            "area_en": "Tal al-Sultan", "area_ar": "تل السلطان", "avg_rating": 4.5, "sports": ["Padel", "Tennis"],
+            "area_en": "Tal al-Sultan", "area_ar": "تل السلطان", "avg_rating": 4.5, "latitude": 31.311, "longitude": 34.234, "sports": ["Padel", "Tennis"],
             "slots": [
                 {"sport": "Tennis", "date": "2026-10-03", "start": "17:00", "end": "18:00", "price": 50},
                 {"sport": "Padel", "date": "2026-10-04", "start": "18:00", "end": "19:00", "price": 80},
@@ -122,7 +126,7 @@
         },
         {
             "name_en": "Jabalia Youth Court", "name_ar": "ملعب شباب جباليا", "city": "Jabalia",
-            "area_en": "Al-Nazla", "area_ar": "النزلة", "avg_rating": 3.8, "sports": ["Football"],
+            "area_en": "Al-Nazla", "area_ar": "النزلة", "avg_rating": 3.8, "latitude": 31.539, "longitude": 34.495, "sports": ["Football"],
             "slots": [
                 {"sport": "Football", "date": "2026-10-03", "start": "22:00", "end": "23:00", "price": 30},
                 {"sport": "Football", "date": "2026-10-05", "start": "10:00", "end": "11:00", "price": 30},
@@ -474,6 +478,86 @@
         {"id": "b2-mx-11", "group": "blind_r2", "language": "mixed", "query": "mal3ab kora fi el remal yom el a7ad 9 bel lail",
             "expected": {"sport": "Football", "date": "2026-10-04", "hour": "21:00", "city": null, "area": "Al-Rimal", "outcome": "suggestion", "venue": "Green Field Court"}},
         {"id": "b2-mx-12", "group": "blind_r2", "language": "mixed", "query": "bdi mal3ab koora fe bait lahia bokra 7",
-            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "19:00", "city": null, "area": null, "outcome": "not_covered", "venue": null}}
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "19:00", "city": null, "area": null, "outcome": "not_covered", "venue": null}},
+        {"id": "v2-ar-01", "group": "v2", "language": "ar", "turns": [{"query": "بدي ملعب كورة بكرا"}], "query": "8",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "20:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Tal al-Hawa Club", "intent": "booking_search", "period": null}},
+        {"id": "v2-ar-02", "group": "v2", "language": "ar", "turns": [{"query": "كورة بكرا الساعة 8"}], "query": "لا خليها بعد بكرا",
+            "expected": {"sport": "Football", "date": "2026-10-05", "hour": "20:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Green Field Court", "intent": "booking_search", "period": null}},
+        {"id": "v2-en-03", "group": "v2", "language": "en", "turns": [{"query": "football tomorrow"}], "query": "at 9pm",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "21:00", "city": null, "area": null, "outcome": "suggestion", "venue": "South Court", "intent": "booking_search", "period": null}},
+        {"id": "v2-mx-04", "group": "v2", "language": "mixed", "turns": [{"query": "kora bukra"}], "query": "3al 7",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "19:00", "city": null, "area": null, "outcome": "suggestion", "venue": "South Court", "intent": "booking_search", "period": null}},
+        {"id": "v2-ar-05", "group": "v2", "language": "ar", "turns": [{"query": "كورة بكرا"}], "query": "بخانيونس",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": null, "city": "Khan Younis", "area": null, "outcome": "needs_details", "venue": null, "intent": "booking_search", "period": null}},
+        {"id": "v2-ar-06", "group": "v2", "language": "ar", "turns": [{"query": "كورة بكرا"}, {"query": "بخانيونس"}], "query": "6 المسا",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "18:00", "city": "Khan Younis", "area": null, "outcome": "suggestion", "venue": "South Court", "intent": "booking_search", "period": null}},
+        {"id": "v2-ar-07", "group": "v2", "language": "ar", "query": "بدي ملعب كورة هالأسبوع",
+            "expected": {"sport": "Football", "date": null, "hour": null, "city": null, "area": null, "outcome": "suggestion", "venue": "Green Field Court", "intent": "booking_search", "period": "this_week"}},
+        {"id": "v2-en-08", "group": "v2", "language": "en", "query": "football next week",
+            "expected": {"sport": "Football", "date": null, "hour": null, "city": null, "area": null, "outcome": "suggestion", "venue": "South Court", "intent": "booking_search", "period": "next_week"}},
+        {"id": "v2-ar-09", "group": "v2", "language": "ar", "query": "كورة الأسبوع الجاي الساعة 9 بالليل",
+            "expected": {"sport": "Football", "date": null, "hour": "21:00", "city": null, "area": null, "outcome": "suggestion", "venue": "South Court", "intent": "booking_search", "period": "next_week"}},
+        {"id": "v2-ar-10", "group": "v2", "language": "ar", "query": "كورة الويكند الجاي",
+            "expected": {"sport": "Football", "date": null, "hour": null, "city": null, "area": null, "outcome": "suggestion", "venue": "South Court", "intent": "booking_search", "period": "next_weekend"}},
+        {"id": "v2-en-11", "group": "v2", "language": "en", "query": "any football court this weekend?",
+            "expected": {"sport": "Football", "date": null, "hour": null, "city": null, "area": null, "outcome": "suggestion", "venue": "Green Field Court", "intent": "booking_search", "period": "weekend"}},
+        {"id": "v2-ar-12", "group": "v2", "language": "ar", "query": "كورة أي يوم الساعة 6 المسا",
+            "expected": {"sport": "Football", "date": null, "hour": "18:00", "city": null, "area": null, "outcome": "suggestion", "venue": "South Court", "intent": "booking_search", "period": "any"}},
+        {"id": "v2-mx-13", "group": "v2", "language": "mixed", "query": "kora el osbo3 el jay",
+            "expected": {"sport": "Football", "date": null, "hour": null, "city": null, "area": null, "outcome": "suggestion", "venue": "South Court", "intent": "booking_search", "period": "next_week"}},
+        {"id": "v2-ar-14", "group": "v2", "language": "ar", "query": "كورة هالشهر بالجلاء",
+            "expected": {"sport": "Football", "date": null, "hour": null, "city": null, "area": "الجلاء", "outcome": "suggestion", "venue": "Al-Jalaa Stadium", "intent": "booking_search", "period": "this_month"}},
+        {"id": "v2-en-15", "group": "v2", "language": "en", "query": "football in the coming days in Gaza",
+            "expected": {"sport": "Football", "date": null, "hour": null, "city": "Gaza", "area": null, "outcome": "suggestion", "venue": "Green Field Court", "intent": "booking_search", "period": "upcoming"}},
+        {"id": "v2-ar-16", "group": "v2", "language": "ar", "query": "ما هي ملاعب كرة القدم المتاحة؟",
+            "expected": {"sport": "Football", "date": null, "hour": null, "city": null, "area": null, "outcome": "suggestion", "venue": "South Court", "intent": "availability", "period": "upcoming"}},
+        {"id": "v2-ar-17", "group": "v2", "language": "ar", "turns": [{"query": "كورة بكرا الساعة 8"}], "query": "الأرخص",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "20:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Al-Jalaa Stadium", "intent": "booking_search", "period": null}},
+        {"id": "v2-en-18", "group": "v2", "language": "en", "query": "cheapest football court tomorrow",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": null, "city": null, "area": null, "outcome": "suggestion", "venue": "Shujaiya Arena", "intent": "booking_search", "period": null}},
+        {"id": "v2-ar-19", "group": "v2", "language": "ar", "query": "بدي الأعلى تقييماً ملعب كورة بكرا",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": null, "city": null, "area": null, "outcome": "suggestion", "venue": "South Court", "intent": "booking_search", "period": null}},
+        {"id": "v2-en-20", "group": "v2", "language": "en", "query": "football near me tomorrow", "context": {"latitude": 31.505, "longitude": 34.48},
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": null, "city": null, "area": null, "outcome": "suggestion", "venue": "Shujaiya Arena", "intent": "booking_search", "period": null}},
+        {"id": "v2-ar-21", "group": "v2", "language": "ar", "query": "ابحث عن ملاعب قريبة مني",
+            "expected": {"sport": null, "date": null, "hour": null, "city": null, "area": null, "outcome": "needs_location", "venue": null, "intent": "availability", "period": null}},
+        {"id": "v2-ar-22", "group": "v2", "language": "ar", "turns": [{"query": "أريد حجز ملعب كرة قدم غداً"}], "query": "كل الملاعب", "context": {"option_id": "all_venues"},
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": null, "city": null, "area": null, "outcome": "suggestion", "venue": "South Court", "intent": "booking_search", "period": null}},
+        {"id": "v2-ar-23", "group": "v2", "language": "ar", "turns": [{"query": "أريد حجز ملعب كرة قدم غداً"}, {"query": "", "option_id": "pick_area"}], "query": "دير البلح", "context": {"option_id": "city_3"},
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": null, "city": "Deir al-Balah", "area": null, "outcome": "suggestion", "venue": "Deir Beach Court", "intent": "booking_search", "period": null}},
+        {"id": "v2-ar-24", "group": "v2", "language": "ar", "turns": [{"query": "كورة بكرا"}], "query": "استخدم موقعي", "context": {"option_id": "use_location", "latitude": 31.539, "longitude": 34.495},
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": null, "city": null, "area": null, "outcome": "suggestion", "venue": "Shujaiya Arena", "intent": "booking_search", "period": null}},
+        {"id": "v2-ar-25", "group": "v2", "language": "ar", "query": "ما هي أسعار الملاعب؟",
+            "expected": {"sport": null, "date": null, "hour": null, "city": null, "area": null, "outcome": "answer", "venue": "Khan Younis Sports Hall", "intent": "prices", "period": null}},
+        {"id": "v2-en-26", "group": "v2", "language": "en", "query": "how much is football in Gaza?",
+            "expected": {"sport": "Football", "date": null, "hour": null, "city": null, "area": null, "outcome": "answer", "venue": "Shujaiya Arena", "intent": "prices", "period": null}},
+        {"id": "v2-ar-27", "group": "v2", "language": "ar", "query": "ما هي مواعيد العمل؟",
+            "expected": {"sport": null, "date": null, "hour": null, "city": null, "area": null, "outcome": "answer", "venue": null, "intent": "working_hours", "period": null}},
+        {"id": "v2-ar-28", "group": "v2", "language": "ar", "query": "كيف يمكنني إلغاء الحجز؟",
+            "expected": {"sport": null, "date": null, "hour": null, "city": null, "area": null, "outcome": "answer", "venue": null, "intent": "cancellation", "period": null}},
+        {"id": "v2-en-29", "group": "v2", "language": "en", "query": "how do I pay for my booking?",
+            "expected": {"sport": null, "date": null, "hour": null, "city": null, "area": null, "outcome": "answer", "venue": null, "intent": "payment", "period": null}},
+        {"id": "v2-mx-30", "group": "v2", "language": "mixed", "query": "kif a7jez mal3ab?",
+            "expected": {"sport": null, "date": null, "hour": null, "city": null, "area": null, "outcome": "answer", "venue": null, "intent": "how_to_book", "period": null}},
+        {"id": "v2-ar-31", "group": "v2", "language": "ar", "query": "مرحبا",
+            "expected": {"sport": null, "date": null, "hour": null, "city": null, "area": null, "outcome": "answer", "venue": null, "intent": "greeting", "period": null}},
+        {"id": "v2-en-32", "group": "v2", "language": "en", "query": "thanks!",
+            "expected": {"sport": null, "date": null, "hour": null, "city": null, "area": null, "outcome": "answer", "venue": null, "intent": "thanks", "period": null}},
+        {"id": "v2-en-33", "group": "v2", "language": "en", "query": "what's the weather like?",
+            "expected": {"sport": null, "date": null, "hour": null, "city": null, "area": null, "outcome": "answer", "venue": null, "intent": "out_of_scope", "period": null}},
+        {"id": "v2-ar-34", "group": "v2", "language": "ar", "turns": [{"query": "كورة بكرا الساعة 8"}], "query": "تمام",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "20:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Tal al-Hawa Club", "intent": "confirm_booking", "period": null}},
+        {"id": "v2-ar-35", "group": "v2", "language": "ar", "turns": [{"query": "كورة بكرا الساعة 8"}], "query": "بحث جديد",
+            "expected": {"sport": null, "date": null, "hour": null, "city": null, "area": null, "outcome": "answer", "venue": null, "intent": "booking_search", "period": null}},
+        {"id": "v2-en-36", "group": "v2", "language": "en", "turns": [{"query": "football next week"}], "query": "best rated",
+            "expected": {"sport": "Football", "date": null, "hour": null, "city": null, "area": null, "outcome": "suggestion", "venue": "South Court", "intent": "booking_search", "period": "next_week"}},
+        {"id": "v2-ar-37", "group": "v2", "language": "ar", "turns": [{"query": "شو في ملاعب كورة الأيام الجاية"}], "query": "الساعة 8 بالليل",
+            "expected": {"sport": "Football", "date": null, "hour": "20:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Green Field Court", "intent": "booking_search", "period": "upcoming"}},
+        {"id": "v2-ar-38", "group": "v2", "language": "ar", "query": "ملعب سلة الويكند",
+            "expected": {"sport": "Basketball", "date": null, "hour": null, "city": null, "area": null, "outcome": "no_match", "venue": null, "intent": "booking_search", "period": "weekend"}},
+        {"id": "v2-en-39", "group": "v2", "language": "en", "turns": [{"query": "volleyball on thursday"}], "query": "any time",
+            "expected": {"sport": "Volleyball", "date": "2026-10-08", "hour": null, "city": null, "area": null, "outcome": "suggestion", "venue": "Khan Younis Sports Hall", "intent": "booking_search", "period": null}},
+        {"id": "v2-ar-40", "group": "v2", "language": "ar", "turns": [{"query": "بدي ملعب كورة بكرا الساعة 10 بالليل"}], "query": "طيب الساعة 11",
+            "expected": {"sport": "Football", "date": "2026-10-04", "hour": "23:00", "city": null, "area": null, "outcome": "suggestion", "venue": "Al-Jalaa Stadium", "intent": "booking_search", "period": null}}
     ]
 }

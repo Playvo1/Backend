@@ -23,12 +23,17 @@ use Illuminate\Support\Str;
  * for the missing details, or a place that is not covered) and the sport, date and hour,
  * plus the city or area when the case expects one, were understood as expected. Each group
  * (GROUPS) is reported separately, as is the accuracy of each field.
+ *
+ * Assistant v2 cases (group v2) may be a conversation: "turns" are the messages before the
+ * final "query", answered in order with the state carried over, and a message may be a
+ * quick reply (option_id) or share a location (latitude/longitude, as "context" for the
+ * final one). They also expect the intent and the span of days (period) understood.
  */
 class AssistantEvaluator
 {
     public const FIXTURE = 'assistant/evaluation-cases.json';
 
-    public const GROUPS = ['tuning', 'held_out', 'unseen_r1', 'blind_r2'];
+    public const GROUPS = ['tuning', 'held_out', 'unseen_r1', 'blind_r2', 'v2'];
 
     public const FIELDS = ['sport', 'date', 'hour', 'place', 'venue'];
 
@@ -91,7 +96,7 @@ class AssistantEvaluator
                 'owner_id' => $owner->id,
                 'city_id' => $cities[$definition['city']]->id,
                 'status' => 'active',
-                ...collect($definition)->only(['name_ar', 'name_en', 'area_ar', 'area_en', 'avg_rating'])->all(),
+                ...collect($definition)->only(['name_ar', 'name_en', 'area_ar', 'area_en', 'avg_rating', 'latitude', 'longitude'])->all(),
             ]);
 
             foreach ($definition['sports'] as $sport) {
@@ -119,15 +124,35 @@ class AssistantEvaluator
     {
         $now = $this->referenceNow();
         $results = [];
+        $messages = 0;
 
-        foreach ($this->cases($group) as $index => $case) {
-            // The free tier limits Gemini requests per minute, so live runs can be spaced out.
-            if ($useGemini && $pace > 0 && $index > 0) {
-                Sleep::for((int) round($pace * 1000))->milliseconds();
+        foreach ($this->cases($group) as $case) {
+            $state = ConversationState::empty();
+            $history = [];
+
+            foreach ([...($case['turns'] ?? []), ['query' => $case['query'], ...($case['context'] ?? [])]] as $message) {
+                // The free tier limits Gemini requests per minute, so live runs can be spaced out.
+                if ($useGemini && $pace > 0 && $messages++ > 0) {
+                    Sleep::for((int) round($pace * 1000))->milliseconds();
+                }
+
+                $answer = $this->assistant->respond($message['query'] ?? '', $now, $useGemini, $state, [
+                    ...array_intersect_key($message, array_flip(['option_id', 'latitude', 'longitude'])),
+                    'history' => $history,
+                ]);
+                $state = $answer['state'];
+                $history[] = ['query' => $answer['query_text'], 'reply' => $answer['reply_text']];
             }
 
-            $answer = $this->assistant->respond($case['query'], $now, $useGemini);
             $actual = $this->actual($answer);
+
+            // v2 cases also expect the intent and the span of days.
+            foreach (['intent' => $answer['intent'], 'period' => $answer['period']['name'] ?? null] as $field => $value) {
+                if (array_key_exists($field, $case['expected'])) {
+                    $actual[$field] = $value;
+                }
+            }
+
             $checks = $this->checks($case['expected'], $actual);
 
             $results[] = [
@@ -194,6 +219,11 @@ class AssistantEvaluator
                     && ($expected['area'] === null || $this->sameArea($expected['area'], $actual['area']))
                 : null,
             'venue' => $expected['outcome'] === $actual['outcome'] && $expected['venue'] === $actual['venue'],
+            // v2: the intent and the span of days, when the case expects them.
+            ...collect(['intent', 'period'])
+                ->filter(fn (string $field) => array_key_exists($field, $expected))
+                ->mapWithKeys(fn (string $field) => [$field => $expected[$field] === ($actual[$field] ?? null)])
+                ->all(),
         ];
     }
 

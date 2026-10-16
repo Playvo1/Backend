@@ -681,7 +681,8 @@ class AiStage4BlindReviewTest extends TestCase
     {
         // Developer: blind_r2 is now a fixture group (as requested), so an unknown group needs another name.
         $this->artisan('assistant:evaluate', ['--fallback' => true, '--group' => 'blind_r3'])
-            ->expectsOutputToContain('--group must be tuning, held_out, unseen_r1, blind_r2 or all.')
+            // Assistant v2 added the v2 group.
+            ->expectsOutputToContain('--group must be tuning, held_out, unseen_r1, blind_r2, v2 or all.')
             ->assertExitCode(2);
     }
 

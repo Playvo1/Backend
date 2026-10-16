@@ -20,7 +20,7 @@ class EvaluateAssistant extends Command
 
     protected $signature = 'assistant:evaluate
         {--fallback : Use only the rule-based fallback parser, never Gemini}
-        {--group=all : Which cases to run: tuning, held_out, unseen_r1, blind_r2 or all}
+        {--group=all : Which cases to run: tuning, held_out, unseen_r1, blind_r2, v2 or all}
         {--min=90 : Minimum accuracy (%) every reported group must reach for the command to succeed}
         {--pace=0 : Seconds to wait between Gemini calls, to stay under the per-minute limit (4 for 15 a minute)}
         {--json= : Also write the full results as JSON to this path (a relative one goes under storage/app/assistant-eval/)}';
