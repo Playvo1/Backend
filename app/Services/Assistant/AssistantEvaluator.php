@@ -79,13 +79,14 @@ class AssistantEvaluator
         $cities = collect($fixture['cities'])->mapWithKeys(fn (array $city) => [
             $city['name_en'] => City::forceCreate([...$city, 'country_id' => $country->id]),
         ]);
-        $owner = User::forceCreate([
-            'name' => 'Evaluation Owner',
-            'email' => 'evaluation-owner@playvo.test',
-            'password' => Hash::make(Str::random(32)),
-        ]);
+        foreach ($fixture['venues'] as $index => $definition) {
+            // Each venue gets its own owner: an owner has one venue (VENUE.owner_id is unique).
+            $owner = User::forceCreate([
+                'name' => 'Evaluation Owner '.($index + 1),
+                'email' => 'evaluation-owner-'.($index + 1).'@playvo.test',
+                'password' => Hash::make(Str::random(32)),
+            ]);
 
-        foreach ($fixture['venues'] as $definition) {
             $venue = Venue::forceCreate([
                 'owner_id' => $owner->id,
                 'city_id' => $cities[$definition['city']]->id,

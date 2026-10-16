@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Assistant;
 
+use App\Models\Venue;
 use App\Services\Assistant\AssistantEvaluator;
 use App\Services\Assistant\BookingAssistant;
 use App\Services\Assistant\TextNormalizer;
@@ -109,6 +110,15 @@ class AssistantEvaluationTest extends TestCase
             'مساءً', 'المسا', 'الصبح', 'ونص', 'وربع', 'الا ربع', 'بالليل', '6pm', '6.30pm', '18:00', '٧', 'Gaza City', 'بالشجاعيه'] as $form) {
             $this->assertStringContainsString($form, $queries, "the cases include \"{$form}\"");
         }
+    }
+
+    public function test_each_reference_venue_has_its_own_owner(): void
+    {
+        // An owner has one venue, so the fixture must not depend on several venues per owner.
+        $this->evaluator()->seedReferenceData();
+
+        $this->assertSame(count($this->evaluator()->fixture()['venues']), Venue::query()->count());
+        $this->assertSame(Venue::query()->count(), Venue::query()->distinct()->count('owner_id'));
     }
 
     public function test_every_expected_venue_follows_from_the_expected_arguments(): void
