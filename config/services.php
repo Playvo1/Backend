@@ -57,4 +57,9 @@ return [
         'hourly_limit' => (int) (env('ASSISTANT_HOURLY_LIMIT') ?: 20),
     ],
 
+    // DemoDataSeeder: the password of the demo venue owners. Empty: a random one, so they can't log in.
+    'demo' => [
+        'owner_password' => env('DEMO_OWNER_PASSWORD'),
+    ],
+
 ];
