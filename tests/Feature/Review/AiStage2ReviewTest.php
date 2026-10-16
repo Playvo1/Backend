@@ -134,9 +134,10 @@ class AiStage2ReviewTest extends TestCase
         $this->assertTrue($json['success']);
         $this->assertSame('OK', $json['message']);
         $this->assertNull($json['errors']);
+        // Assistant v2 adds optional fields after the 7.8 ones; the 7.8 fields keep their order and meaning.
         $this->assertSame(
             ['assistant_query_id', 'parsed_sport_id', 'parsed_date', 'parsed_hour', 'suggested_venue_id', 'reply_text'],
-            array_keys($json['data']),
+            array_slice(array_keys($json['data']), 0, 6),
         );
 
         $data = $json['data'];
@@ -384,6 +385,8 @@ class AiStage2ReviewTest extends TestCase
     public function test_e2e_day_after_tomorrow_with_arabic_digit_and_no_sport_asks_for_details(): void
     {
         $this->withoutGemini();
+        // Assistant v2 assumes the only sport on offer, so a second one keeps "which sport?" asked here.
+        $this->makeSlot($this->makeVenue(null, ['name_en' => 'Hoops Hall']), ['sport_id' => $this->makeSport('Basketball', 'كرة السلة')->id]);
 
         $this->assertAnswer($this->ask('بعد بكرا الساعة ٧'), [
             'parsed_sport_id' => null,

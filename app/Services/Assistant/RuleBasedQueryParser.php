@@ -353,6 +353,19 @@ class RuleBasedQueryParser implements QueryParser
     }
 
     /**
+     * The sport the text names among every sport this parser knows a word for (the keys of
+     * SPORT_ALIASES, lower-case English), whether or not it is in the SPORT table, so a sport
+     * that can't be booked yet is said to be coming soon instead of asking "which sport?".
+     */
+    public function mentionedSport(string $queryText): ?string
+    {
+        $candidates = collect(self::SPORT_ALIASES)->flatMap(fn (array $aliases, string $sport) => collect([$sport, ...$aliases])
+            ->map(fn (string $alias) => ['name' => $sport, 'alias' => $alias]));
+
+        return $this->bestMention($this->prepare($queryText), $candidates, $this->knownWords());
+    }
+
+    /**
      * Whether the text names a day at all, even one only Gemini can resolve.
      */
     public function mentionsDate(string $queryText, CarbonImmutable $today): bool

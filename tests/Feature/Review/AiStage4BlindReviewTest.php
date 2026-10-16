@@ -339,7 +339,8 @@ class AiStage4BlindReviewTest extends TestCase
 
         return [
             'بالقرب من (near)' => ['بدي ملعب كورة بالقرب من الجامعة بكرا الساعة 8 بالليل', $tomorrow8],
-            'بالقرب مني (near me)' => ['بدي ملعب كورة بالقرب مني بكرا الساعة 8 بالليل', $tomorrow8],
+            // Assistant v2: "near me" without a shared location asks for it before searching.
+            'بالقرب مني (near me)' => ['بدي ملعب كورة بالقرب مني بكرا الساعة 8 بالليل', ['outcome' => 'needs_location', 'venue' => null]],
             'عند البيت (by the house)' => ['بدي ملعب كورة عند البيت بكرا الساعة 8 بالليل', $tomorrow8],
             'عند المسجد (by the mosque)' => ['بدي ملعب كورة عند المسجد بكرا 8 بالليل', $tomorrow8],
             'قرب البحر (near the sea)' => ['بدي ملعب كورة قرب البحر بكرا الساعة 8 بالليل', $tomorrow8],
@@ -411,7 +412,8 @@ class AiStage4BlindReviewTest extends TestCase
             'عند الجامعة' => ['بدي ملعب كورة عند الجامعة بكرا الساعة 8 بالليل', $tomorrow8],
             'بالضبط' => ['بدي ملعب كورة بكرا الساعة 8 بالضبط', $tomorrow8],
             'near my house' => ['football near my house tomorrow 8pm', $tomorrow8],
-            'near me' => ['football tomorrow 8pm near me', $tomorrow8],
+            // Assistant v2: "near me" without a shared location asks for it before searching.
+            'near me' => ['football tomorrow 8pm near me', ['outcome' => 'needs_location', 'venue' => null]],
             'in my area' => ['football tomorrow 8pm in my area', $tomorrow8],
             'anywhere' => ['football anywhere tomorrow 8pm', $tomorrow8],
             'please' => ['football tomorrow 8pm please', $tomorrow8],
@@ -743,8 +745,10 @@ class AiStage4BlindReviewTest extends TestCase
         $this->assertTrue($response->json('success'));
         $this->assertSame('OK', $response->json('message'));
         $this->assertNull($response->json('errors'));
-        $this->assertSame(['assistant_query_id', 'parsed_sport_id', 'parsed_date', 'parsed_hour', 'suggested_venue_id', 'reply_text'], array_keys($response->json('data')));
-        $this->assertSame(['parsed_sport_id' => $football, ...$data, 'reply_text' => $reply], array_diff_key($response->json('data'), ['assistant_query_id' => true]));
+        // Assistant v2 adds optional fields after the 7.8 ones; the 7.8 fields keep their order and meaning.
+        $this->assertSame(['assistant_query_id', 'parsed_sport_id', 'parsed_date', 'parsed_hour', 'suggested_venue_id', 'reply_text'], array_slice(array_keys($response->json('data')), 0, 6));
+        // Only the 7.8 fields are compared; the v2 additions are tested in tests/Feature/Assistant.
+        $this->assertSame(['parsed_sport_id' => $football, ...$data, 'reply_text' => $reply], array_diff_key(array_slice($response->json('data'), 0, 6), ['assistant_query_id' => true]));
 
         $row = AssistantQuery::findOrFail($response->json('data.assistant_query_id'));
         $this->assertSame($player->id, $row->user_id);

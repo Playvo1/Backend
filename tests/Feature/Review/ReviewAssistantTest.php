@@ -219,6 +219,8 @@ class ReviewAssistantTest extends TestCase
     public function test_arabic_query_without_sport_asks_for_details_in_arabic(): void
     {
         config(['services.gemini.key' => null]);
+        // Assistant v2 assumes the only sport on offer, so a second one keeps "which sport?" asked here.
+        $this->makeSlot($this->makeVenue(null, ['name_en' => 'Hoops Hall']), ['sport_id' => $this->makeSport('Basketball', 'كرة السلة')->id]);
 
         $this->ask('بكرا الساعة 6 مساءً بالجلاء')
             ->assertOk()

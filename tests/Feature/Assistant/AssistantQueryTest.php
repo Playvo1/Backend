@@ -69,20 +69,18 @@ class AssistantQueryTest extends TestCase
 
         $response = $this->ask('Football court tomorrow at 6pm near Gaza City');
 
-        $response->assertOk()
-            ->assertExactJson([
-                'success' => true,
-                'message' => 'OK',
-                'errors' => null,
-                'data' => [
-                    'assistant_query_id' => $response->json('data.assistant_query_id'),
-                    'parsed_sport_id' => $this->football->id,
-                    'parsed_date' => '2026-10-04',
-                    'parsed_hour' => '18:00',
-                    'suggested_venue_id' => $this->venue->id,
-                    'reply_text' => 'Green Field Court is available tomorrow at 18:00 for 40 ILS/hour. Want me to book it?',
-                ],
-            ]);
+        // Assistant v2 adds optional fields after these (tested in AssistantConversationTest), so the 7.8 ones are compared alone.
+        $response->assertOk();
+        $this->assertSame(['success', 'message', 'data', 'errors'], array_keys($response->json()));
+        $this->assertSame([
+            'assistant_query_id' => $response->json('data.assistant_query_id'),
+            'parsed_sport_id' => $this->football->id,
+            'parsed_date' => '2026-10-04',
+            'parsed_hour' => '18:00',
+            'suggested_venue_id' => $this->venue->id,
+            'reply_text' => 'Green Field Court is available tomorrow at 18:00 for 40 ILS/hour. Want me to book it?',
+        ], array_slice($response->json('data'), 0, 6));
+        $response->assertJson(['success' => true, 'message' => 'OK', 'errors' => null]);
 
         $this->assertDatabaseHas('assistant_queries', [
             'id' => $response->json('data.assistant_query_id'),
@@ -193,7 +191,8 @@ class AssistantQueryTest extends TestCase
             ->assertJsonPath('data.parsed_hour', null)
             ->assertJsonPath('data.parsed_date', null)
             ->assertJsonPath('data.suggested_venue_id', null)
-            ->assertJsonPath('data.reply_text', 'Tell me the sport, day and hour you want, for example: "Football tomorrow at 6pm".');
+            // Assistant v2 answers a greeting instead of asking for the sport, day and hour.
+            ->assertJsonPath('data.reply_text', 'Hi! I\'m the Playvo booking assistant. Tell me what you\'re looking for, e.g. "football court tomorrow at 8pm" or "venues near me", or ask me about prices, working hours, payment or cancellation.');
 
         $this->assertDatabaseHas('assistant_queries', ['query_text' => 'hello there', 'parsed_sport_id' => null, 'parsed_hour' => null]);
     }
