@@ -40,15 +40,30 @@ class AppServiceProvider extends ServiceProvider
 
         // Guidelines 2.4: the assistant is limited per user to control Gemini cost and abuse.
         // The 429 keeps the unified response shape and the Retry-After header.
+        // Every message counts, whether Gemini answers it or not; a quick-reply tap (option_id
+        // without text) never reaches Gemini, so taps count in a larger bucket of their own.
         RateLimiter::for('assistant', function (Request $request) {
-            $limit = config('services.assistant.hourly_limit');
+            $tap = filled($request->input('option_id')) && blank($request->input('query_text'));
+            $limit = config($tap ? 'services.assistant.option_hourly_limit' : 'services.assistant.hourly_limit');
 
             return Limit::perHour($limit)
-                ->by('assistant:'.($request->user()?->id ?? $request->ip()))
+                ->by(($tap ? 'assistant-option:' : 'assistant:').($request->user()?->id ?? $request->ip()))
                 ->response(fn (Request $request, array $headers) => ApiResponse::send(
                     false,
                     429,
                     "You've reached the limit of {$limit} assistant questions per hour. Please try again later.",
+                )->withHeaders($headers));
+        });
+
+        RateLimiter::for('assistant-feedback', function (Request $request) {
+            $limit = config('services.assistant.feedback_hourly_limit');
+
+            return Limit::perHour($limit)
+                ->by('assistant-feedback:'.($request->user()?->id ?? $request->ip()))
+                ->response(fn (Request $request, array $headers) => ApiResponse::send(
+                    false,
+                    429,
+                    "You've reached the limit of {$limit} ratings per hour. Please try again later.",
                 )->withHeaders($headers));
         });
     }

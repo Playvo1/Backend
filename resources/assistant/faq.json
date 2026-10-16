@@ -1,0 +1,60 @@
+{
+    "meta": {
+        "title": "Playvo booking assistant: policy and FAQ answers",
+        "status": "draft — pending team approval",
+        "version": 2,
+        "hold_minutes": 10,
+        "notes": [
+            "These texts describe how the system works today; change them here when the product changes, and keep {hold_minutes} equal to the payment window in BookingController::store (hold_expires_at).",
+            "Prices and working hours are never written here: the assistant computes them live from the time slots of the next 14 days. Prices come from the free slots only (what a player can book); working hours from every published slot, free, held or booked (when the venue is open).",
+            "The payment window is enforced by the bookings:expire job (every minute), which only cancels bookings without a receipt; a receipt uploaded a little after the window but before the job runs is still accepted. The texts therefore say a late booking \"can\" be cancelled, and ask players to upload right away.",
+            "Open question for the team: where a player should go to cancel a booking that is already paid or confirmed (venue phone, support contact). Until then the answer says to contact the venue."
+        ]
+    },
+    "answers": {
+        "cancellation": {
+            "ar": "لا يوجد حالياً زر لإلغاء الحجز من التطبيق. الحجز الجديد ينتظر الدفع حوالي {hold_minutes} دقائق: إذا لم ترفع إيصال الدفع خلالها قد يُلغى تلقائياً ويعود الموعد متاحاً للجميع. إذا رفعت الإيصال أو تأكد حجزك وتريد إلغاءه، تواصل مع إدارة الملعب مباشرة. وإذا رُفض الإيصال عند المراجعة يُلغى الحجز تلقائياً.",
+            "en": "There is no cancel button in the app yet. A new booking waits about {hold_minutes} minutes for payment: if you don't upload the payment receipt in that time, it can be cancelled automatically and the slot is free again. If you already uploaded the receipt or the booking is confirmed and you want to cancel, please contact the venue directly. If the receipt is rejected at review, the booking is cancelled automatically."
+        },
+        "payment": {
+            "ar": "الدفع بتحويل بنكي. بعد إرسال الحجز يُحجز لك الموعد حوالي {hold_minutes} دقائق، ارفع خلالها صورة إيصال التحويل من شاشة الحجز فوراً، وإلا قد يُلغى الحجز تلقائياً. نتحقق أن الإيصال لم يُستخدم لحجز آخر، ثم يراجعه المشرف: عند القبول يتأكد الحجز ويصلك إشعار، وعند الرفض يُلغى الحجز ويعود الموعد متاحاً. المبلغ هو سعر الساعة المعروض للموعد.",
+            "en": "Payment is by bank transfer. Once you submit a booking, the slot is held for you for about {hold_minutes} minutes: upload a photo of the transfer receipt from the booking screen right away, or the booking can be cancelled automatically. We check the receipt wasn't used for another booking, then an admin reviews it: if it's accepted your booking is confirmed and you get a notification; if it's rejected the booking is cancelled and the slot is free again. The amount is the slot's hourly price."
+        },
+        "how_to_book": {
+            "ar": "الحجز بخطوات بسيطة: 1) اختر الملعب والموعد (أو اسألني مثلاً: \"كورة بكرا الساعة 8\"). 2) أدخل اسم كابتن الفريق ودوره ورقم هاتفه وأكّد. 3) يُحجز لك الموعد حوالي {hold_minutes} دقائق، ارفع خلالها صورة إيصال التحويل البنكي. 4) بعد مراجعة المشرف للإيصال يتأكد حجزك ويصلك إشعار.",
+            "en": "Booking takes a few steps: 1) pick a venue and a time (or ask me, e.g. \"football tomorrow at 8pm\"). 2) Enter the team captain's name, role and phone number, and confirm. 3) The slot is held for about {hold_minutes} minutes: upload a photo of your bank transfer receipt in that time. 4) Once an admin has checked the receipt, your booking is confirmed and you get a notification."
+        },
+        "confirm_booking": {
+            "ar": "لا أستطيع إتمام الحجز بنفسي: افتح الاقتراح لتنتقل إلى شاشة الحجز، ثم أدخل بيانات كابتن الفريق وأكّد، وارفع إيصال الدفع خلال {hold_minutes} دقائق.",
+            "en": "I can't complete the booking myself: open the suggestion to go to the booking screen, enter the team captain's details and confirm, then upload the payment receipt within {hold_minutes} minutes."
+        },
+        "booking_status": {
+            "ar": "لا أستطيع رؤية حجوزاتك من هنا، لكن هكذا يسير الحجز: بعد إرساله يكون بانتظار الدفع، وعليك رفع إيصال التحويل خلال حوالي {hold_minutes} دقائق وإلا قد يُلغى تلقائياً. بعد رفع الإيصال ينتظر مراجعة المشرف؛ عند القبول يتأكد الحجز ويصلك إشعار، وعند الرفض يُلغى ويعود الموعد متاحاً. إذا رفعت الإيصال ولم يصلك إشعار بعد، فالحجز ما زال قيد المراجعة. مبارياتك السابقة تظهر في \"حجوزاتي\".",
+            "en": "I can't see your bookings from here, but this is how a booking moves: once submitted it waits for payment, and you need to upload the transfer receipt within about {hold_minutes} minutes or it can be cancelled automatically. After the upload it waits for an admin's review; if accepted it is confirmed and you get a notification, if rejected it is cancelled and the slot is free again. If you uploaded the receipt and got no notification yet, it is still being reviewed. Your past games are listed under My Bookings."
+        },
+        "greeting": {
+            "ar": "أهلاً بك! أنا مساعد الحجز في Playvo. اكتب لي ما تريد، مثلاً: \"ملعب كورة بكرا الساعة 8\" أو \"ملاعب قريبة مني\"، أو اسألني عن الأسعار ومواعيد العمل والدفع والإلغاء.",
+            "en": "Hi! I'm the Playvo booking assistant. Tell me what you're looking for, e.g. \"football court tomorrow at 8pm\" or \"venues near me\", or ask me about prices, working hours, payment or cancellation."
+        },
+        "help": {
+            "ar": "أستطيع أن: أبحث لك عن موعد متاح (رياضة ويوم وساعة، أو هذا الأسبوع، أو الويكند)، أعرض أقرب الملاعب أو الأرخص أو الأعلى تقييماً، وأجيب عن الأسعار ومواعيد العمل وطريقة الحجز والدفع والإلغاء. جرّب: \"كورة بكرا الساعة 8\".",
+            "en": "I can: find you a free slot (a sport, day and hour, or this week, or the weekend), show the nearest, cheapest or best-rated venues, and answer questions about prices, working hours, how to book, payment and cancellation. Try: \"football tomorrow at 8pm\"."
+        },
+        "thanks": {
+            "ar": "العفو! إذا احتجت موعداً آخر اكتب لي في أي وقت.",
+            "en": "You're welcome! If you need another slot, just write to me any time."
+        },
+        "out_of_scope": {
+            "ar": "عذراً، أستطيع المساعدة فقط في حجز الملاعب: البحث عن موعد متاح، الملاعب القريبة أو الأرخص، الأسعار، مواعيد العمل، وطريقة الحجز والدفع والإلغاء. جرّب مثلاً: \"كورة بكرا الساعة 8\".",
+            "en": "Sorry, I can only help with booking venues: finding a free slot, nearby or cheapest venues, prices, working hours, and how booking, payment and cancellation work. Try, for example: \"football tomorrow at 8pm\"."
+        },
+        "new_search": {
+            "ar": "تمام، لنبدأ من جديد. ما الرياضة واليوم والساعة التي تريدها؟",
+            "en": "Sure, let's start over. Which sport, day and hour would you like?"
+        },
+        "venue_info": {
+            "ar": "ليس لدي بعد معلومات عن مرافق الملاعب (الإضاءة، نوع الأرضية، المواقف، غرف التبديل...). تفاصيل كل ملعب وصوره في صفحته في التطبيق. أستطيع أن أبحث لك عن موعد متاح أو أعرض الملاعب حسب المنطقة.",
+            "en": "I don't have information about the venues' facilities yet (lights, surface, parking, changing rooms...). Each venue's page in the app shows its details and photos. I can find you a free slot or show the venues by area."
+        }
+    }
+}

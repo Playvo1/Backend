@@ -134,9 +134,10 @@ class AiStage2ReviewTest extends TestCase
         $this->assertTrue($json['success']);
         $this->assertSame('OK', $json['message']);
         $this->assertNull($json['errors']);
+        // Assistant v2 adds optional fields after the 7.8 ones; the 7.8 fields keep their order and meaning.
         $this->assertSame(
             ['assistant_query_id', 'parsed_sport_id', 'parsed_date', 'parsed_hour', 'suggested_venue_id', 'reply_text'],
-            array_keys($json['data']),
+            array_slice(array_keys($json['data']), 0, 6),
         );
 
         $data = $json['data'];
@@ -175,7 +176,7 @@ class AiStage2ReviewTest extends TestCase
 
     private function arSuggestion(string $day, string $hour, string $price = '40', string $name = 'ملعب الحقل الأخضر'): string
     {
-        return "{$name} متاح {$day} الساعة {$hour} بسعر {$price} شيكل للساعة. هل تريد أن أحجزه لك؟";
+        return "يتوفر موعد في {$name} {$day} الساعة {$hour} بسعر {$price} شيكل للساعة. هل تريد أن أحجزه لك؟";
     }
 
     private function enSuggestion(string $day, string $hour, string $price = '40', string $name = 'Green Field Court'): string
@@ -209,13 +210,15 @@ class AiStage2ReviewTest extends TestCase
     {
         $this->geminiCall(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '21:00']);
 
-        $this->assertAnswer($this->ask('Football tomorrow at 9pm'), [
+        // Assistant v2 review: the 18:00 slot is close, so it is named and suggested (not exact).
+        $response = $this->ask('Football tomorrow at 9pm');
+        $this->assertAnswer($response, [
             'parsed_sport_id' => $this->football->id,
             'parsed_date' => '2026-10-04',
             'parsed_hour' => '21:00',
-            'suggested_venue_id' => null,
-            'reply_text' => self::EN_NO_MATCH,
+            'suggested_venue_id' => $this->venue->id,
         ]);
+        $this->assertStringStartsWith('Nothing is free at exactly 21:00. Closest times: ', $response->json('data.reply_text'));
         $this->assertSame(1, AssistantQuery::count());
     }
 
@@ -384,13 +387,16 @@ class AiStage2ReviewTest extends TestCase
     public function test_e2e_day_after_tomorrow_with_arabic_digit_and_no_sport_asks_for_details(): void
     {
         $this->withoutGemini();
+        // Assistant v2 assumes the only sport on offer, so a second one keeps "which sport?" asked here.
+        $this->makeSlot($this->makeVenue(null, ['name_en' => 'Hoops Hall']), ['sport_id' => $this->makeSport('Basketball', 'كرة السلة')->id]);
 
         $this->assertAnswer($this->ask('بعد بكرا الساعة ٧'), [
             'parsed_sport_id' => null,
             'parsed_date' => '2026-10-05',
             'parsed_hour' => '19:00',
             'suggested_venue_id' => null,
-            'reply_text' => 'أخبرني بالرياضة واليوم والساعة التي تريدها، مثلاً: "كرة قدم بكرا الساعة 6 مساءً".',
+            // Only the sport is missing, so only the sport is asked for (Stage 3 review decision).
+            'reply_text' => 'أي رياضة؟',
         ]);
     }
 
@@ -406,7 +412,8 @@ class AiStage2ReviewTest extends TestCase
             'parsed_date' => '2026-10-09',
             'parsed_hour' => '09:00',
             'suggested_venue_id' => $this->venue->id,
-            'reply_text' => $this->arSuggestion('بتاريخ 2026-10-09', '09:00', '30'),
+            // Assistant v2 review: dates are written as in the lists, never as YYYY-MM-DD.
+            'reply_text' => $this->arSuggestion('يوم الجمعة 9 أكتوبر', '09:00', '30'),
         ]);
     }
 
@@ -510,7 +517,8 @@ class AiStage2ReviewTest extends TestCase
             'parsed_date' => '2026-10-05',
             'parsed_hour' => '19:00',
             'suggested_venue_id' => $this->venue->id,
-            'reply_text' => $this->enSuggestion('on 2026-10-05', '19:00', '45'),
+            // Assistant v2 review: dates are written as in the lists, never as YYYY-MM-DD.
+            'reply_text' => $this->enSuggestion('on Mon 5 Oct', '19:00', '45'),
         ]);
     }
 
@@ -726,7 +734,12 @@ class AiStage2ReviewTest extends TestCase
         // 15:00:30 UTC on the 4th is 18:00:30 in Gaza: the 18:00 slot has started, the 19:00 one has not.
         $this->travelTo(Carbon::parse('2026-10-04 15:00:30', 'UTC'));
 
-        $this->assertAnswer($this->ask('football today at 6pm'), ['parsed_date' => '2026-10-04', 'suggested_venue_id' => null, 'reply_text' => self::EN_NO_MATCH]);
+        // Assistant v2 review: the started 18:00 slot is never offered; the 19:00 one is, as the closest time.
+        $started = $this->ask('football today at 6pm');
+        $this->assertAnswer($started, ['parsed_date' => '2026-10-04']);
+        $this->assertSame([false], array_column($started->json('data.suggestions'), 'exact'));
+        $this->assertSame(['19:00'], array_column($started->json('data.suggestions'), 'start_time'));
+        $this->assertStringStartsWith('Nothing is free at exactly 18:00.', $started->json('data.reply_text'));
         $this->assertAnswer($this->ask('football today at 7pm'), ['suggested_venue_id' => $this->venue->id, 'reply_text' => $this->enSuggestion('today', '19:00', '50')]);
     }
 
@@ -806,13 +819,16 @@ class AiStage2ReviewTest extends TestCase
     public function test_an_injected_area_or_city_never_produces_a_made_up_suggestion(): void
     {
         $this->geminiCall(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00', 'area' => 'Fake Arena']);
-        $this->assertAnswer($this->ask('football tomorrow at 6pm at Fake Arena'), ['suggested_venue_id' => null, 'reply_text' => self::EN_NO_MATCH]);
+        // An area no venue is in is said plainly (Stage 3 review decision), never searched elsewhere.
+        $this->assertAnswer($this->ask('football tomorrow at 6pm at Fake Arena'), ['suggested_venue_id' => null, 'reply_text' => "I couldn't find a venue in Fake Arena — try another area, or leave the area out."]);
 
+        // Assistant v2 review: an area the text doesn't name is ignored, so the plain request is searched.
+        $plain = (new VenueSearchTool)->execute(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00'], LocalClock::now())?->venue_id;
         $this->geminiCall(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00', 'area' => "%' OR '1'='1"]);
-        $this->assertAnswer($this->ask('football tomorrow at 6pm'), ['suggested_venue_id' => null]);
+        $this->assertAnswer($this->ask('football tomorrow at 6pm'), ['suggested_venue_id' => $plain]);
 
         $this->geminiCall(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00', 'area' => '_']);
-        $this->assertAnswer($this->ask('football tomorrow at 6pm'), ['suggested_venue_id' => null]);
+        $this->assertAnswer($this->ask('football tomorrow at 6pm'), ['suggested_venue_id' => $plain]);
     }
 
     public static function injectionTexts(): array
@@ -952,7 +968,8 @@ class AiStage2ReviewTest extends TestCase
 
         foreach ($cases as $args) {
             $this->geminiCall($args);
-            $expected = (new VenueSearchTool)->execute($args, LocalClock::now())?->venue_id;
+            // Assistant v2 review: the text names no place, so Gemini's city or area is ignored.
+            $expected = (new VenueSearchTool)->execute(array_diff_key($args, ['city' => true, 'area' => true]), LocalClock::now())?->venue_id;
 
             // The text gives an hour, so Gemini's hour is used (a text without one now asks for it).
             $this->assertAnswer($this->ask('football tomorrow at 6pm'), ['suggested_venue_id' => $expected]);

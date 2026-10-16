@@ -93,6 +93,9 @@ Route::prefix('v1')->group(function () {
     Route::post('assistant/query', [AssistantController::class, 'query'])
         ->middleware(['auth:sanctum', 'role:player', 'throttle:assistant']);
 
+    Route::post('assistant/feedback', [AssistantController::class, 'feedback'])
+        ->middleware(['auth:sanctum', 'role:player', 'throttle:assistant-feedback']);
+
     Route::prefix('admin')
         ->middleware(['auth:sanctum', 'role:admin'])
         ->group(function () {

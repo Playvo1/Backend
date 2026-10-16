@@ -26,6 +26,8 @@ php artisan db:seed --class=RoleSeeder --force
 php artisan db:seed --class=InitialAdminSeeder --force
 php artisan db:seed --class=CitySeeder --force
 php artisan db:seed --class=SportSeeder --force
+# Demo venues and slots for a showcase server (DemoDataSeeder); off unless asked for.
+if [ "$SEED_DEMO_DATA" = "true" ]; then php artisan db:seed --class=DemoDataSeeder --force; fi
 php artisan storage:link || true
 
 # Runs scheduled commands (bookings:expire every minute) alongside the web server.

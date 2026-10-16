@@ -55,6 +55,17 @@ return [
     // Guidelines 2.4: assistant questions per player per hour.
     'assistant' => [
         'hourly_limit' => (int) (env('ASSISTANT_HOURLY_LIMIT') ?: 20),
+        // Quick-reply taps (option_id without text) never reach Gemini, so they have a bucket of their own.
+        'option_hourly_limit' => (int) (env('ASSISTANT_OPTION_HOURLY_LIMIT') ?: 60),
+        // A conversation idle for longer starts afresh (assistant v2).
+        'conversation_minutes' => (int) (env('ASSISTANT_CONVERSATION_MINUTES') ?: 30),
+        // Ratings of the assistant per player per hour.
+        'feedback_hourly_limit' => (int) (env('ASSISTANT_FEEDBACK_HOURLY_LIMIT') ?: 10),
+    ],
+
+    // DemoDataSeeder: the password of the demo venue owners. Empty: a random one, so they can't log in.
+    'demo' => [
+        'owner_password' => env('DEMO_OWNER_PASSWORD'),
     ],
 
 ];

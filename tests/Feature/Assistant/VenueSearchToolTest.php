@@ -97,7 +97,8 @@ class VenueSearchToolTest extends TestCase
         $this->assertSame(VenueSearchTool::NAME, $declaration['name']);
         $this->assertSame('search_available_venues', $declaration['name']);
         $this->assertSame('OBJECT', $parameters['type']);
-        $this->assertSame(['sport', 'date', 'hour', 'city', 'area'], array_keys($properties));
+        // Assistant v2 adds the optional period and intent readings.
+        $this->assertSame(['sport', 'date', 'hour', 'city', 'area', 'period', 'intent'], array_keys($properties));
         $this->assertSame(['sport', 'date', 'hour'], $parameters['required']);
         $this->assertEqualsCanonicalizing(['كرة القدم', 'Football'], $properties['sport']['enum']);
         $this->assertEqualsCanonicalizing(['غزة', 'Gaza', 'خانيونس', 'Khan Younis'], $properties['city']['enum']);
@@ -321,6 +322,16 @@ class VenueSearchToolTest extends TestCase
         $this->assertNull($this->search(['area' => 'AlJalaa']));
         $this->assertNull($this->search(['area' => '-']));
         $this->assertNull($this->search(['area' => ' - - ']));
+    }
+
+    public function test_a_dropped_hamza_seat_matches_names_and_areas(): void
+    {
+        $volleyball = Sport::forceCreate(['name_ar' => 'كرة الطائرة', 'name_en' => 'Volleyball']);
+        $slot = $this->slot($this->venue(['area_ar' => 'حي الطائرة']), ['sport_id' => $volleyball->id]);
+
+        $this->assertTrue($volleyball->is((new VenueSearchTool)->findSport('كرة الطايرة')));
+        $this->assertTrue($slot->is($this->search(['sport' => 'كره الطايره', 'area' => 'حي الطايرة'])));
+        $this->assertTrue($slot->is($this->search(['sport' => 'Volleyball', 'area' => 'الطائره'])));
     }
 
     public function test_trailing_newlines_are_rejected(): void

@@ -35,6 +35,7 @@ php artisan key:generate --show
    | `ADMIN_EMAIL`, `ADMIN_PASSWORD` | first admin account (created on start if missing) |
    | `GOOGLE_CLIENT_ID` | Google OAuth client ID (same as local `.env`) |
    | `CORS_ALLOWED_ORIGINS` | web dashboard URL(s), comma-separated |
+   | `DEMO_OWNER_PASSWORD` | optional: password of the demo venue owners (see below) |
 4. Service → **Environment → Secret Files → Add**: filename `ca.pem`, paste the Aiven certificate.
 5. **Manual Deploy → Deploy latest commit**. Check `https://<service>.onrender.com/up` returns 200.
 
@@ -43,3 +44,4 @@ php artisan key:generate --show
 - **Uploaded files are not persistent:** payment receipt images are lost on every redeploy/restart. Move them to external storage (e.g. S3) before real use.
 - **First admin account:** created from `ADMIN_EMAIL` / `ADMIN_PASSWORD` by `InitialAdminSeeder`. Log in with it and create further admins via `POST /api/v1/admin/admins`. Changing the variables later does not modify an existing account.
 - **Logs:** Render dashboard → service → **Logs**.
+- **Demo data:** set `SEED_DEMO_DATA` to `true` to create 5 demo Football venues (one owner each, `owner.*@playvo.test`) with free hourly slots from 16:00 to 00:00 for the next 14 days, on every start. It is safe to repeat: existing demo venues, and booked or held slots, are never changed, and nothing else is touched. Locally: `php artisan db:seed --class=DemoDataSeeder` (after `RoleSeeder`, `CitySeeder` and `SportSeeder`). With `DEMO_OWNER_PASSWORD` empty the owners get a random password and can't log in.
