@@ -26,8 +26,8 @@ use Illuminate\Support\Str;
  *
  * Assistant v2 cases (group v2) may be a conversation: "turns" are the messages before the
  * final "query", answered in order with the state carried over, and a message may be a
- * quick reply (option_id) or share a location (latitude/longitude, as "context" for the
- * final one). They also expect the intent and the span of days (period) understood.
+ * quick reply (option_id, or city for a city button) or share a location (latitude/longitude,
+ * as "context" for the final one). They also expect the intent and the span of days (period) understood.
  */
 class AssistantEvaluator
 {
@@ -134,6 +134,11 @@ class AssistantEvaluator
                 // The free tier limits Gemini requests per minute, so live runs can be spaced out.
                 if ($useGemini && $pace > 0 && $messages++ > 0) {
                     Sleep::for((int) round($pace * 1000))->milliseconds();
+                }
+
+                // A city button is named in the fixture ("city": "Deir al-Balah"); its id depends on the database.
+                if (isset($message['city'])) {
+                    $message['option_id'] = 'city_'.$this->tool->findCity($message['city'])?->id;
                 }
 
                 $answer = $this->assistant->respond($message['query'] ?? '', $now, $useGemini, $state, [

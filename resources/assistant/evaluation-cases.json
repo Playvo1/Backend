@@ -523,7 +523,7 @@
             "expected": {"sport": null, "date": null, "hour": null, "city": null, "area": null, "outcome": "needs_location", "venue": null, "intent": "availability", "period": null}},
         {"id": "v2-ar-22", "group": "v2", "language": "ar", "turns": [{"query": "أريد حجز ملعب كرة قدم غداً"}], "query": "كل الملاعب", "context": {"option_id": "all_venues"},
             "expected": {"sport": "Football", "date": "2026-10-04", "hour": null, "city": null, "area": null, "outcome": "suggestion", "venue": "South Court", "intent": "booking_search", "period": null}},
-        {"id": "v2-ar-23", "group": "v2", "language": "ar", "turns": [{"query": "أريد حجز ملعب كرة قدم غداً"}, {"query": "", "option_id": "pick_area"}], "query": "دير البلح", "context": {"option_id": "city_3"},
+        {"id": "v2-ar-23", "group": "v2", "language": "ar", "turns": [{"query": "أريد حجز ملعب كرة قدم غداً"}, {"query": "", "option_id": "pick_area"}], "query": "دير البلح", "context": {"city": "Deir al-Balah"},
             "expected": {"sport": "Football", "date": "2026-10-04", "hour": null, "city": "Deir al-Balah", "area": null, "outcome": "suggestion", "venue": "Deir Beach Court", "intent": "booking_search", "period": null}},
         {"id": "v2-ar-24", "group": "v2", "language": "ar", "turns": [{"query": "كورة بكرا"}], "query": "استخدم موقعي", "context": {"option_id": "use_location", "latitude": 31.539, "longitude": 34.495},
             "expected": {"sport": "Football", "date": "2026-10-04", "hour": null, "city": null, "area": null, "outcome": "suggestion", "venue": "Shujaiya Arena", "intent": "booking_search", "period": null}},
