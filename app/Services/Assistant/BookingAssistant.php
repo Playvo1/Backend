@@ -152,7 +152,7 @@ class BookingAssistant
             return $this->faqAnswer($read['strong'], $turn);
         }
 
-        $period = isset($parsed['date']) ? null : $this->periods->parse($queryText, $now->startOfDay());
+        $period = isset($parsed['date']) ? $this->rules->weekdayChoice($queryText, $now->startOfDay()) : $this->periods->parse($queryText, $now->startOfDay());
         $searchSignals = $parsed !== [] || $period !== null || $read['sort'] !== null || $read['near'] || $read['any_hour'] || $read['list'];
         // A day alone in a longer message that is about nothing else ("what's the weather
         // today?") is not a booking request; "بكرا" alone, or as a follow-up, still is.
@@ -164,6 +164,11 @@ class BookingAssistant
 
         if ($read['prices'] && ! isset($parsed['date']) && ! isset($parsed['hour']) && $period === null) {
             return $this->faqAnswer(IntentClassifier::PRICES, $turn);
+        }
+
+        // "هل يوجد ملاعب مضاءة؟": the data has no facilities, so say so instead of searching.
+        if ($read['facility'] && ! isset($parsed['date']) && ! isset($parsed['hour']) && $period === null) {
+            return $this->answer($turn, IntentClassifier::VENUE_INFO, $this->knowledge->answer('venue_info', $arabic), ['all_venues', 'pick_area']);
         }
 
         if (! $searchSignals && ! $read['venue_words'] && ($read['yes'] || $read['no']) && $state->has('last_slot_id')) {
@@ -193,7 +198,7 @@ class BookingAssistant
             // Nothing a search can use: Gemini may still have recognised a question.
             $intent = $extras['intent'] ?? null;
 
-            if (in_array($intent, [IntentClassifier::CANCELLATION, IntentClassifier::PAYMENT, IntentClassifier::HOW_TO_BOOK, IntentClassifier::PRICES, IntentClassifier::WORKING_HOURS], true)) {
+            if (in_array($intent, [IntentClassifier::CANCELLATION, IntentClassifier::PAYMENT, IntentClassifier::HOW_TO_BOOK, IntentClassifier::PRICES, IntentClassifier::WORKING_HOURS, IntentClassifier::BOOKING_STATUS], true)) {
                 return $this->faqAnswer($intent, $turn);
             }
 
@@ -218,7 +223,9 @@ class BookingAssistant
             unset($arguments['date']);
         }
 
+        // "Now" without an hour: the earliest slots from now on today.
         $listMode = $period !== null || $read['sort'] !== null || $read['near'] || $read['any_hour'] || $read['list']
+            || ($read['now'] && ! isset($arguments['hour']))
             || ($extras['intent'] ?? null) === IntentClassifier::AVAILABILITY;
         $partOfDay = ! isset($arguments['hour']) ? $this->rules->partOfDay($queryText) : null;
 
@@ -323,6 +330,14 @@ class BookingAssistant
             $freeHours = $missing === ['hour'] ? $this->tool->freeHours($this->arguments($state, $sport), $turn->now, $from, until: $until) : [];
             $turn->state = $state->with(['asked' => $missing[0]]);
 
+            // Nothing free in that part of the day: say so, and offer the day's free hours.
+            if ($missing === ['hour'] && $freeHours === []) {
+                $dayHours = $this->tool->freeHours($this->arguments($state, $sport), $turn->now, '00:00');
+                $turn->options = $dayHours === [] ? [] : ['all_venues'];
+
+                return $this->finish($turn, self::NEEDS_DETAILS, $this->replies->noFreeHours($partOfDay, $dayHours, $state->has('part_of_day'), $arabic));
+            }
+
             // "Football tomorrow": besides the hour, offer how to search (the design's three buttons).
             if ($missing === ['hour'] && ! $state->has('city') && ! $state->has('area') && ! $state->has('location')) {
                 $turn->options = ['use_location', 'pick_area', 'all_venues'];
@@ -334,7 +349,7 @@ class BookingAssistant
         [$from, $until] = self::PARTS_OF_DAY[$state->get('part_of_day') ?? ''] ?? [null, null];
         $found = $this->tool->search([
             ...$this->arguments($state, $sport),
-            ...($period !== null ? ['from' => $period['from'], 'to' => $period['to']] : []),
+            ...($period !== null ? ['from' => $period['from'], 'to' => $period['to'], 'dates' => $period['dates'] ?? []] : []),
             'from_hour' => $from,
             'until_hour' => $until,
             'sort' => $state->get('sort'),
@@ -347,13 +362,17 @@ class BookingAssistant
 
         if ($found['exact'] === []) {
             $turn->suggestions = array_map(fn (array $option) => [...$option, 'exact' => false], $found['alternatives']);
-            $turn->state = $turn->state->with(['asked' => null]);
+            $turn->state = $turn->state->with(['asked' => null, 'last_slot_id' => $found['alternatives'][0]['slot']->id ?? null]);
 
-            // The US-4.5 wording stays as it is; the close alternatives come as suggestions.
-            return $this->finish($turn, self::NO_MATCH, $this->replies->noMatch($arabic));
+            // Nothing at all: the US-4.5 wording. Close alternatives: said, with their time and price.
+            return $this->finish($turn, self::NO_MATCH, $found['alternatives'] === []
+                ? $this->replies->noMatch($arabic)
+                : $this->replies->closestOptions((string) $state->get('hour'), $found['alternatives'], $today, $arabic));
         }
 
-        $turn->suggestions = array_map(fn (array $option) => [...$option, 'exact' => true], $found['exact']);
+        // A slot that holds the hour asked for but not a full hour from it ("8 ونص" in a
+        // 20:00-21:00 slot) is offered, yet not as an exact match.
+        $turn->suggestions = array_map(fn (array $option) => [...$option, 'exact' => $this->coversHour($option['slot'], $state->get('hour'))], $found['exact']);
         $turn->slot = $found['exact'][0]['slot'];
         $turn->state = $turn->state->with(['asked' => null, 'last_slot_id' => $turn->slot->id]);
 
@@ -539,6 +558,8 @@ class BookingAssistant
             'source' => $turn->source,
             'sport' => $turn->sport ?? $this->tool->findSport($state->get('sport')),
             'slot' => $turn->slot,
+            // The first suggestion's venue, also when it is only close to what was asked.
+            'suggested_venue_id' => $turn->suggestions[0]['slot']->venue_id ?? $turn->slot?->venue_id,
             'outcome' => $outcome,
             'reply_text' => $replyText,
             'intent' => $turn->intent,
@@ -549,6 +570,24 @@ class BookingAssistant
             'arabic' => $turn->arabic,
             'query_text' => $turn->queryText,
         ];
+    }
+
+    /**
+     * Whether a slot starts at the hour asked for or runs a full hour from it (00:00 as an
+     * end is midnight); with no hour asked, any slot of the day fits.
+     */
+    private function coversHour(TimeSlot $slot, ?string $hour): bool
+    {
+        if ($hour === null) {
+            return true;
+        }
+
+        $minutes = fn (string $time) => (int) substr($time, 0, 2) * 60 + (int) substr($time, 3, 2);
+        $start = $minutes((string) $slot->start_time);
+        $end = $minutes((string) $slot->end_time) ?: 1440;
+        $asked = $minutes($hour);
+
+        return $start === $asked || ($start <= $asked && $end >= $asked + 60);
     }
 
     /**
@@ -593,12 +632,32 @@ class BookingAssistant
     private function isArabic(string $queryText, ConversationState $state, ?string $language): bool
     {
         if (preg_match('/\p{L}/u', $queryText) === 1) {
-            return TextNormalizer::isArabic($queryText);
+            return TextNormalizer::isArabic($queryText) || $this->isArabizi($queryText);
         }
 
         $language = $state->get('language') ?? $language;
 
         return $language === null ? TextNormalizer::isArabic($queryText) : $language === 'ar';
+    }
+
+    /**
+     * Arabic written in Latin letters with digits for letters ("kif bilghi el 7ajez",
+     * "mal3ab", "el8a2"): its writers read Arabic, so the reply is in Arabic. A digit next to
+     * an English unit ("8pm", "5th", "2hrs") is not Arabizi.
+     */
+    private function isArabizi(string $queryText): bool
+    {
+        foreach (preg_split('/[^a-z0-9]+/', mb_strtolower($queryText), flags: PREG_SPLIT_NO_EMPTY) ?: [] as $word) {
+            if (preg_match('/^\d+(?:am|pm|th|st|nd|rd|h|hr|hrs|min|mins|ish|k|km|x|v|vs)$/D', $word) === 1) {
+                continue;
+            }
+
+            if (preg_match('/^[a-z]+[235-9][a-z0-9]*$|^[3578][a-z]{2,}$/D', $word) === 1) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -662,6 +721,16 @@ class BookingAssistant
         foreach (['sport', 'city', 'area'] as $field) {
             if (isset($fromGemini[$field], $context['known'][$field]) && ! isset($fallback[$field])
                 && TextNormalizer::normalize($fromGemini[$field]) === TextNormalizer::normalize((string) $context['known'][$field])) {
+                unset($fromGemini[$field]);
+            }
+        }
+
+        // Like a day or an hour, a city or area counts only when the text names a place: one
+        // the rules read, one Gemini's value spells, or one the rules see but can't place.
+        foreach (['city', 'area'] as $field) {
+            if (isset($fromGemini[$field]) && ! isset($fallback[$field])
+                && ! TextNormalizer::mentions($queryText, $fromGemini[$field]) && ! TextNormalizer::spells($queryText, $fromGemini[$field])
+                && $this->rules->unknownPlace($queryText) === null) {
                 unset($fromGemini[$field]);
             }
         }

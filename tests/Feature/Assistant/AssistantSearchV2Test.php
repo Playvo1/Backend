@@ -208,11 +208,12 @@ class AssistantSearchV2Test extends TestCase
     {
         $this->slotsTomorrow();
 
+        // The reply names the closest times; suggested_venue_id is the first one's venue.
         $response = $this->ask('football tomorrow at 10pm')
             ->assertJsonPath('data.outcome', 'no_match')
-            ->assertJsonPath('data.suggested_venue_id', null)
-            // US-4.5 wording, unchanged.
-            ->assertJsonPath('data.reply_text', 'No venues match that request — try a different time.');
+            ->assertJsonPath('data.suggested_venue_id', $this->venues['green']->id)
+            ->assertJsonPath('data.reply_text', 'Nothing is free at exactly 22:00. Closest times: Green Field Court tomorrow at 20:00 (50 ILS); Al-Jalaa Stadium tomorrow at 20:00 (35 ILS); South Court tomorrow at 19:00 (60 ILS). Which one would you like?');
+        $this->assertDatabaseHas('assistant_queries', ['query_text' => 'football tomorrow at 10pm', 'suggested_venue_id' => $this->venues['green']->id]);
 
         // Up to three hours away: the 18:00 slot is too far.
         $this->assertSame([false, false, false], array_column($response->json('data.suggestions'), 'exact'));
@@ -387,6 +388,115 @@ class AssistantSearchV2Test extends TestCase
         $this->ask('padel tomorrow at 8pm')
             ->assertJsonPath('data.outcome', 'not_offered')
             ->assertJsonPath('data.reply_text', "Padel isn't available yet — you can book Football now, with more sports coming soon.");
+    }
+
+    // ---------------------------------------------------------------- QA review findings
+
+    public function test_a_bare_place_name_we_dont_cover_is_said_in_every_spelling(): void
+    {
+        $this->slotsTomorrow();
+
+        // Rafah is not seeded here; Khan Younis is.
+        foreach (['بدي ملعب في رفح بكرا الساعة 8', 'بدي ملعب برفح بكرا الساعة 8', 'بدي ملعب بنابلس بكرا الساعة 8', 'كورة في بيت لاهيا بكرا 8', 'ملعب ببيت لاهيا بكرا 8', 'في نابلس بكرا ملعب'] as $text) {
+            $this->newConversation();
+            $this->ask($text)->assertJsonPath('data.outcome', 'not_covered')->assertJsonPath('data.suggestions', []);
+        }
+
+        $this->newConversation();
+        $this->ask('بدي ملعب في رفح بكرا الساعة 8')->assertJsonPath('data.reply_text', 'لا نغطي رفح بعد — نغطي حالياً: غزة وخانيونس.');
+
+        // Covered places, ordinary words and dialect verbs after "في" or a glued "ب" are no place.
+        foreach (['كورة بخانيونس بكرا الساعة 8', 'كورة في خانيونس بكرا الساعة 8', 'انا بلعب كورة بكرا الساعة 8', 'بتعرف ملعب كورة بكرا الساعة 8',
+            'في عندكم ملاعب بكرا الساعة 8؟', 'بدي ملعب عند صاحبي بكرا الساعة 8', 'ملعب كورة بشرط يكون فاضي بكرا الساعة 8', 'بدي ملعب بسرعة بكرا الساعة 8'] as $text) {
+            $this->newConversation();
+            $this->assertNotSame('not_covered', $this->ask($text)->json('data.outcome'), $text);
+        }
+    }
+
+    public function test_a_near_miss_names_the_closest_times_and_suggests_the_first(): void
+    {
+        $this->slotsTomorrow();
+
+        $this->ask('بدي ملعب بكرا الساعة 4 العصر')
+            ->assertJsonPath('data.outcome', 'no_match')
+            ->assertJsonPath('data.suggested_venue_id', $this->venues['beach']->id)
+            ->assertJsonPath('data.reply_text', 'لا يوجد موعد متاح الساعة 16:00 بالضبط. أقرب المواعيد: ملعب الشاطئ غداً الساعة 18:00 (25 شيكل)، الملعب الجنوبي غداً الساعة 19:00 (60 شيكل). أيها تريد؟');
+
+        // Nothing close at all: the US-4.5 wording, and no suggestion.
+        $this->newConversation();
+        $this->ask('بدي ملعب بكرا الساعة 10 الصبح')
+            ->assertJsonPath('data.suggestions', [])
+            ->assertJsonPath('data.suggested_venue_id', null)
+            ->assertJsonPath('data.reply_text', 'لا توجد ملاعب تطابق طلبك — جرّب وقتاً آخر.');
+    }
+
+    public function test_a_slot_holding_only_part_of_the_hour_is_not_exact(): void
+    {
+        $this->slotsTomorrow();
+
+        $response = $this->ask('بدي ملعب بكرا الساعة 8 ونص')->assertJsonPath('data.parsed_hour', '20:30');
+
+        // 20:00-21:00 holds 20:30 but not an hour from it; South Court's 19:00-21:00 doesn't either.
+        $this->assertSame([false, false, false], array_column($response->json('data.suggestions'), 'exact'));
+        $this->newConversation();
+        $this->assertTrue($this->ask('football tomorrow at 7:30pm')->json('data.suggestions.0.exact'), 'South Court 19:00-21:00 runs a full hour from 19:30');
+    }
+
+    public function test_friday_or_saturday_searches_those_days_only(): void
+    {
+        $this->makeSlot($this->venues['green'], ['slot_date' => '2026-10-06', 'start_time' => '20:00:00', 'end_time' => '21:00:00']);
+        $this->makeSlot($this->venues['jalaa'], ['slot_date' => '2026-10-09', 'start_time' => '20:00:00', 'end_time' => '21:00:00']);
+
+        // Saturday 3 Oct: "السبت" is today, "الجمعة" the coming Friday; Tuesday's slot is not offered.
+        $response = $this->ask('بدي ملعب يوم الجمعة أو السبت')
+            ->assertJsonPath('data.parsed_date', null)
+            ->assertJsonPath('data.parsed_date_range', ['period' => 'days', 'from' => '2026-10-03', 'to' => '2026-10-09']);
+        $this->assertSame(['Al-Jalaa Stadium'], $this->suggested($response));
+
+        $this->newConversation();
+        $this->ask('football on friday or saturday at 8pm')->assertJsonPath('data.suggested_venue_id', $this->venues['jalaa']->id);
+    }
+
+    public function test_now_lists_what_is_left_today(): void
+    {
+        $this->makeSlot($this->venues['green'], ['slot_date' => '2026-10-03', 'start_time' => '11:00:00', 'end_time' => '12:00:00']);
+        $this->makeSlot($this->venues['green'], ['slot_date' => '2026-10-03', 'start_time' => '15:00:00', 'end_time' => '16:00:00']);
+
+        foreach (['بدي ملعب الحين', 'بدي ملعب هلأ', 'football now'] as $text) {
+            $this->newConversation();
+            $this->ask($text)
+                ->assertJsonPath('data.parsed_date', '2026-10-03')
+                ->assertJsonPath('data.outcome', 'suggestion')
+                ->assertJsonPath('data.suggestions.0.start_time', '15:00');
+        }
+    }
+
+    public function test_a_part_of_the_day_with_nothing_free_offers_the_days_hours(): void
+    {
+        $this->slotsTomorrow();
+
+        $this->ask('بدي ملعب بكرا بعد العصر')
+            ->assertJsonPath('data.outcome', 'needs_details')
+            ->assertJsonPath('data.reply_text', 'لا توجد مواعيد متاحة بعد الظهر. أي ساعة؟ المتاح في ذلك اليوم: 18:00، 19:00 و20:00.')
+            ->assertJsonPath('data.options.*.id', ['all_venues']);
+
+        $this->newConversation();
+        $this->ask('football on monday morning')
+            ->assertJsonPath('data.reply_text', 'Nothing is free that day — try another day.');
+    }
+
+    public function test_gemini_cannot_add_a_place_the_text_doesnt_name(): void
+    {
+        config(['services.gemini.key' => 'test-key']);
+        $this->slotsTomorrow();
+        $this->fakeGemini(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '20:00', 'city' => 'Atlantis', 'area' => 'Nowhere']);
+
+        $this->ask('football tomorrow at 8pm')->assertJsonPath('data.outcome', 'suggestion');
+
+        // Named in the text, it is reported.
+        $this->newConversation();
+        $this->fakeGemini(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '20:00', 'city' => 'Atlantis']);
+        $this->ask('football in Atlantis tomorrow at 8pm')->assertJsonPath('data.outcome', 'not_covered');
     }
 
     // ---------------------------------------------------------------- data honesty

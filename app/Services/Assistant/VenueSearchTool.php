@@ -172,7 +172,7 @@ class VenueSearchTool
      * The same honesty rules as execute(): only available slots, from now on, in active,
      * not removed venues that offer the sport, inside the city and area when given.
      *
-     * @param  array<string, mixed>  $criteria  sport, date or from/to (YYYY-MM-DD), hour, from_hour and until_hour
+     * @param  array<string, mixed>  $criteria  sport, date or from/to (YYYY-MM-DD) and dates (only these days), hour, from_hour and until_hour
      *                                          (HH:mm, a part of the day), city, area, sort, near, latitude, longitude
      * @return array{exact: list<array{slot: TimeSlot, distance_km: ?float}>, alternatives: list<array{slot: TimeSlot, distance_km: ?float}>}
      */
@@ -197,7 +197,11 @@ class VenueSearchTool
         $fromHour = $this->parseHour($criteria['from_hour'] ?? null);
         $untilHour = $this->parseHour($criteria['until_hour'] ?? null);
 
+        $dates = array_values(array_filter((array) ($criteria['dates'] ?? []), fn (mixed $date) => is_string($date) && $this->parseDate($date) !== null));
+
         $slots = $query
+            // Days offered as alternatives ("Friday or Saturday"): only those days of the span.
+            ->when($dates !== [], fn (Builder $q) => $q->whereIn('time_slots.slot_date', $dates))
             ->when($hour === null && $fromHour !== null, fn (Builder $q) => $q->where('time_slots.start_time', '>=', $fromHour))
             ->when($hour === null && $untilHour !== null, fn (Builder $q) => $q->where('time_slots.start_time', '<', $untilHour))
             ->with('venue.city')

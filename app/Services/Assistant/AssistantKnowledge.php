@@ -17,7 +17,7 @@ class AssistantKnowledge
     /**
      * How far ahead prices and working hours are read.
      */
-    public const PRICE_DAYS = 30;
+    public const PRICE_DAYS = 14;
 
     public const HOURS_DAYS = 14;
 

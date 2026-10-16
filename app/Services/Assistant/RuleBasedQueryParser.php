@@ -272,6 +272,11 @@ class RuleBasedQueryParser implements QueryParser
     private const PLACE_CONNECTORS = ['من', 'to', 'of'];
 
     /**
+     * Common words that also begin place names (بيت لاهيا، خان يونس، دير البلح، تل السلطان...).
+     */
+    private const NAME_STARTS = ['بيت', 'خان', 'دير', 'تل', 'عين', 'كفر', 'بني', 'ام', 'ابو', 'شيخ', 'beit', 'bait', 'khan', 'deir', 'tal', 'tel', 'bani', 'beni'];
+
+    /**
      * Words that are never a place name, so "بالجامعة" or "near the gym" is not reported as a
      * place we don't cover (a false "not covered" blocks a booking; ignoring a word does not).
      * Written in normalised form without the article; grow them by category.
@@ -310,13 +315,14 @@ class RuleBasedQueryParser implements QueryParser
         'english', 'arabic', 'exactly', 'asap', 'total', 'advance',
         'ضبط', 'ظبط', 'زبط', 'تحديد', 'نسبه', 'مره', 'دور', 'توفيق', 'سلامه', 'عربي', 'انجليزي', 'انكليزي', 'كامل', 'مجان',
         'تقسيط', 'راحه', 'فعل', 'اول', 'اخر', 'مناسبه', 'مناسب', 'طبع', 'تاكيد', 'اضافه', 'عكس', 'سرعه', 'تمام',
+        'شرط', 'موعد', 'مواعيد', 'حال', 'مشكله', 'مشاكل', 'نفسه', 'نفسها', 'لحاله', 'سهوله', 'صعوبه', 'ضروري',
         // Paying.
         'cash', 'price', 'card', 'visa', 'money', 'discount', 'offer', 'app', 'free',
         'كاش', 'سعر', 'فلوس', 'مصاري', 'دفع', 'حساب', 'فيزا', 'بطاقه', 'تطبيق', 'خصم', 'عرض',
         // People.
         'friends', 'family', 'team', 'guys', 'kids', 'men', 'women', 'boys', 'girls', 'people', 'group',
         'شباب', 'جماعه', 'ربع', 'اصحاب', 'صحاب', 'عيله', 'اولاد', 'ولاد', 'رجال', 'نساء', 'بنات', 'فريق', 'فرقه', 'اطفال', 'كبار',
-        'صغار', 'ناس', 'اهل', 'اخوان', 'زملاء',
+        'صغار', 'ناس', 'اهل', 'اخوان', 'زملاء', 'صاحب', 'صديق', 'اصدقاء', 'رفيق', 'رفقات', 'اخو', 'اخوي', 'ابن', 'عم', 'خال', 'جار',
     ];
 
     /**
@@ -367,6 +373,55 @@ class RuleBasedQueryParser implements QueryParser
     }
 
     /**
+     * Two or more weekdays offered as alternatives ("الجمعة أو السبت", "friday or saturday",
+     * "el jum3a wala el sabt"): each is resolved as when named alone, and the days are
+     * searched together. Null for a single day or days not joined by "or".
+     *
+     * @return array{name: string, from: string, to: string, dates: list<string>}|null
+     */
+    public function weekdayChoice(string $queryText, CarbonImmutable $today): ?array
+    {
+        $text = $this->prepare($queryText);
+        $today = $today->startOfDay();
+        $mentions = [];
+
+        foreach (self::WEEKDAYS as $weekday => $words) {
+            foreach ($words as $word) {
+                if (preg_match_all('/(?<![\p{L}\p{N}])[وبلف]?'.preg_quote($word, '/').'(?![\p{L}\p{N}])/u', $text, $m, PREG_OFFSET_CAPTURE)) {
+                    foreach ($m[0] as [$match, $offset]) {
+                        $mentions[$offset] = [$weekday, $offset + strlen($match)];
+                    }
+                }
+            }
+        }
+
+        ksort($mentions);
+
+        if (count(array_unique(array_column($mentions, 0))) < 2) {
+            return null;
+        }
+
+        $offsets = array_keys($mentions);
+
+        foreach (array_slice($offsets, 1) as $i => $offset) {
+            $between = substr($text, $mentions[$offsets[$i]][1], $offset - $mentions[$offsets[$i]][1]);
+
+            if (preg_match('/(?<![\p{L}])(?:او|ولا|والا|or|aw|wala|walla|wella)(?![\p{L}])/u', $between) !== 1) {
+                return null;
+            }
+        }
+
+        $dates = collect($mentions)
+            ->map(fn (array $mention) => ($today->englishDayOfWeek === ucfirst($mention[0]) ? $today : $today->modify('next '.$mention[0]))->toDateString())
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        return ['name' => 'days', 'from' => $dates[0], 'to' => end($dates), 'dates' => $dates];
+    }
+
+    /**
      * Whether the text names a day at all, even one only Gemini can resolve.
      */
     public function mentionsDate(string $queryText, CarbonImmutable $today): bool
@@ -412,29 +467,39 @@ class RuleBasedQueryParser implements QueryParser
     }
 
     /**
-     * A place the player named that is no seeded city, area or venue ("بالقدس", "in Cairo"),
-     * so the assistant can say it isn't covered instead of suggesting somewhere else. Only
-     * clear cases are reported: "بال..." or "في ال..." in Arabic, "in"/"near"/"fi" in English
-     * and Arabizi, with up to three words ("بالشيخ رضوان"). When in doubt no place is
-     * reported: a common word, a word shorter than three Latin letters, or anything that
-     * loosely spells a covered city or area is never "not covered".
+     * A place the player named that is no seeded city, area or venue ("بالقدس", "في نابلس",
+     * "برفح", "in Cairo"), so the assistant can say it isn't covered instead of suggesting
+     * somewhere else. The words after a place marker ("في", "عند", "قرب", "in", "near", "fi"...),
+     * after "بال", or glued to "ب" are the candidates, up to three words ("بالشيخ رضوان", "في
+     * بيت لاهيا").
+     *
+     * When in doubt no place is reported, since a false "not covered" blocks a booking:
+     * - a common word (NOT_PLACES, the words this parser knows, also with a pronoun ending:
+     *   "عندكم", "بيتي"), a word shorter than three Latin letters, or anything that loosely
+     *   spells a covered city or area is never a place;
+     * - in Arabic, "في" also means "is there" and "ب" starts dialect verbs ("بلعب"), so a name
+     *   without its article only counts next to the request itself: after a venue, sport, day
+     *   or hour word, or followed by one ("بدي ملعب برفح", "في نابلس بكرا").
      */
     public function unknownPlace(string $queryText): ?string
     {
         $words = explode(' ', $this->prepare($queryText));
         $known = $this->knownWords();
         $covered = $this->cityCandidates()->concat($this->areaCandidates());
+        $request = $this->requestWords();
 
         foreach ($words as $index => $word) {
+            // "برفح", "ببيت لاهيا"; never at the start, where "ب" begins a verb ("بتعرف ملعب").
+            $glued = $index > 0 && mb_strlen($word) >= 4 && str_starts_with($word, 'ب') && ! str_starts_with($word, 'بال')
+                && (in_array(mb_substr($word, 1), self::NAME_STARTS, true) || ! $this->isOrdinaryWord($word, $known));
             $place = match (true) {
                 in_array($word, self::PLACE_MARKERS, true) => array_slice($words, $index + 1, 4),
                 mb_strlen($word) >= 5 && str_starts_with($word, 'بال') => [mb_substr($word, 1), ...array_slice($words, $index + 1, 2)],
+                $glued => [mb_substr($word, 1), ...array_slice($words, $index + 1, 2)],
                 default => [],
             };
 
-            // Skip a connector ("بالقرب من") and English articles. In Arabic "في" also means
-            // "is there" ("في ملعب؟"), so a place needs its article unless a place noun (حي،
-            // منطقة، مدينة) comes first.
+            // Skip a connector ("بالقرب من") and English articles.
             if ($place !== [] && in_array($place[0], self::PLACE_CONNECTORS, true)) {
                 array_shift($place);
             }
@@ -443,29 +508,126 @@ class RuleBasedQueryParser implements QueryParser
                 array_shift($place);
             }
 
-            $placeNoun = in_array($word, ['حي', 'بحي', 'منطقه', 'بمنطقه', 'مدينه', 'بمدينه'], true);
-
-            if ($place === [] || (preg_match('/^\p{Arabic}/u', $place[0]) === 1 && ! str_starts_with($place[0], 'ال') && ! $placeNoun)) {
+            if ($place === []) {
                 continue;
             }
 
-            $phrase = [];
+            $phrase = $this->placePhrase($place, $known);
 
-            foreach (array_slice($place, 0, 3) as $candidate) {
-                if (preg_match('/\d/', $candidate) === 1 || in_array($candidate, self::PLACE_MARKERS, true)
-                    || preg_match('/^[a-z]{1,2}$/', $candidate) === 1 || $this->isKnownWord($candidate, $known)) {
-                    break;
-                }
-
-                $phrase[] = $candidate;
+            if ($phrase === []) {
+                continue;
             }
 
-            if ($phrase !== [] && ! $this->namesCoveredPlace(implode(' ', $phrase), $covered, $known)) {
+            // An Arabic name without its article, after "في", "عند"... or glued to "ب", must sit
+            // next to the request; a place noun first (حي، منطقة، مدينة) is clear enough.
+            $placeNoun = in_array($word, ['حي', 'بحي', 'منطقه', 'بمنطقه', 'مدينه', 'بمدينه'], true);
+            $bare = preg_match('/^\p{Arabic}/u', $phrase[0]) === 1 && ! str_starts_with($phrase[0], 'ال') && ! $placeNoun;
+            $before = $words[$index - 1] ?? null;
+            $after = $words[$index + count($phrase) + (in_array($word, self::PLACE_MARKERS, true) ? 1 : 0)] ?? null;
+
+            if ($bare && ! $this->isRequestWord($before, $request) && ($glued || ! $this->isRequestWord($after, $request))) {
+                continue;
+            }
+
+            if (! $this->namesCoveredPlace(implode(' ', $phrase), $covered, $known)) {
                 return $this->originalSpelling($queryText, implode(' ', $phrase));
             }
         }
 
         return null;
+    }
+
+    /**
+     * The words that may name a place, from the first candidate on, until a common word, a
+     * number or a marker. Names that start with a common word ("بيت لاهيا", "خان يونس", "تل
+     * السلطان") keep it when an unknown word follows.
+     *
+     * @param  list<string>  $place
+     * @param  list<string>  $known
+     * @return list<string>
+     */
+    private function placePhrase(array $place, array $known): array
+    {
+        $phrase = [];
+
+        foreach (array_slice($place, 0, 3) as $offset => $candidate) {
+            $nameStart = $offset === 0 && in_array($candidate, self::NAME_STARTS, true)
+                && isset($place[1]) && preg_match('/\d/', $place[1]) !== 1 && ! $this->isOrdinaryWord($place[1], $known);
+
+            if (! $nameStart && (preg_match('/\d/', $candidate) === 1 || in_array($candidate, self::PLACE_MARKERS, true)
+                || preg_match('/^[a-z]{1,2}$/', $candidate) === 1 || $this->isOrdinaryWord($candidate, $known))) {
+                break;
+            }
+
+            $phrase[] = $candidate;
+        }
+
+        return $phrase;
+    }
+
+    /**
+     * A known word, also with a pronoun ending ("عندكم", "بيتي", "صحابنا").
+     *
+     * @param  list<string>  $known
+     */
+    private function isOrdinaryWord(string $word, array $known): bool
+    {
+        if ($this->isKnownWord($word, $known) || in_array($word, self::PLACE_MARKERS, true)) {
+            return true;
+        }
+
+        foreach (['كم', 'كو', 'نا', 'هم', 'ها', 'ي', 'ك', 'ه'] as $ending) {
+            $stem = mb_substr($word, 0, -mb_strlen($ending));
+
+            if (str_ends_with($word, $ending) && mb_strlen($stem) >= 2
+                && ($this->isKnownWord($stem, $known) || in_array($stem, self::PLACE_MARKERS, true))) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Words that make a message a booking request: venues, sports, days and times.
+     *
+     * @return list<string> loose() forms
+     */
+    private function requestWords(): array
+    {
+        $words = [
+            'ملعب', 'ملاعب', 'صاله', 'ساحه', 'نادي', 'court', 'courts', 'pitch', 'field', 'venue',
+            ...$this->sportCandidates()->pluck('alias')->all(),
+            ...self::DAY_AFTER_TOMORROW, ...self::TOMORROW, ...self::TODAY, ...self::NOW,
+            ...array_merge(...array_values(self::WEEKDAYS)),
+            ...self::HOUR_MARKERS, ...self::PM_WORDS, ...self::AM_WORDS, ...self::NIGHT_WORDS,
+        ];
+
+        return array_values(array_unique(array_filter(explode(' ', TextNormalizer::loose(implode(' ', $words))))));
+    }
+
+    /**
+     * @param  list<string>  $request
+     */
+    private function isRequestWord(?string $word, array $request): bool
+    {
+        if ($word === null) {
+            return false;
+        }
+
+        if (preg_match('/^\d/', $word) === 1) {
+            return true;
+        }
+
+        $loose = TextNormalizer::loose($word);
+
+        foreach ([$loose, ...array_map(fn (string $prefix) => str_starts_with($loose, $prefix) ? mb_substr($loose, mb_strlen($prefix)) : null, ['و', 'ب', 'ل', 'ف'])] as $form) {
+            if ($form !== null && in_array($form, $request, true)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**

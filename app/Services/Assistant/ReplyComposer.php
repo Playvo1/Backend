@@ -53,6 +53,7 @@ class ReplyComposer
         'next_weekend' => ['في الويكند القادم', 'next weekend'],
         'upcoming' => ['في الأيام القادمة', 'in the coming days'],
         'any' => ['في الأسبوعين القادمين', 'in the next two weeks'],
+        'days' => ['في الأيام التي ذكرتها', 'on the days you named'],
     ];
 
     /**
@@ -206,6 +207,55 @@ class ReplyComposer
     }
 
     /**
+     * Nothing is free at the hour asked for, but some slots start close to it: said plainly,
+     * with each one's day, time, venue and price.
+     *
+     * @param  list<array{slot: TimeSlot, distance_km: ?float}>  $alternatives
+     */
+    public function closestOptions(string $hour, array $alternatives, CarbonImmutable $today, bool $arabic): string
+    {
+        $items = array_map(function (array $option) use ($today, $arabic) {
+            $slot = $option['slot'];
+            $start = substr((string) $slot->start_time, 0, 5);
+            $price = $this->number((float) $slot->hourly_price);
+            $day = $this->shortDay(substr((string) $slot->slot_date, 0, 10), $today, $arabic);
+
+            return $arabic
+                ? "{$slot->venue->name_ar} {$day} الساعة {$start} ({$price} شيكل)"
+                : "{$slot->venue->name_en} {$day} at {$start} ({$price} ILS)";
+        }, $alternatives);
+
+        return $arabic
+            ? "لا يوجد موعد متاح الساعة {$hour} بالضبط. أقرب المواعيد: ".implode('، ', $items).'. أيها تريد؟'
+            : "Nothing is free at exactly {$hour}. Closest times: ".implode('; ', $items).'. Which one would you like?';
+    }
+
+    /**
+     * "بعد العصر" with nothing free that afternoon: said, with the hours free that day; or that
+     * the day has nothing at all. $named is whether the player named the part of the day.
+     *
+     * @param  list<string>  $dayHours
+     */
+    public function noFreeHours(string $partOfDay, array $dayHours, bool $named, bool $arabic): string
+    {
+        if ($dayHours === []) {
+            return $arabic ? 'لا توجد مواعيد متاحة في ذلك اليوم — جرّب يوماً آخر.' : 'Nothing is free that day — try another day.';
+        }
+
+        $part = ['morning' => ['صباحاً', 'that morning'], 'afternoon' => ['بعد الظهر', 'that afternoon'], 'evening' => ['مساءً', 'that evening']][$partOfDay] ?? ['مساءً', 'that evening'];
+
+        if ($arabic) {
+            $lead = $named ? "لا توجد مواعيد متاحة {$part[0]}. " : '';
+
+            return "{$lead}أي ساعة؟ المتاح في ذلك اليوم: ".$this->arabicList(array_slice($dayHours, 0, 3)).'.';
+        }
+
+        $lead = $named ? "Nothing is free {$part[1]}. " : '';
+
+        return "{$lead}What time would you like to play? Free that day: ".$this->englishList(array_slice($dayHours, 0, 3)).'.';
+    }
+
+    /**
      * "Near me" without a shared location.
      */
     public function askLocation(bool $arabic): string
@@ -349,7 +399,8 @@ class ReplyComposer
 
     /**
      * A slot after midnight belongs to the evening before, so it is said that way, with the
-     * calendar date: "tomorrow night after midnight (Mon 5 Oct)".
+     * calendar date: "tomorrow night after midnight (Mon 5 Oct)". Any other day is written as
+     * in the lists, "on Mon 5 Oct" / "يوم الإثنين 5 أكتوبر", never as YYYY-MM-DD.
      */
     private function englishDay(string $date, CarbonImmutable $today, bool $afterMidnight): string
     {
@@ -367,7 +418,7 @@ class ReplyComposer
         return match ($date) {
             $today->toDateString() => 'today',
             $today->addDay()->toDateString() => 'tomorrow',
-            default => "on {$date}",
+            default => "on {$calendar}",
         };
     }
 
@@ -387,7 +438,7 @@ class ReplyComposer
         return match ($date) {
             $today->toDateString() => 'اليوم',
             $today->addDay()->toDateString() => 'غداً',
-            default => "بتاريخ {$date}",
+            default => "يوم {$calendar}",
         };
     }
 

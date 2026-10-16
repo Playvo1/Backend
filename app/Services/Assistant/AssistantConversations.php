@@ -73,7 +73,7 @@ class AssistantConversations
                 'parsed_sport_id' => $answer['sport']?->id,
                 'parsed_date' => $arguments['date'] ?? null,
                 'parsed_hour' => isset($arguments['hour']) ? $arguments['hour'].':00' : null,
-                'suggested_venue_id' => $answer['slot']?->venue_id,
+                'suggested_venue_id' => $answer['suggested_venue_id'],
             ]);
 
             $conversation->turns()->create([

@@ -182,7 +182,9 @@ class ReviewAssistantTest extends TestCase
     {
         $this->fakeArgs(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00', 'area' => '%']);
 
-        $this->ask('football tomorrow at 6pm in %')->assertOk()->assertJsonPath('data.suggested_venue_id', null);
+        // Assistant v2 review: "%" names no place, so Gemini's "%" area is ignored and nothing matches "everything" through LIKE.
+        $response = $this->ask('football tomorrow at 6pm in %')->assertOk();
+        $this->assertSame((new VenueSearchTool)->execute(['sport' => 'Football', 'date' => '2026-10-04', 'hour' => '18:00'])?->venue_id, $response->json('data.suggested_venue_id'));
     }
 
     public function test_sql_injection_in_area_and_city_is_harmless(): void

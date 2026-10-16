@@ -146,8 +146,9 @@ class AssistantQueryTest extends TestCase
 
         $this->ask('football today at 8pm')
             ->assertJsonPath('data.reply_text', 'Green Field Court is available today at 20:00 for 35.5 ILS/hour. Want me to book it?');
+        // Assistant v2 review: dates are written as in the lists, never as YYYY-MM-DD.
         $this->ask('football on 2026-10-12 at 7pm')
-            ->assertJsonPath('data.reply_text', 'Green Field Court is available on 2026-10-12 at 19:00 for 40 ILS/hour. Want me to book it?');
+            ->assertJsonPath('data.reply_text', 'Green Field Court is available on Mon 12 Oct at 19:00 for 40 ILS/hour. Want me to book it?');
     }
 
     // ---------------------------------------------------------------- no match
@@ -433,9 +434,10 @@ class AssistantQueryTest extends TestCase
         $this->makeSlot($this->venue, ['slot_date' => '2026-10-05', 'start_time' => '17:00:00', 'end_time' => '20:00:00']);
 
         $this->ask('football on monday at 6pm')
-            ->assertJsonPath('data.reply_text', 'Green Field Court is available on 2026-10-05 from 17:00 to 20:00 for 40 ILS/hour. Want me to book it?');
+            // Assistant v2 review: dates are written as in the lists, never as YYYY-MM-DD.
+            ->assertJsonPath('data.reply_text', 'Green Field Court is available on Mon 5 Oct from 17:00 to 20:00 for 40 ILS/hour. Want me to book it?');
         $this->ask('كرة قدم يوم الاثنين الساعة 6')
-            ->assertJsonPath('data.reply_text', 'يتوفر موعد في ملعب الحقل الأخضر بتاريخ 2026-10-05 من الساعة 17:00 حتى 20:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟');
+            ->assertJsonPath('data.reply_text', 'يتوفر موعد في ملعب الحقل الأخضر يوم الإثنين 5 أكتوبر من الساعة 17:00 حتى 20:00 بسعر 40 شيكل للساعة. هل تريد أن أحجزه لك؟');
     }
 
     public function test_a_slot_ending_at_midnight_is_one_hour(): void

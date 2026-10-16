@@ -220,6 +220,36 @@ class AssistantIntentsTest extends TestCase
         $this->ask('tell me a story')->assertJsonPath('data.intent', 'out_of_scope');
     }
 
+    public function test_booking_status_facilities_and_more_phrasings(): void
+    {
+        foreach (['الحجز تبعي ما تأكد ليش', 'وين حجزي؟ لسا ما انقبل', 'why is my booking still pending?', 'my booking was rejected, what happened?'] as $text) {
+            $this->newConversation();
+            $this->ask($text)->assertJsonPath('data.intent', 'booking_status')->assertJsonPath('data.outcome', 'answer');
+        }
+
+        $this->newConversation();
+        $this->ask('الحجز تبعي ما تأكد ليش')->assertJsonPath('data.reply_text', $this->faq('booking_status', true));
+
+        foreach (['هل يوجد ملاعب مضاءة؟', 'is there parking?', 'الملعب عشب طبيعي؟'] as $text) {
+            $this->newConversation();
+            $this->ask($text)
+                ->assertJsonPath('data.intent', 'venue_info')
+                ->assertJsonPath('data.options.*.id', ['all_venues', 'pick_area']);
+        }
+
+        foreach (['kif bilghi el 7ajez' => 'cancellation', 'لإيمتى الملاعب فاتحة؟' => 'working_hours', 'till when are you open?' => 'working_hours'] as $text => $intent) {
+            $this->newConversation();
+            $this->ask($text)->assertJsonPath('data.intent', $intent);
+        }
+    }
+
+    public function test_arabizi_gets_an_arabic_reply(): void
+    {
+        $this->assertMatchesRegularExpression('/\p{Arabic}/u', $this->ask('kif bilghi el 7ajez')->json('data.reply_text'));
+        $this->newConversation();
+        $this->assertDoesNotMatchRegularExpression('/\p{Arabic}/u', $this->ask('football tomorrow at 4pm')->json('data.reply_text'));
+    }
+
     // ---------------------------------------------------------------- odd input
 
     public static function oddInput(): array

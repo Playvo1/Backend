@@ -132,9 +132,12 @@ class AssistantConversationTest extends TestCase
         $this->ask('كورة بكرا الساعة 8')->assertJsonPath('data.suggested_venue_id', $this->venues['jalaa']->id);
         $this->venues['jalaa']->timeSlots()->update(['status' => 'blocked']);
 
+        // Only South Court's 21:00 is left, an hour away: offered as the closest time.
         $this->ask('yes')
             ->assertJsonPath('data.outcome', 'no_match')
-            ->assertJsonPath('data.suggested_venue_id', null);
+            ->assertJsonPath('data.suggestions.0.exact', false)
+            ->assertJsonPath('data.suggested_venue_id', $this->venues['south']->id)
+            ->assertJsonPath('data.reply_text', 'Nothing is free at exactly 20:00. Closest times: South Court tomorrow at 21:00 (60 ILS). Which one would you like?');
     }
 
     public function test_a_question_in_the_middle_keeps_the_request(): void

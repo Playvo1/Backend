@@ -38,9 +38,20 @@ class IntentClassifier
 
     public const OUT_OF_SCOPE = 'out_of_scope';
 
+    /**
+     * "Why isn't my booking confirmed?": how a booking moves from pending to confirmed.
+     */
+    public const BOOKING_STATUS = 'booking_status';
+
+    /**
+     * A question about the venues' facilities (lights, turf, parking...), which the data doesn't hold.
+     */
+    public const VENUE_INFO = 'venue_info';
+
     public const INTENTS = [
         self::BOOKING_SEARCH, self::AVAILABILITY, self::PRICES, self::WORKING_HOURS, self::CANCELLATION, self::PAYMENT,
         self::HOW_TO_BOOK, self::CONFIRM_BOOKING, self::GREETING, self::HELP, self::THANKS, self::OUT_OF_SCOPE,
+        self::BOOKING_STATUS, self::VENUE_INFO,
     ];
 
     /**
@@ -79,6 +90,44 @@ class IntentClassifier
     /**
      * Prices, unless a day or an hour is given: then it is a search, whose reply quotes the price.
      */
+    /**
+     * Word shapes the lists can't hold: Arabizi "bilghi", "el8a2" (cancel); "لإيمتى فاتحة",
+     * "till when are you open" (a "when" word with an opening or closing word).
+     */
+    private const STRONG_PATTERNS = [
+        self::CANCELLATION => '/(?<![a-z\d])(?:b|y|n|t)?[aeiu]?l(?:gh|8)(?:i|y|ee|a2|aa2|a)(?![a-z\d])/u',
+        self::WORKING_HOURS => '/(?:(?<![\p{L}])[وبلف]?(?:ل|لل|لحد\s+|ل\s*حد\s+)?(?:متي|ايمتي|امتي|اي\s+ساعه|ايش\s+الساعه)(?![\p{L}]).*(?<![\p{L}])[وبلف]?(?:فاتح|مفتوح|بتفتح|تفتح|بيفتح|بتسكر|تسكر|بيسكر|مسكر|بتغلق|تغلق|مغلق|بتقفل|تقفل)\p{L}*)|(?:(?<![a-z])(?:when|what\s+time|till\s+when|until\s+when|how\s+late|how\s+early)(?![a-z]).*(?<![a-z])(?:open|opens|opening|close|closes|closing)(?![a-z]))/u',
+    ];
+
+    /**
+     * The player's own booking, and words asking what happened to it.
+     */
+    private const MY_BOOKING = [
+        'حجزي', 'حجزنا', 'الحجز تبعي', 'الحجز تاعي', 'الحجز تبعنا', 'الحجز الي عملته', 'الحجز اللي عملته', 'حجوزاتي',
+        'my booking', 'our booking', 'my reservation', 'my bookings', 'the booking i made', '7ajzi', 'el 7ajz taba3i',
+    ];
+
+    private const STATUS_WORDS = [
+        'تاكد', 'اتاكد', 'مؤكد', 'موكد', 'مأكد', 'انقبل', 'انرفض', 'رفض', 'رفضتو', 'معلق', 'لسا', 'لسه', 'ليش', 'وين', 'شو صار', 'حاله', 'وضع', 'انلغي', 'راح',
+        'status', 'confirmed', 'pending', 'rejected', 'accepted', 'approved', 'why', 'where', 'what happened', 'still', 'cancelled', 'canceled',
+        'leish', 'lesh', 'wein', 'ta2akad',
+    ];
+
+    /**
+     * Facilities the venue data doesn't describe.
+     */
+    private const FACILITY_WORDS = [
+        'مضاء', 'مضاءه', 'مضائه', 'اضاءه', 'الاضاءه', 'انارة', 'اناره', 'الاناره', 'كشافات', 'عشب', 'نجيل', 'نجيله', 'ترتان', 'ارضيه', 'الارضيه', 'مغطي', 'مسقوف',
+        'دش', 'دوش', 'دشات', 'حمام', 'حمامات', 'غرف تبديل', 'غرفه تبديل', 'مواقف', 'موقف سيارات', 'باركنج', 'كافتيريا', 'كافيتيريا', 'مكيف', 'مدرجات', 'كراسي',
+        'lights', 'floodlights', 'floodlit', 'lit', 'lighting', 'grass', 'turf', 'artificial', 'indoor', 'covered', 'roof', 'shower', 'showers', 'toilet',
+        'toilets', 'changing room', 'changing rooms', 'locker', 'lockers', 'parking', 'cafeteria', 'air conditioning', 'stands', 'seats',
+    ];
+
+    /**
+     * "Now" words: today, from the current time on.
+     */
+    private const NOW_WORDS = ['now', 'right now', 'هلا', 'هلق', 'هلقيت', 'هسا', 'هسه', 'هسع', 'الحين', 'حالا', 'هالحين', 'halla2', 'hala2', 'hal2', 'hallaq', 'el7in'];
+
     private const PRICE_WORDS = [
         'اسعار', 'الاسعار', 'سعر', 'السعر', 'اسعاركم', 'بكم', 'بقديش', 'قديش', 'قداش', 'كم سعر', 'كم السعر', 'كم بتكلف', 'كم يكلف', 'كم تكلفه', 'التكلفه', 'تكلفه',
         'كم حق', 'حق الساعه', 'سعر الساعه', 'كم الحجز',
@@ -167,7 +216,7 @@ class IntentClassifier
 
     /**
      * @return array{text: string, strong: ?string, prices: bool, list: bool, sort: ?string, near: bool, any_hour: bool, reset: bool,
-     *               yes: bool, no: bool, greeting: bool, help: bool, thanks: bool, booking_words: bool, venue_words: bool, question: bool}
+     *               yes: bool, no: bool, greeting: bool, help: bool, thanks: bool, booking_words: bool, venue_words: bool, question: bool, facility: bool, now: bool}
      */
     public function read(string $queryText): array
     {
@@ -175,17 +224,24 @@ class IntentClassifier
         $strong = null;
 
         foreach (self::STRONG as $intent => $phrases) {
-            if ($this->says($text, $phrases)) {
+            if ($this->says($text, $phrases) || preg_match(self::STRONG_PATTERNS[$intent] ?? '/(?!)/', $text) === 1) {
                 $strong = $intent;
 
                 break;
             }
         }
 
+        // "الحجز تبعي ما تأكد ليش": the player's own booking and what happened to it.
+        if ($this->says($text, self::MY_BOOKING) && $this->says($text, self::STATUS_WORDS) && $strong !== self::PAYMENT) {
+            $strong = self::BOOKING_STATUS;
+        }
+
         return [
             'text' => $text,
             'strong' => $strong,
             'prices' => $this->says($text, self::PRICE_WORDS),
+            'facility' => $this->says($text, self::FACILITY_WORDS),
+            'now' => $this->says($text, self::NOW_WORDS),
             'list' => $this->says($text, self::LIST_WORDS)
                 // "what football venues are available", "which courts are free tomorrow".
                 || preg_match('/(?<![a-z])(?:what|which|any|list|show)\s+(?:[a-z]+\s+){0,2}(?:venues|courts|pitches|fields|slots)\s+(?:are\s+|is\s+)?(?:available|free|open)(?![a-z])/', $text) === 1,
