@@ -4576,6 +4576,107 @@
         }
       ],
       "name": "Admin"
+    },
+    {
+      "item": [
+        {
+          "name": "assistant query (English)",
+          "request": {
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": ""
+                }
+              ],
+              "type": "bearer"
+            },
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n    \"query_text\": \"Football court tomorrow at 6pm near Gaza City\"\n}"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "assistant",
+                "query"
+              ],
+              "raw": "{{playvo}}/api/v1/assistant/query"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "assistant query (Arabic)",
+          "request": {
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": ""
+                }
+              ],
+              "type": "bearer"
+            },
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\n    \"query_text\": \"بدي ملعب كرة قدم بكرا الساعة 6 مساءً بالجلاء\"\n}"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "assistant",
+                "query"
+              ],
+              "raw": "{{playvo}}/api/v1/assistant/query"
+            }
+          },
+          "response": []
+        }
+      ],
+      "name": "Assistant"
     }
   ],
   "variable": [
