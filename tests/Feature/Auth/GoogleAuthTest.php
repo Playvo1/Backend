@@ -33,14 +33,14 @@ class GoogleAuthTest extends TestCase
         // signing certs.
         $response = $this->postJson('/api/v1/auth/google', [
             'id_token' => 'this-is-not-a-jwt',
+            'mode' => 'login',
         ]);
-
         $response->assertStatus(401)
             ->assertJsonStructure(['success', 'data', 'message', 'errors'])
             ->assertJson([
                 'success' => false,
                 'data' => null,
-                'message' => 'Invalid Google token.',
+                'message' => 'Invalid Google token or unverified email.',
                 'errors' => null,
             ]);
     }

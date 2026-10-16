@@ -70,6 +70,7 @@ Route::prefix('v1')->group(function () {
     Route::prefix('venue_owner')
         ->middleware(['auth:sanctum', 'role:venue_owner'])
         ->group(function () {
+            Route::get('/owner/myvenues',[VenueController::class, 'myVenues']);
 
             Route::put('owner/venues/{id}',  [VenueController::class, 'update']);
 
@@ -82,10 +83,8 @@ Route::prefix('v1')->group(function () {
 
             Route::put('owner/time-slots/{id}',   [TimeSlotController::class, 'update']);
 
-            Route::get(
-                'owner/bookings',
-                [OwnerBookingController::class, 'index']
-            );
+            Route::get( 'owner/venues/{id}/ratings', [VenueController::class, 'ratings']);
+            Route::get(  'owner/bookings',  [OwnerBookingController::class, 'index'] );
         });
 
 

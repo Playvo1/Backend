@@ -1,19 +1,26 @@
 {
   "info": {
+    "_collection_link": "https://go.postman.co/collection/57486470-3c37b249-d9b6-40c5-b64a-3948fcae0655?source=collection_link",
+    "_exporter_id": "57486470",
     "_postman_id": "3c37b249-d9b6-40c5-b64a-3948fcae0655",
     "name": "Playvo",
-    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_exporter_id": "57486470",
-    "_collection_link": "https://go.postman.co/collection/57486470-3c37b249-d9b6-40c5-b64a-3948fcae0655?source=collection_link"
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
-      "name": "Authentication",
       "item": [
         {
           "name": "regestier player",
           "request": {
-            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\r\n    \"name\": \"te\",\r\n    \"email\":\"******@gmail.com \",\r\n    \"phone\":\"05971003855\",\r\n    \"password\":\"12345678\",\r\n    \"password_confirmation\":\"12345678\"\r\n}"
+            },
             "header": [
               {
                 "key": "Accept",
@@ -24,17 +31,8 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"name\": \"te\",\r\n    \"email\":\"******@gmail.com \",\r\n    \"phone\":\"05971003855\",\r\n    \"password\":\"12345678\",\r\n    \"password_confirmation\":\"12345678\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
+            "method": "POST",
             "url": {
-              "raw": "{{playvo}}/api/v1/auth/register/player",
               "host": [
                 "{{playvo}}"
               ],
@@ -44,15 +42,244 @@
                 "auth",
                 "register",
                 "player"
-              ]
+              ],
+              "raw": "{{playvo}}/api/v1/auth/register/player"
             }
           },
-          "response": []
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"user_id\": 21,\n    \"email\": \"hatem.shbair2003@gmail.com\"\n  },\n  \"message\": \"Account created, verification code sent\",\n  \"errors\": null\n}",
+              "code": 200,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:25:30 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success true",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"name\": \"te\",\r\n    \"email\":\"hatem.shbair2003@gmail.com\",\r\n    \"phone\":\"05971003855\",\r\n    \"password\":\"12345678\",\r\n    \"password_confirmation\":\"12345678\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "register",
+                    "player"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/register/player"
+                }
+              },
+              "status": "OK"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"The email has already been taken. (and 1 more error)\",\n  \"errors\": {\n    \"email\": [\n      \"The email has already been taken.\"\n    ],\n    \"phone\": [\n      \"The phone has already been taken.\"\n    ]\n  }\n}",
+              "code": 422,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:35:07 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"name\": \"te\",\r\n    \"email\":\"hatem.shbair2003@gmail.com\",\r\n    \"phone\":\"05971003855\",\r\n    \"password\":\"12345678\",\r\n    \"password_confirmation\":\"12345678\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "register",
+                    "player"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/register/player"
+                }
+              },
+              "status": "Unprocessable Content"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"The name field is required. (and 3 more errors)\",\n  \"errors\": {\n    \"name\": [\n      \"The name field is required.\"\n    ],\n    \"email\": [\n      \"The email field is required.\"\n    ],\n    \"phone\": [\n      \"The phone field is required.\"\n    ],\n    \"password\": [\n      \"The password field is required.\"\n    ]\n  }\n}",
+              "code": 422,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 20:02:16 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "Validation",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"name\": \"\",\r\n    \"email\":\"\",\r\n    \"phone\":\"\",\r\n    \"password\":\"\",\r\n    \"password_confirmation\":\"\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "register",
+                    "player"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/register/player"
+                }
+              },
+              "status": "Unprocessable Content"
+            }
+          ]
         },
         {
           "name": "send-otp",
           "request": {
-            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\r\n    \"email\":\"******@gmail.com\"\r\n}"
+            },
             "header": [
               {
                 "key": "Accept",
@@ -63,17 +290,8 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"email\":\"******@gmail.com\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
+            "method": "POST",
             "url": {
-              "raw": "{{playvo}}/api/v1/auth/send-otp",
               "host": [
                 "{{playvo}}"
               ],
@@ -82,15 +300,241 @@
                 "v1",
                 "auth",
                 "send-otp"
-              ]
+              ],
+              "raw": "{{playvo}}/api/v1/auth/send-otp"
             }
           },
-          "response": []
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"OTP sent successfully to your email.\",\n  \"data\": null\n}",
+              "code": 200,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:26:43 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success true",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"email\":\"hatem.shbair2003@gmail.com\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "send-otp"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/send-otp"
+                }
+              },
+              "status": "OK"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"message\": \"Email is already verified.\",\n  \"data\": null\n}",
+              "code": 422,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:36:21 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"email\":\"hatem.shbair2003@gmail.com\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "send-otp"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/send-otp"
+                }
+              },
+              "status": "Unprocessable Content"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"The email field is required.\",\n  \"errors\": {\n    \"email\": [\n      \"The email field is required.\"\n    ]\n  }\n}",
+              "code": 422,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 20:02:59 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "Validation",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"email\":\"\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "send-otp"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/send-otp"
+                }
+              },
+              "status": "Unprocessable Content"
+            }
+          ]
         },
         {
           "name": "verify-otp",
           "request": {
-            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\r\n    \"email\": \"hatem.shbair2003@gmail.com\",\r\n    \"otp_code\": \"667388 \"\r\n}"
+            },
             "header": [
               {
                 "key": "Accept",
@@ -101,17 +545,8 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"email\": \"hatem407910314@gmail.com\",\r\n    \"otp_code\": \"851625 \"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
+            "method": "POST",
             "url": {
-              "raw": "{{playvo}}/api/v1/auth/verify-otp",
               "host": [
                 "{{playvo}}"
               ],
@@ -120,15 +555,241 @@
                 "v1",
                 "auth",
                 "verify-otp"
-              ]
+              ],
+              "raw": "{{playvo}}/api/v1/auth/verify-otp"
             }
           },
-          "response": []
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"email_verified_at\": \"2026-09-29T20:28:10.000000Z\"\n  },\n  \"message\": \"Email verified\",\n  \"errors\": null\n}",
+              "code": 200,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:28:10 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success true",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"email\": \"hatem.shbair2003@gmail.com\",\r\n    \"otp_code\": \"667388 \"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "verify-otp"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/verify-otp"
+                }
+              },
+              "status": "OK"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"data\": null,\n  \"message\": \"Invalid or expired OTP.\",\n  \"errors\": null\n}",
+              "code": 422,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:36:41 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"email\": \"hatem.shbair2003@gmail.com\",\r\n    \"otp_code\": \"667388 \"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "verify-otp"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/verify-otp"
+                }
+              },
+              "status": "Unprocessable Content"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"The email field is required. (and 1 more error)\",\n  \"errors\": {\n    \"email\": [\n      \"The email field is required.\"\n    ],\n    \"otp_code\": [\n      \"The otp code field is required.\"\n    ]\n  }\n}",
+              "code": 422,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 20:03:45 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "Validation",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"email\": \"\",\r\n    \"otp_code\": \" \"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "verify-otp"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/verify-otp"
+                }
+              },
+              "status": "Unprocessable Content"
+            }
+          ]
         },
         {
           "name": "login",
           "request": {
-            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\r\n    \"email\": \"hatem.shbair2003@gmail.com\",\r\n    \"password\": \"si1^<!VPMK6!\"\r\n}"
+            },
             "header": [
               {
                 "key": "Accept",
@@ -139,17 +800,8 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"email\": \"hatem.shbair2003@gmail.com\",\r\n    \"password\": \"si1^<!VPMK6!\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
+            "method": "POST",
             "url": {
-              "raw": "{{playvo}}/api/v1/auth/login",
               "host": [
                 "{{playvo}}"
               ],
@@ -158,33 +810,250 @@
                 "v1",
                 "auth",
                 "login"
-              ]
+              ],
+              "raw": "{{playvo}}/api/v1/auth/login"
             }
           },
-          "response": []
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"token\": \"34|P8n7byukYSuKpZy1kCRQ7bznKLDWtuiJaQbzdnEba9fb54d1\",\n    \"user\": {\n      \"id\": 21,\n      \"name\": \"te\",\n      \"email\": \"hatem.shbair2003@gmail.com\",\n      \"roles\": [\n        \"player\"\n      ]\n    }\n  },\n  \"message\": \"Logged in\",\n  \"errors\": null\n}",
+              "code": 200,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:29:45 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success true",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"email\": \"hatem.shbair2003@gmail.com\",\r\n    \"password\": \"12345678\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/login"
+                }
+              },
+              "status": "OK"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"data\": null,\n  \"message\": \"Invalid credentials.\",\n  \"errors\": null\n}",
+              "code": 401,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:37:07 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"email\": \"hatem.shbair2003@gmail.com\",\r\n    \"password\": \"12345678\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/login"
+                }
+              },
+              "status": "Unauthorized"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"The email field is required. (and 1 more error)\",\n  \"errors\": {\n    \"email\": [\n      \"The email field is required.\"\n    ],\n    \"password\": [\n      \"The password field is required.\"\n    ]\n  }\n}",
+              "code": 422,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 20:04:20 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "Validation",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"email\": \"\",\r\n    \"password\": \"\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "login"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/login"
+                }
+              },
+              "status": "Unprocessable Content"
+            }
+          ]
         },
         {
           "name": "logout",
           "request": {
             "auth": {
-              "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "",
-                  "type": "string"
+                  "type": "string",
+                  "value": ""
                 }
-              ]
+              ],
+              "type": "bearer"
             },
-            "method": "POST",
             "header": [
               {
                 "key": "Accept",
                 "value": "application/json"
               }
             ],
+            "method": "POST",
             "url": {
-              "raw": "{{playvo}}/api/v1/auth/logout",
               "host": [
                 "{{playvo}}"
               ],
@@ -193,20 +1062,148 @@
                 "v1",
                 "auth",
                 "logout"
-              ]
+              ],
+              "raw": "{{playvo}}/api/v1/auth/logout"
             }
           },
-          "response": []
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": null,\n  \"message\": \"Logged out\",\n  \"errors\": null\n}",
+              "code": 200,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:30:15 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success true",
+              "originalRequest": {
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "logout"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/logout"
+                }
+              },
+              "status": "OK"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"Unauthenticated.\"\n}",
+              "code": 401,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:39:02 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "logout"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/logout"
+                }
+              },
+              "status": "Unauthorized"
+            }
+          ]
         },
         {
           "name": "googleAuth",
           "request": {
-            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\r\n    \"id_token\": \"\"\r\n}\r\n"
+            },
             "header": [
               {
+                "disabled": true,
                 "key": "",
-                "value": "",
-                "disabled": true
+                "value": ""
               },
               {
                 "key": "Accept",
@@ -217,17 +1214,8 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"id_token\": \"\"\r\n}\r\n",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
+            "method": "POST",
             "url": {
-              "raw": "{{playvo}}/api/v1/auth/google",
               "host": [
                 "{{playvo}}"
               ],
@@ -236,20 +1224,29 @@
                 "v1",
                 "auth",
                 "google"
-              ]
+              ],
+              "raw": "{{playvo}}/api/v1/auth/google"
             }
           },
           "response": []
         }
-      ]
+      ],
+      "name": "Authentication"
     },
     {
-      "name": "Restpassword",
       "item": [
         {
           "name": "forgot-password",
           "request": {
-            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\r\n    \"email\": \" ******@gmail.com\"\r\n}"
+            },
             "header": [
               {
                 "key": "Accept",
@@ -260,17 +1257,8 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"email\": \" ******@gmail.com\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
+            "method": "POST",
             "url": {
-              "raw": "{{playvo}}/api/v1/auth/forgot-password",
               "host": [
                 "{{playvo}}"
               ],
@@ -279,15 +1267,241 @@
                 "v1",
                 "auth",
                 "forgot-password"
-              ]
+              ],
+              "raw": "{{playvo}}/api/v1/auth/forgot-password"
             }
           },
-          "response": []
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": null,\n  \"message\": \"If this email exists, a reset code was sent\",\n  \"errors\": null\n}",
+              "code": 200,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:30:59 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success true",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"email\": \"hatem.shbair2003@gmail.com\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "forgot-password"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/forgot-password"
+                }
+              },
+              "status": "OK"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"The selected email is invalid.\",\n  \"errors\": {\n    \"email\": [\n      \"The selected email is invalid.\"\n    ]\n  }\n}",
+              "code": 422,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:40:05 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"email\": \"hatem.shbair2@gmail.com\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "forgot-password"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/forgot-password"
+                }
+              },
+              "status": "Unprocessable Content"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"The email field is required.\",\n  \"errors\": {\n    \"email\": [\n      \"The email field is required.\"\n    ]\n  }\n}",
+              "code": 422,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 20:05:08 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "Validation",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"email\": \"\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "forgot-password"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/forgot-password"
+                }
+              },
+              "status": "Unprocessable Content"
+            }
+          ]
         },
         {
           "name": "verify-rest-otp",
           "request": {
-            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\r\n    \"email\": \"******@gmail.com\",\r\n    \"otp_code\": \"155455\"\r\n}"
+            },
             "header": [
               {
                 "key": "Accept",
@@ -298,17 +1512,8 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"email\": \"******@gmail.com\",\r\n    \"otp_code\": \"155455\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
+            "method": "POST",
             "url": {
-              "raw": "{{playvo}}/api/v1/auth/verify-reset-otp",
               "host": [
                 "{{playvo}}"
               ],
@@ -317,15 +1522,241 @@
                 "v1",
                 "auth",
                 "verify-reset-otp"
-              ]
+              ],
+              "raw": "{{playvo}}/api/v1/auth/verify-reset-otp"
             }
           },
-          "response": []
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"OTP verified successfully. You can now reset your password.\",\n  \"data\": null\n}",
+              "code": 200,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:32:16 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success true",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"email\": \"hatem.shbair2003@gmail.com\",\r\n    \"otp_code\": \"808538\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "verify-reset-otp"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/verify-reset-otp"
+                }
+              },
+              "status": "OK"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"message\": \"Invalid or expired OTP.\",\n  \"data\": null\n}",
+              "code": 422,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:41:01 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"email\": \"hatem.shbair2003@gmail.com\",\r\n    \"otp_code\": \"277211\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "verify-reset-otp"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/verify-reset-otp"
+                }
+              },
+              "status": "Unprocessable Content"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"Email is required (and 1 more error)\",\n  \"errors\": {\n    \"email\": [\n      \"Email is required\"\n    ],\n    \"otp_code\": [\n      \"OTP code is required\"\n    ]\n  }\n}",
+              "code": 422,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 20:05:45 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "Validation",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"email\": \"\",\r\n    \"otp_code\": \"\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "verify-reset-otp"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/verify-reset-otp"
+                }
+              },
+              "status": "Unprocessable Content"
+            }
+          ]
         },
         {
           "name": "rest-password",
           "request": {
-            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\r\n \"email\": \"******@gmail.com\",\r\n\r\n    \"password\": \"12345666\",\r\n    \"password_confirmation\": \"12345666\"\r\n}"
+            },
             "header": [
               {
                 "key": "Accept",
@@ -336,17 +1767,8 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n \"email\": \"******@gmail.com\",\r\n\r\n    \"password\": \"12345666\",\r\n    \"password_confirmation\": \"12345666\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
+            "method": "POST",
             "url": {
-              "raw": "{{playvo}}/api/v1/auth/reset-password",
               "host": [
                 "{{playvo}}"
               ],
@@ -355,15 +1777,1226 @@
                 "v1",
                 "auth",
                 "reset-password"
-              ]
+              ],
+              "raw": "{{playvo}}/api/v1/auth/reset-password"
+            }
+          },
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": null,\n  \"message\": \"Password updated\",\n  \"errors\": null\n}",
+              "code": 200,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:32:49 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "succes true",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"email\": \"hatem.shbair2003@gmail.com\",\r\n\r\n    \"password\": \"12345666\",\r\n    \"password_confirmation\": \"12345666\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "reset-password"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/reset-password"
+                }
+              },
+              "status": "OK"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"data\": null,\n  \"message\": \"OTP verification required o                                                                                    r expired.\",\n  \"errors\": null\n}",
+              "code": 422,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:41:41 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"email\": \"hatem.shbair2003@gmail.com\",\r\n\r\n    \"password\": \"12345666\",\r\n    \"password_confirmation\": \"12345666\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "reset-password"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/reset-password"
+                }
+              },
+              "status": "Unprocessable Content"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"The email field is required. (and 1 more error)\",\n  \"errors\": {\n    \"email\": [\n      \"The email field is required.\"\n    ],\n    \"password\": [\n      \"The password field is required.\"\n    ]\n  }\n}",
+              "code": 422,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 20:06:27 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "Validation",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"email\": \"\",\r\n\r\n    \"password\": \"\",\r\n    \"password_confirmation\": \"\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "auth",
+                    "reset-password"
+                  ],
+                  "raw": "{{playvo}}/api/v1/auth/reset-password"
+                }
+              },
+              "status": "Unprocessable Content"
+            }
+          ]
+        }
+      ],
+      "name": "Restpassword"
+    },
+    {
+      "item": [
+        {
+          "name": "myvenues",
+          "request": {
+            "header": [],
+            "method": "GET",
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "updatevenue",
+          "request": {
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": "{{vault:auth_secret_0yzj}}"
+                }
+              ],
+              "type": "bearer"
+            },
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\r\n    \"address_ar\": \"غزة - الشيخ رضوان\",\r\n    \"address_en\": \"Gaza - Sheikh Radwan\",\r\n    \"area_ar\": \"ملعب خماسي\",\r\n    \"area_en\": \"Five-a-side football field\",\r\n    \"length_m\": 40,\r\n    \"width_m\": 20,\r\n    \"latitude\": 31.5169,\r\n    \"longitude\": 34.4566\r\n}"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "PUT",
+            "url": {
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "owner",
+                "venues",
+                "1"
+              ],
+              "raw": "{{playvo}}/api/v1/owner/venues/1"
+            }
+          },
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 5,\n    \"owner_id\": 24,\n    \"city_id\": 1,\n    \"name_ar\": \"ملعب غزة الرياضي\",\n    \"name_en\": \"Gaza Sports Stadium\",\n    \"address_ar\": \"غزة - الشيخ رضوان\",\n    \"address_en\": \"Gaza - Sheikh Radwan\",\n    \"area_ar\": \"ملعب خماسي\",\n    \"area_en\": \"Five-a-side football field\",\n    \"latitude\": \"31.5169000\",\n    \"longitude\": \"34.4566000\",\n    \"length_m\": \"40.00\",\n    \"width_m\": \"20.00\",\n    \"avg_rating\": \"0.00\",\n    \"min_hourly_price\": \"100.00\",\n    \"status\": \"active\",\n    \"created_at\": \"2026-10-01T18:06:41.000000Z\",\n    \"updated_at\": \"2026-10-01T18:35:33.000000Z\",\n    \"deleted_at\": null\n  },\n  \"message\": \"Venue updated successfully.\"\n}",
+              "code": 200,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 18:35:33 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success true",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"address_ar\": \"غزة - الشيخ رضوان\",\r\n    \"address_en\": \"Gaza - Sheikh Radwan\",\r\n    \"area_ar\": \"ملعب خماسي\",\r\n    \"area_en\": \"Five-a-side football field\",\r\n    \"length_m\": 40,\r\n    \"width_m\": 20,\r\n    \"latitude\": 31.5169,\r\n    \"longitude\": 34.4566\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "venue_owner",
+                    "owner",
+                    "venues",
+                    "5"
+                  ],
+                  "raw": "{{playvo}}/api/v1/venue_owner/owner/venues/5"
+                }
+              },
+              "status": "OK"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"data\": null,\n  \"message\": \"Venue not found.\"\n}",
+              "code": 404,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 19:31:26 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"address_ar\": \"غزة - الشيخ رضوان\",\r\n    \"address_en\": \"Gaza - Sheikh Radwan\",\r\n    \"area_ar\": \"ملعب خماسي\",\r\n    \"area_en\": \"Five-a-side football field\",\r\n    \"length_m\": 40,\r\n    \"width_m\": 20,\r\n    \"latitude\": 31.5169,\r\n    \"longitude\": 34.4566\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "venue_owner",
+                    "owner",
+                    "venues",
+                    "8"
+                  ],
+                  "raw": "{{playvo}}/api/v1/venue_owner/owner/venues/8"
+                }
+              },
+              "status": "Not Found"
+            }
+          ]
+        },
+        {
+          "name": "images venue",
+          "request": {
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": "{{vault:auth_secret_0yzj}}"
+                }
+              ],
+              "type": "bearer"
+            },
+            "body": {
+              "formdata": [
+                {
+                  "key": "image",
+                  "src": [
+                    "/C:/Users/joker/Pictures/Screenshots/Screenshot (1).png"
+                  ],
+                  "type": "file"
+                },
+                {
+                  "key": "sort_order",
+                  "type": "text",
+                  "value": "1"
+                }
+              ],
+              "mode": "formdata"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "owner",
+                "venues",
+                "1",
+                "images"
+              ],
+              "raw": "{{playvo}}/api/v1/owner/venues/1/images"
+            }
+          },
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"image_url\": \"/storage/venues/CpILsizbQ31Nwd4EC5sEC1b9wHJ3D6VA2gJ9fdhy.png\",\n    \"sort_order\": \"1\",\n    \"imageable_id\": 5,\n    \"imageable_type\": \"VENUE\",\n    \"updated_at\": \"2026-10-01T18:37:20.000000Z\",\n    \"created_at\": \"2026-10-01T18:37:20.000000Z\",\n    \"id\": 2\n  },\n  \"message\": \"Venue image uploaded successfully.\",\n  \"errors\": null\n}",
+              "code": 201,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 18:37:20 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success true",
+              "originalRequest": {
+                "body": {
+                  "formdata": [
+                    {
+                      "key": "image",
+                      "src": [
+                        "/C:/Users/joker/Pictures/Screenshots/Screenshot (1).png"
+                      ],
+                      "type": "file"
+                    },
+                    {
+                      "key": "sort_order",
+                      "type": "text",
+                      "value": "1"
+                    }
+                  ],
+                  "mode": "formdata"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "venue_owner",
+                    "owner",
+                    "venues",
+                    "5",
+                    "images"
+                  ],
+                  "raw": "{{playvo}}/api/v1/venue_owner/owner/venues/5/images"
+                }
+              },
+              "status": "Created"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"data\": null,\n  \"message\": \"Venue not found.\",\n  \"errors\": null\n}",
+              "code": 404,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 19:32:22 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "body": {
+                  "formdata": [
+                    {
+                      "key": "image",
+                      "src": [
+                        "/C:/Users/joker/Pictures/Screenshots/Screenshot (1).png"
+                      ],
+                      "type": "file"
+                    },
+                    {
+                      "key": "sort_order",
+                      "type": "text",
+                      "value": "1"
+                    }
+                  ],
+                  "mode": "formdata"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "venue_owner",
+                    "owner",
+                    "venues",
+                    "8",
+                    "images"
+                  ],
+                  "raw": "{{playvo}}/api/v1/venue_owner/owner/venues/8/images"
+                }
+              },
+              "status": "Not Found"
+            }
+          ]
+        },
+        {
+          "name": "create timeslot",
+          "request": {
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": "{{vault:auth_secret_196j}}"
+                }
+              ],
+              "type": "bearer"
+            },
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\r\n    \"sport_id\": 6,\r\n    \"slot_date\": \"2026-09-29\",\r\n    \"start_time\": \"20:00\",\r\n    \"end_time\": \"21:00\",\r\n    \"hourly_price\": 500\r\n}"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": " application/json"
+              }
+            ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "venue_owner",
+                "owner",
+                "venues",
+                "2",
+                "time-slots"
+              ],
+              "raw": "{{playvo}}/api/v1/venue_owner/owner/venues/2/time-slots"
+            }
+          },
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"sport_id\": 1,\n    \"slot_date\": \"2026-09-25\",\n    \"start_time\": \"21:00\",\n    \"end_time\": \"22:00\",\n    \"hourly_price\": 50,\n    \"status\": \"available\",\n    \"venue_id\": 5,\n    \"updated_at\": \"2026-10-01T18:40:36.000000Z\",\n    \"created_at\": \"2026-10-01T18:40:36.000000Z\",\n    \"id\": 10\n  },\n  \"message\": \"Time slot created successfully.\",\n  \"errors\": null\n}",
+              "code": 201,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 18:40:36 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success true",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"sport_id\": 1,\r\n    \"slot_date\": \"2026-09-25\",\r\n    \"start_time\": \"21:00\",\r\n    \"end_time\": \"22:00\",\r\n    \"hourly_price\": 50\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": " application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "venue_owner",
+                    "owner",
+                    "venues",
+                    "5",
+                    "time-slots"
+                  ],
+                  "raw": "{{playvo}}/api/v1/venue_owner/owner/venues/5/time-slots"
+                }
+              },
+              "status": "Created"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"data\": null,\n  \"message\": \"Venue not found.\",\n  \"errors\": null\n}",
+              "code": 404,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 19:33:23 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"sport_id\": 1,\r\n    \"slot_date\": \"2026-09-25\",\r\n    \"start_time\": \"21:00\",\r\n    \"end_time\": \"22:00\",\r\n    \"hourly_price\": 50\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": " application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "venue_owner",
+                    "owner",
+                    "venues",
+                    "7",
+                    "time-slots"
+                  ],
+                  "raw": "{{playvo}}/api/v1/venue_owner/owner/venues/7/time-slots"
+                }
+              },
+              "status": "Not Found"
+            }
+          ]
+        },
+        {
+          "name": "update timeslot",
+          "request": {
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": "{{vault:auth_secret_196j}}"
+                }
+              ],
+              "type": "bearer"
+            },
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\r\n    \"slot_date\": \"2026-09-30\",\r\n    \"start_time\": \"21:00\",\r\n    \"end_time\": \"22:00\",\r\n    \"hourly_price\": 100\r\n}"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "appliction/json"
+              }
+            ],
+            "method": "PUT",
+            "url": {
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "venue_owner",
+                "owner",
+                "time-slots",
+                "1"
+              ],
+              "raw": "{{playvo}}/api/v1/venue_owner/owner/time-slots/1"
+            }
+          },
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"id\": 9,\n    \"venue_id\": 5,\n    \"sport_id\": 1,\n    \"slot_date\": \"2026-10-05\",\n    \"start_time\": \"19:00:00\",\n    \"end_time\": \"20:00:00\",\n    \"hourly_price\": \"10.00\",\n    \"status\": \"available\",\n    \"created_at\": \"2026-10-01T18:40:04.000000Z\",\n    \"updated_at\": \"2026-10-01T18:45:42.000000Z\"\n  },\n  \"message\": \"Time slot updated successfully.\",\n  \"errors\": null\n}",
+              "code": 200,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 18:45:42 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success true",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"slot_date\": \"2026-10-05\",\r\n    \"start_time\": \"19:00\",\r\n    \"end_time\": \"20:00\",\r\n    \"hourly_price\": 10\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "appliction/json"
+                  }
+                ],
+                "method": "PUT",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "venue_owner",
+                    "owner",
+                    "time-slots",
+                    "19"
+                  ],
+                  "raw": "{{playvo}}/api/v1/venue_owner/owner/time-slots/19"
+                }
+              },
+              "status": "OK"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"data\": null,\n  \"message\": \"Time slot not found.\",\n  \"errors\": null\n}",
+              "code": 404,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 19:34:32 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"slot_date\": \"2026-10-05\",\r\n    \"start_time\": \"19:00\",\r\n    \"end_time\": \"20:00\",\r\n    \"hourly_price\": 10\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "appliction/json"
+                  }
+                ],
+                "method": "PUT",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "venue_owner",
+                    "owner",
+                    "time-slots",
+                    "19"
+                  ],
+                  "raw": "{{playvo}}/api/v1/venue_owner/owner/time-slots/19"
+                }
+              },
+              "status": "Not Found"
+            }
+          ]
+        },
+        {
+          "name": "owner booking",
+          "request": {
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": "{{vault:auth_secret_06qb}}"
+                }
+              ],
+              "type": "bearer"
+            },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "method": "GET",
+            "url": {
+              "host": [
+                "playvo-backend",
+                "onrender",
+                "com"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "venue_owner",
+                "owner",
+                "bookings"
+              ],
+              "protocol": "https",
+              "query": [
+                {
+                  "key": "venue_id",
+                  "value": "1"
+                }
+              ],
+              "raw": "https://playvo-backend.onrender.com/api/v1/venue_owner/owner/bookings?venue_id=1"
+            }
+          },
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"bookings\": {\n      \"current_page\": 1,\n      \"data\": [\n        {\n          \"id\": 22,\n          \"time_slot_id\": 8,\n          \"captain_user_id\": 21,\n          \"captain_name\": \"Hatem Shbeir\",\n          \"captain_role\": \"Captain\",\n          \"captain_phone\": \"970597103855\",\n          \"total_price\": \"500.00\",\n          \"result\": null,\n          \"status\": \"cancelled\",\n          \"hold_expires_at\": \"2026-10-01T19:08:55.000000Z\",\n          \"share_token\": \"ozuW24q4f2Ews9KLbrhmowBoFvb6f5sULQYWaqwe\",\n          \"created_at\": \"2026-10-01T18:58:55.000000Z\",\n          \"updated_at\": \"2026-10-01T19:15:32.000000Z\",\n          \"time_slot\": {\n            \"id\": 8,\n            \"venue_id\": 5,\n            \"sport_id\": 1,\n            \"slot_date\": \"2026-09-29\",\n            \"start_time\": \"20:00:00\",\n            \"end_time\": \"21:00:00\",\n            \"hourly_price\": \"500.00\",\n            \"status\": \"available\",\n            \"created_at\": \"2026-10-01T18:39:18.000000Z\",\n            \"updated_at\": \"2026-10-01T19:15:32.000000Z\"\n          },\n          \"captain\": {\n            \"id\": 21,\n            \"name\": \"te\",\n            \"email\": \"hatem.shbair2003@gmail.com\",\n            \"phone\": \"05971003855\",\n            \"google_id\": null,\n            \"email_verified_at\": \"2026-09-29T20:28:10.000000Z\",\n            \"status\": \"active\",\n            \"failed_login_attempts\": 0,\n            \"locked_until\": null,\n            \"created_at\": \"2026-09-29T20:25:30.000000Z\",\n            \"updated_at\": \"2026-10-01T11:17:33.000000Z\"\n          }\n        }\n      ],\n      \"first_page_url\": \"http://127.0.0.1:8000/api/v1/venue_owner/owner/bookings?page=1\",\n      \"from\": 1,\n      \"last_page\": 1,\n      \"last_page_url\": \"http://127.0.0.1:8000/api/v1/venue_owner/owner/bookings?page=1\",\n      \"links\": [\n        {\n          \"url\": null,\n          \"label\": \"&laquo; Previous\",\n          \"page\": null,\n          \"active\": false\n        },\n        {\n          \"url\": \"http://127.0.0.1:8000/api/v1/venue_owner/owner/bookings?page=1\",\n          \"label\": \"1\",\n          \"page\": 1,\n          \"active\": true\n        },\n        {\n          \"url\": null,\n          \"label\": \"Next &raquo;\",\n          \"page\": null,\n          \"active\": false\n        }\n      ],\n      \"next_page_url\": null,\n      \"path\": \"http://127.0.0.1:8000/api/v1/venue_owner/owner/bookings\",\n      \"per_page\": 10,\n      \"prev_page_url\": null,\n      \"to\": 1,\n      \"total\": 1\n    },\n    \"weekly_stats\": {\n      \"total_bookings\": 1,\n      \"income\": 0\n    }\n  },\n  \"message\": \"Owner bookings retrieved successfully.\",\n  \"errors\": null\n}",
+              "code": 200,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 19:35:00 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success  true",
+              "originalRequest": {
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "venue_owner",
+                    "owner",
+                    "bookings"
+                  ],
+                  "query": [
+                    {
+                      "key": "venue_id",
+                      "value": "5"
+                    }
+                  ],
+                  "raw": "{{playvo}}/api/v1/venue_owner/owner/bookings?venue_id=5"
+                }
+              },
+              "status": "OK"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"data\": null,\n  \"message\": \"The selected venue id is invalid.\",\n  \"errors\": {\n    \"venue_id\": [\n      \"The selected venue id is invalid.\"\n    ]\n  }\n}",
+              "code": 422,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 19:35:38 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "venue_owner",
+                    "owner",
+                    "bookings"
+                  ],
+                  "query": [
+                    {
+                      "key": "venue_id",
+                      "value": "90"
+                    }
+                  ],
+                  "raw": "{{playvo}}/api/v1/venue_owner/owner/bookings?venue_id=90"
+                }
+              },
+              "status": "Unprocessable Content"
+            }
+          ]
+        },
+        {
+          "name": "ratings venue",
+          "request": {
+            "header": [],
+            "method": "GET",
+            "url": {
+              "raw": ""
             }
           },
           "response": []
         }
-      ]
+      ],
+      "name": "Venues"
     },
     {
-      "name": "Venues",
       "item": [
         {
           "name": "venue",
@@ -371,15 +3004,14 @@
             "auth": {
               "type": "noauth"
             },
-            "method": "GET",
             "header": [
               {
                 "key": "Accept",
                 "value": "application/json"
               }
             ],
+            "method": "GET",
             "url": {
-              "raw": "{{playvo}}/api/v1/venues/1?city_id=&sport_id=&date=&hour=&page=",
               "host": [
                 "{{playvo}}"
               ],
@@ -392,7 +3024,7 @@
               "query": [
                 {
                   "key": "city_id",
-                  "value": ""
+                  "value": "1"
                 },
                 {
                   "key": "sport_id",
@@ -410,247 +3042,99 @@
                   "key": "page",
                   "value": ""
                 }
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "updatevenue",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "23|twe3FWArFU9lCgqUH9IRj95o9RHdzquH6kc073po4e1b9695",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{playvo}}/api/v1/owner/venues/1",
-              "host": [
-                "{{playvo}}"
               ],
-              "path": [
-                "api",
-                "v1",
-                "owner",
-                "venues",
-                "1"
-              ]
+              "raw": "{{playvo}}/api/v1/venues/1?city_id=1&sport_id=&date=&hour=&page="
             }
           },
-          "response": []
-        },
-        {
-          "name": "images venue",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"current_page\": 1,\n    \"data\": [\n      {\n        \"id\": 5,\n        \"owner_id\": 24,\n        \"city_id\": 1,\n        \"name_ar\": \"ملعب غزة الرياضي\",\n        \"name_en\": \"Gaza Sports Stadium\",\n        \"address_ar\": \"غزة - الشيخ رضوان\",\n        \"address_en\": \"Gaza - Sheikh Radwan\",\n        \"area_ar\": \"ملعب خماسي\",\n        \"area_en\": \"Five-a-side football field\",\n        \"latitude\": \"31.5169000\",\n        \"longitude\": \"34.4566000\",\n        \"length_m\": \"40.00\",\n        \"width_m\": \"20.00\",\n        \"avg_rating\": \"0.00\",\n        \"min_hourly_price\": \"100.00\",\n        \"status\": \"active\",\n        \"created_at\": \"2026-10-01T18:06:41.000000Z\",\n        \"updated_at\": \"2026-10-01T18:57:01.000000Z\",\n        \"deleted_at\": null,\n        \"city\": {\n          \"id\": 1,\n          \"country_id\": 1,\n          \"name_ar\": \"غزة\",\n          \"name_en\": \"Gaza\",\n          \"created_at\": null,\n          \"updated_at\": null,\n          \"country\": {\n            \"id\": 1,\n            \"name_ar\": \"فلسطين\",\n            \"name_en\": \"Palestine\",\n            \"created_at\": \"2026-09-20T14:29:36.000000Z\",\n            \"updated_at\": \"2026-09-20T14:29:36.000000Z\"\n          }\n        },\n        \"sports\": [],\n        \"images\": [\n          {\n            \"id\": 2,\n            \"imageable_type\": \"VENUE\",\n            \"imageable_id\": 5,\n            \"image_url\": \"/storage/venues/CpILsizbQ31Nwd4EC5sEC1b9wHJ3D6VA2gJ9fdhy.png\",\n            \"sort_order\": 1,\n            \"created_at\": \"2026-10-01T18:37:20.000000Z\",\n            \"updated_at\": \"2026-10-01T18:37:20.000000Z\"\n          }\n        ],\n        \"time_slots\": [\n          {\n            \"id\": 8,\n            \"venue_id\": 5,\n            \"sport_id\": 1,\n            \"slot_date\": \"2026-09-29\",\n            \"start_time\": \"20:00:00\",\n            \"end_time\": \"21:00:00\",\n            \"hourly_price\": \"500.00\",\n            \"status\": \"available\",\n            \"created_at\": \"2026-10-01T18:39:18.000000Z\",\n            \"updated_at\": \"2026-10-01T18:39:18.000000Z\"\n          },\n          {\n            \"id\": 9,\n            \"venue_id\": 5,\n            \"sport_id\": 1,\n            \"slot_date\": \"2026-10-05\",\n            \"start_time\": \"19:00:00\",\n            \"end_time\": \"20:00:00\",\n            \"hourly_price\": \"10.00\",\n            \"status\": \"available\",\n            \"created_at\": \"2026-10-01T18:40:04.000000Z\",\n            \"updated_at\": \"2026-10-01T18:45:42.000000Z\"\n          },\n          {\n            \"id\": 10,\n            \"venue_id\": 5,\n            \"sport_id\": 1,\n            \"slot_date\": \"2026-09-25\",\n            \"start_time\": \"21:00:00\",\n            \"end_time\": \"22:00:00\",\n            \"hourly_price\": \"50.00\",\n            \"status\": \"available\",\n            \"created_at\": \"2026-10-01T18:40:36.000000Z\",\n            \"updated_at\": \"2026-10-01T18:40:36.000000Z\"\n          }\n        ]\n      }\n    ],\n    \"first_page_url\": \"http://127.0.0.1:8000/api/v1/venues?page=1\",\n    \"from\": 1,\n    \"last_page\": 1,\n    \"last_page_url\": \"http://127.0.0.1:8000/api/v1/venues?page=1\",\n    \"links\": [\n      {\n        \"url\": null,\n        \"label\": \"&laquo; Previous\",\n        \"page\": null,\n        \"active\": false\n      },\n      {\n        \"url\": \"http://127.0.0.1:8000/api/v1/venues?page=1\",\n        \"label\": \"1\",\n        \"page\": 1,\n        \"active\": true\n      },\n      {\n        \"url\": null,\n        \"label\": \"Next &raquo;\",\n        \"page\": null,\n        \"active\": false\n      }\n    ],\n    \"next_page_url\": null,\n    \"path\": \"http://127.0.0.1:8000/api/v1/venues\",\n    \"per_page\": 10,\n    \"prev_page_url\": null,\n    \"to\": 1,\n    \"total\": 1\n  },\n  \"message\": \"Venues retrieved successfully\",\n  \"errors\": null\n}",
+              "code": 200,
+              "cookie": [],
+              "header": [
                 {
-                  "key": "token",
-                  "value": "26|OOvXE7SQhzQCrZEvAqryySi9cQvcEUfgsdHlQy2098606f0e",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "image",
-                  "type": "file",
-                  "src": [
-                    "/C:/Users/joker/Pictures/Screenshots/Screenshot (1).png"
-                  ]
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
                 },
                 {
-                  "key": "sort_order",
-                  "value": "1",
-                  "type": "text"
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 18:57:32 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
                 }
-              ]
-            },
-            "url": {
-              "raw": "{{playvo}}/api/v1/owner/venues/1/images",
-              "host": [
-                "{{playvo}}"
               ],
-              "path": [
-                "api",
-                "v1",
-                "owner",
-                "venues",
-                "1",
-                "images"
-              ]
+              "name": "success true",
+              "originalRequest": {
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "GET",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "venues"
+                  ],
+                  "query": [
+                    {
+                      "key": "city_id",
+                      "value": "1"
+                    }
+                  ],
+                  "raw": "{{playvo}}/api/v1/venues?city_id=1"
+                }
+              },
+              "status": "OK"
             }
-          },
-          "response": []
+          ]
         },
-        {
-          "name": "create timeslot",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "/api/v1/owner/venues/1/time-slots",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": " application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{playvo}}/api/v1/owner/venues/1/time-slots",
-              "host": [
-                "{{playvo}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "owner",
-                "venues",
-                "1",
-                "time-slots"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "update timeslot",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "27|EWgL6ROT22qDHlqPfOM0XILan9lqzWQvKIzwMLPIa32562da",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "PUT",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "appliction/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"slot_date\": \"2026-09-30\",\r\n    \"start_time\": \"21:00\",\r\n    \"end_time\": \"22:00\",\r\n    \"hourly_price\": 120\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{playvo}}/api/v1/owner/time-slots/1",
-              "host": [
-                "{{playvo}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "owner",
-                "time-slots",
-                "1"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "owner booking",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "27|EWgL6ROT22qDHlqPfOM0XILan9lqzWQvKIzwMLPIa32562da",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "GET",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{playvo}}/api/v1/owner/bookings?venue_id=1",
-              "host": [
-                "{{playvo}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "owner",
-                "bookings"
-              ],
-              "query": [
-                {
-                  "key": "venue_id",
-                  "value": "1"
-                }
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Bookings",
-      "item": [
         {
           "name": "bookingvenue",
           "request": {
             "auth": {
-              "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "",
-                  "type": "string"
+                  "type": "string",
+                  "value": "{{vault:auth_secret_0oth}}"
                 }
-              ]
+              ],
+              "type": "bearer"
             },
-            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\r\n    \"time_slot_id\": 2,\r\n    \"captain_name\": \"Hatem Shbeir\",\r\n    \"captain_role\": \"Captain\",\r\n    \"captain_phone\": \"970597103855\"\r\n}"
+            },
             "header": [
               {
                 "key": "Accept",
@@ -661,17 +3145,8 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"time_slot_id\": 2,\r\n    \"captain_name\": \"Hatem Shbeir\",\r\n    \"captain_role\": \"Captain\",\r\n    \"captain_phone\": \"970597103855\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
+            "method": "POST",
             "url": {
-              "raw": "{{playvo}}/api/v1/bookings",
               "host": [
                 "{{playvo}}"
               ],
@@ -679,43 +3154,259 @@
                 "api",
                 "v1",
                 "bookings"
-              ]
+              ],
+              "raw": "{{playvo}}/api/v1/bookings"
             }
           },
-          "response": []
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"booking_id\": 21,\n    \"total_price\": \"120.00\",\n    \"status\": \"pending_payment\"\n  },\n  \"message\": \"Booking created successfully\",\n  \"errors\": null\n}",
+              "code": 201,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:45:20 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success true",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"time_slot_id\": 2,\r\n    \"captain_name\": \"Hatem Shbeir\",\r\n    \"captain_role\": \"Captain\",\r\n    \"captain_phone\": \"970597103855\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "bookings"
+                  ],
+                  "raw": "{{playvo}}/api/v1/bookings"
+                }
+              },
+              "status": "Created"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"data\": null,\n  \"message\": \"This time slot is no longer available.\",\n  \"errors\": null\n}",
+              "code": 409,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:46:24 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"time_slot_id\": 2,\r\n    \"captain_name\": \"Hatem Shbeir\",\r\n    \"captain_role\": \"Captain\",\r\n    \"captain_phone\": \"970597103855\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "bookings"
+                  ],
+                  "raw": "{{playvo}}/api/v1/bookings"
+                }
+              },
+              "status": "Conflict"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"The time slot id field is required. (and 3 more errors)\",\n  \"errors\": {\n    \"time_slot_id\": [\n      \"The time slot id field is required.\"\n    ],\n    \"captain_name\": [\n      \"The captain name field is required.\"\n    ],\n    \"captain_role\": [\n      \"The captain role field is required.\"\n    ],\n    \"captain_phone\": [\n      \"The captain phone field is required.\"\n    ]\n  }\n}",
+              "code": 422,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 20:09:19 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "Validation",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"time_slot_id\":,\r\n    \"captain_name\": \"\",\r\n    \"captain_role\": \"\",\r\n    \"captain_phone\": \"\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "bookings"
+                  ],
+                  "raw": "{{playvo}}/api/v1/bookings"
+                }
+              },
+              "status": "Unprocessable Content"
+            }
+          ]
         },
         {
           "name": "uploadPaymentReceipt",
           "request": {
             "auth": {
-              "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "",
-                  "type": "string"
+                  "type": "string",
+                  "value": "{{vault:auth_secret_0oth}}"
                 }
-              ]
+              ],
+              "type": "bearer"
             },
-            "method": "POST",
+            "body": {
+              "formdata": [
+                {
+                  "key": "receipt",
+                  "src": [
+                    "/C:/Users/joker/Downloads/playvo (1).jpg"
+                  ],
+                  "type": "file"
+                }
+              ],
+              "mode": "formdata"
+            },
             "header": [
               {
                 "key": "Accept",
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "receipt",
-                  "type": "file",
-                  "src": []
-                }
-              ]
-            },
+            "method": "POST",
             "url": {
-              "raw": "{{playvo}}/api/v1/bookings/18/payment-receipt",
               "host": [
                 "{{playvo}}"
               ],
@@ -723,32 +3414,107 @@
                 "api",
                 "v1",
                 "bookings",
-                "18",
+                "17",
                 "payment-receipt"
-              ]
+              ],
+              "raw": "{{playvo}}/api/v1/bookings/17/payment-receipt"
             }
           },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Admin",
-      "item": [
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"message\": \"Receipt image is required.\",\n  \"errors\": {\n    \"receipt\": [\n      \"Receipt image is required.\"\n    ]\n  }\n}",
+              "code": 422,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Tue, 29 Sep 2026 20:48:43 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "body": {
+                  "formdata": [
+                    {
+                      "key": "receipt",
+                      "src": [],
+                      "type": "file"
+                    }
+                  ],
+                  "mode": "formdata"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "bookings",
+                    "18",
+                    "payment-receipt"
+                  ],
+                  "raw": "{{playvo}}/api/v1/bookings/18/payment-receipt"
+                }
+              },
+              "status": "Unprocessable Content"
+            }
+          ]
+        },
         {
-          "name": "add venue",
+          "name": "rating venue",
           "request": {
             "auth": {
-              "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "28|qUaptWmNak2FvtUaE0Knmyvul79LDmoCwHVlWLxQed0b7367",
-                  "type": "string"
+                  "type": "string",
+                  "value": "{{vault:auth_secret_1a17}}"
                 }
-              ]
+              ],
+              "type": "bearer"
             },
-            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\r\n    \"rating\":5 ,\r\n    \"comment\": \"الملعب ممتاز والتنظيم رائع\"\r\n}"
+            },
             "header": [
               {
                 "key": "Accept",
@@ -759,17 +3525,106 @@
                 "value": "application/json"
               }
             ],
+            "method": "POST",
+            "url": {
+              "host": [
+                "{{playvo}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "bookings",
+                "34",
+                "rating"
+              ],
+              "raw": "{{playvo}}/api/v1/bookings/34/rating"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "device tokens",
+          "request": {
+            "header": [],
+            "method": "GET",
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "notifaction",
+          "request": {
+            "header": [],
+            "method": "GET",
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "read notification",
+          "request": {
+            "header": [],
+            "method": "GET",
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "favorit",
+          "request": {
+            "header": [],
+            "method": "GET",
+            "url": {
+              "raw": ""
+            }
+          },
+          "response": []
+        }
+      ],
+      "name": "Bookings"
+    },
+    {
+      "item": [
+        {
+          "name": "add venue",
+          "request": {
+            "auth": {
+              "bearer": [
+                {
+                  "key": "token",
+                  "type": "string",
+                  "value": "{{vault:auth_secret_06z0}}"
+                }
+              ],
+              "type": "bearer"
+            },
             "body": {
               "mode": "raw",
-              "raw": "{\r\n        \"owner_id\": 16,\r\n    \"name_ar\": \"ملعب غزة الرياضي\",\r\n    \"name_en\": \"Gaza Sports Stadium\",\r\n    \"city_id\": 1,\r\n    \"address_ar\": \"الرمال، غزة\",\r\n    \"address_en\": \"Al-Rimal, Gaza\",\r\n    \"area_ar\": \"الرمال\",\r\n    \"area_en\": \"Al-Rimal\",\r\n    \"latitude\": 31.5204,\r\n    \"longitude\": 34.4600,\r\n    \"length_m\": 40,\r\n    \"width_m\": 20,\r\n    \"min_hourly_price\": 100\r\n}",
               "options": {
                 "raw": {
                   "language": "json"
                 }
-              }
+              },
+              "raw": "{\r\n        \"owner_id\": 16,\r\n    \"name_ar\": \"ملعب غزة الرياضي\",\r\n    \"name_en\": \"Gaza Sports Stadium\",\r\n    \"city_id\": 1,\r\n    \"address_ar\": \"الرمال، غزة\",\r\n    \"address_en\": \"Al-Rimal, Gaza\",\r\n    \"area_ar\": \"الرمال\",\r\n    \"area_en\": \"Al-Rimal\",\r\n    \"latitude\": 31.5204,\r\n    \"longitude\": 34.4600,\r\n    \"length_m\": 40,\r\n    \"width_m\": 20,\r\n    \"min_hourly_price\": 100\r\n}"
             },
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "method": "POST",
             "url": {
-              "raw": "{{playvo}}/api/v1/admin/venues",
               "host": [
                 "{{playvo}}"
               ],
@@ -778,33 +3633,178 @@
                 "v1",
                 "admin",
                 "venues"
-              ]
+              ],
+              "raw": "{{playvo}}/api/v1/admin/venues"
             }
           },
-          "response": []
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": {\n    \"owner_id\": 24,\n    \"city_id\": 1,\n    \"name_ar\": \"ملعب غزة الرياضي\",\n    \"name_en\": \"Gaza Sports Stadium\",\n    \"address_ar\": \"الرمال، غزة\",\n    \"address_en\": \"Al-Rimal, Gaza\",\n    \"area_ar\": \"الرمال\",\n    \"area_en\": \"Al-Rimal\",\n    \"latitude\": 31.5204,\n    \"longitude\": 34.46,\n    \"length_m\": 40,\n    \"width_m\": 20,\n    \"min_hourly_price\": 100,\n    \"status\": \"active\",\n    \"updated_at\": \"2026-10-01T18:06:41.000000Z\",\n    \"created_at\": \"2026-10-01T18:06:41.000000Z\",\n    \"id\": 5\n  },\n  \"message\": \"Venue created successfully.\",\n  \"errors\": null\n}",
+              "code": 201,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 18:06:41 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success true",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n        \"owner_id\": 24,\r\n    \"name_ar\": \"ملعب غزة الرياضي\",\r\n    \"name_en\": \"Gaza Sports Stadium\",\r\n    \"city_id\": 1,\r\n    \"address_ar\": \"الرمال، غزة\",\r\n    \"address_en\": \"Al-Rimal, Gaza\",\r\n    \"area_ar\": \"الرمال\",\r\n    \"area_en\": \"Al-Rimal\",\r\n    \"latitude\": 31.5204,\r\n    \"longitude\": 34.4600,\r\n    \"length_m\": 40,\r\n    \"width_m\": 20,\r\n    \"min_hourly_price\": 100\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "venues"
+                  ],
+                  "raw": "{{playvo}}/api/v1/admin/venues"
+                }
+              },
+              "status": "Created"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"data\": null,\n  \"message\": \"The selected owner id is invalid.\",\n  \"errors\": {\n    \"owner_id\": [\n      \"The selected owner id is invalid.\"\n    ]\n  }\n}",
+              "code": 422,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 19:37:40 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n        \"owner_id\": 55,\r\n    \"name_ar\": \"ملعب غزة الرياضي\",\r\n    \"name_en\": \"Gaza Sports Stadium\",\r\n    \"city_id\": 1,\r\n    \"address_ar\": \"الرمال، غزة\",\r\n    \"address_en\": \"Al-Rimal, Gaza\",\r\n    \"area_ar\": \"الرمال\",\r\n    \"area_en\": \"Al-Rimal\",\r\n    \"latitude\": 31.5204,\r\n    \"longitude\": 34.4600,\r\n    \"length_m\": 40,\r\n    \"width_m\": 20,\r\n    \"min_hourly_price\": 100\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "venues"
+                  ],
+                  "raw": "{{playvo}}/api/v1/admin/venues"
+                }
+              },
+              "status": "Unprocessable Content"
+            }
+          ]
         },
         {
-          "name": "remove venue",
+          "name": "status  venue",
           "request": {
             "auth": {
-              "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "29|u7zWO94SuOnfLAyiB2ZShRxosznoiuAqSqj6j9wV76c88fcd",
-                  "type": "string"
+                  "type": "string",
+                  "value": "{{vault:auth_secret_0bhp}}"
                 }
-              ]
+              ],
+              "type": "bearer"
             },
-            "method": "PUT",
             "header": [
               {
                 "key": "Accept",
                 "value": "application/json"
               }
             ],
+            "method": "PUT",
             "url": {
-              "raw": "{{playvo}}/api/v1/admin/venues/2/status",
               "host": [
                 "{{playvo}}"
               ],
@@ -815,25 +3815,183 @@
                 "venues",
                 "2",
                 "status"
-              ]
+              ],
+              "raw": "{{playvo}}/api/v1/admin/venues/2/status"
             }
           },
-          "response": []
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"data\": null,\n  \"message\": \"Venue activated successfully.\",\n  \"errors\": null\n}",
+              "code": 200,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 19:11:36 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success true",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"status\": \"active\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "venues",
+                    "5",
+                    "status"
+                  ],
+                  "raw": "{{playvo}}/api/v1/admin/venues/5/status"
+                }
+              },
+              "status": "OK"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"data\": null,\n  \"message\": \"Resource not found.\",\n  \"errors\": null\n}",
+              "code": 404,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 19:39:02 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"status\": \"active\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "venues",
+                    "",
+                    "status"
+                  ],
+                  "raw": "{{playvo}}/api/v1/admin/venues//status"
+                }
+              },
+              "status": "Not Found"
+            }
+          ]
         },
         {
-          "name": "login",
+          "name": "create owner venue",
           "request": {
             "auth": {
-              "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "30|DQZHDlI215tcU6kVHHy1OL7ZnJq4lC8i2ECkz7d2c896483f",
-                  "type": "string"
+                  "type": "string",
+                  "value": "{{vault:auth_secret_0ppw}}"
                 }
-              ]
+              ],
+              "type": "bearer"
             },
-            "method": "POST",
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\r\n    \"name\": \"Test Venue Owner\",\r\n    \"email\": \"hatem.shbair2003@gmail.com\",\r\n    \"phone\": \"0591234567\"\r\n}"
+            },
             "header": [
               {
                 "key": "Accept",
@@ -844,17 +4002,8 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"name\": \"Test Venue Owner\",\r\n    \"email\": \"hatem.shbair2003@gmail.com\",\r\n    \"phone\": \"0591234567\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
+            "method": "POST",
             "url": {
-              "raw": "{{playvo}}/api/v1/admin/venue-owners",
               "host": [
                 "{{playvo}}"
               ],
@@ -863,33 +4012,178 @@
                 "v1",
                 "admin",
                 "venue-owners"
-              ]
+              ],
+              "raw": "{{playvo}}/api/v1/admin/venue-owners"
             }
           },
-          "response": []
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Venue owner created, credentials sent by email\",\n  \"data\": {\n    \"user_id\": 24,\n    \"name\": \"Test Venue Owner\",\n    \"email\": \"hatem407910314@gmail.com\",\n    \"roles\": [\n      \"venue_owner\"\n    ]\n  },\n  \"errors\": null\n}",
+              "code": 201,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 17:56:19 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success true",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"name\": \"Test Venue Owner\",\r\n    \"email\": \"hatem407910314@gmail.com\",\r\n    \"phone\": \"0591234567\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "venue-owners"
+                  ],
+                  "raw": "{{playvo}}/api/v1/admin/venue-owners"
+                }
+              },
+              "status": "Created"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"data\": null,\n  \"message\": \"This email address is already in use. (and 1 more error)\",\n  \"errors\": {\n    \"email\": [\n      \"This email address is already in use.\"\n    ],\n    \"phone\": [\n      \"The phone field is required.\"\n    ]\n  }\n}",
+              "code": 422,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 19:40:16 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"name\": \"Test Venue Owner\",\r\n    \"email\": \"hatem407910314@gmail.com\",\r\n    \"phone\": \"\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "POST",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "venue-owners"
+                  ],
+                  "raw": "{{playvo}}/api/v1/admin/venue-owners"
+                }
+              },
+              "status": "Unprocessable Content"
+            }
+          ]
         },
         {
           "name": "paymet receipt",
           "request": {
             "auth": {
-              "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "32|cQsM2uxZRf7HjxUtBE3Sv1LqyXuHUVjwvYdw8Ko20553635c",
-                  "type": "string"
+                  "type": "string",
+                  "value": "{{vault:auth_secret_11od}}"
                 }
-              ]
+              ],
+              "type": "bearer"
             },
-            "method": "GET",
             "header": [
               {
                 "key": "Accept",
                 "value": "appliction/json"
               }
             ],
+            "method": "GET",
             "url": {
-              "raw": "{{playvo}}/api/v1/admin/payment-receipts?status=pending",
               "host": [
                 "{{playvo}}"
               ],
@@ -904,7 +4198,8 @@
                   "key": "status",
                   "value": "pending"
                 }
-              ]
+              ],
+              "raw": "{{playvo}}/api/v1/admin/payment-receipts?status=pending"
             }
           },
           "response": []
@@ -913,24 +4208,23 @@
           "name": "verify payment",
           "request": {
             "auth": {
-              "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "32|cQsM2uxZRf7HjxUtBE3Sv1LqyXuHUVjwvYdw8Ko20553635c",
-                  "type": "string"
+                  "type": "string",
+                  "value": "{{vault:auth_secret_11od}}"
                 }
-              ]
+              ],
+              "type": "bearer"
             },
-            "method": "PUT",
             "header": [
               {
                 "key": "Accept",
                 "value": "appliction/json"
               }
             ],
+            "method": "PUT",
             "url": {
-              "raw": "{{playvo}}/api/v1/admin/payment-receipts/1/verify",
               "host": [
                 "{{playvo}}"
               ],
@@ -941,25 +4235,157 @@
                 "payment-receipts",
                 "1",
                 "verify"
-              ]
+              ],
+              "raw": "{{playvo}}/api/v1/admin/payment-receipts/1/verify"
             }
           },
-          "response": []
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Payment receipt verified and booking confirmed.\",\n  \"data\": {\n    \"booking_id\": 22,\n    \"venue\": null,\n    \"date\": null,\n    \"time_slot\": {\n      \"start_time\": \"20:00:00\",\n      \"end_time\": \"21:00:00\"\n    }\n  },\n  \"errors\": null\n}",
+              "code": 200,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 19:12:43 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success true",
+              "originalRequest": {
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "appliction/json"
+                  }
+                ],
+                "method": "PUT",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "payment-receipts",
+                    "2",
+                    "verify"
+                  ],
+                  "raw": "{{playvo}}/api/v1/admin/payment-receipts/2/verify"
+                }
+              },
+              "status": "OK"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"data\": null,\n  \"message\": \"Resource not found.\",\n  \"errors\": null\n}",
+              "code": 404,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 19:41:48 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "appliction/json"
+                  }
+                ],
+                "method": "PUT",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "payment-receipts",
+                    "555",
+                    "verify"
+                  ],
+                  "raw": "{{playvo}}/api/v1/admin/payment-receipts/555/verify"
+                }
+              },
+              "status": "Not Found"
+            }
+          ]
         },
         {
           "name": "reject payment",
           "request": {
             "auth": {
-              "type": "bearer",
               "bearer": [
                 {
                   "key": "token",
-                  "value": "32|cQsM2uxZRf7HjxUtBE3Sv1LqyXuHUVjwvYdw8Ko20553635c",
-                  "type": "string"
+                  "type": "string",
+                  "value": "{{vault:auth_secret_11od}}"
                 }
-              ]
+              ],
+              "type": "bearer"
             },
-            "method": "PUT",
+            "body": {
+              "mode": "raw",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              },
+              "raw": "{\r\n    \"reason\": \"Receipt image is unclear\"\r\n}"
+            },
             "header": [
               {
                 "key": "Accept",
@@ -970,17 +4396,8 @@
                 "value": "application/json"
               }
             ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\r\n    \"reason\": \"Receipt image is unclear\"\r\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
+            "method": "PUT",
             "url": {
-              "raw": "{{playvo}}/api/v1/admin/payment-receipts/1/reject",
               "host": [
                 "{{playvo}}"
               ],
@@ -991,113 +4408,174 @@
                 "payment-receipts",
                 "1",
                 "reject"
-              ]
-            }
-          },
-          "response": []
-        }
-      ]
-    },
-    {
-      "name": "Assistant",
-      "item": [
-        {
-          "name": "assistant query (English)",
-          "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"query_text\": \"Football court tomorrow at 6pm near Gaza City\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
-            "url": {
-              "raw": "{{playvo}}/api/v1/assistant/query",
-              "host": [
-                "{{playvo}}"
               ],
-              "path": [
-                "api",
-                "v1",
-                "assistant",
-                "query"
-              ]
+              "raw": "{{playvo}}/api/v1/admin/payment-receipts/1/reject"
             }
           },
-          "response": []
+          "response": [
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": true,\n  \"message\": \"Payment receipt rejected.\",\n  \"data\": {\n    \"receipt_id\": 2,\n    \"reason\": \"Receipt image is unclear\"\n  },\n  \"errors\": null\n}",
+              "code": 200,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 19:15:33 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success true",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"reason\": \"Receipt image is unclear\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "payment-receipts",
+                    "2",
+                    "reject"
+                  ],
+                  "raw": "{{playvo}}/api/v1/admin/payment-receipts/2/reject"
+                }
+              },
+              "status": "OK"
+            },
+            {
+              "_postman_previewlanguage": "json",
+              "body": "{\n  \"success\": false,\n  \"data\": null,\n  \"message\": \"Resource not found.\",\n  \"errors\": null\n}",
+              "code": 404,
+              "cookie": [],
+              "header": [
+                {
+                  "key": "host",
+                  "value": "127.0.0.1:8000"
+                },
+                {
+                  "key": "connection",
+                  "value": "close"
+                },
+                {
+                  "key": "x-powered-by",
+                  "value": "PHP/8.2.12"
+                },
+                {
+                  "key": "cache-control",
+                  "value": "no-cache, private"
+                },
+                {
+                  "key": "date",
+                  "value": "Thu, 01 Oct 2026 19:42:45 GMT"
+                },
+                {
+                  "key": "content-type",
+                  "value": "application/json"
+                },
+                {
+                  "key": "access-control-allow-origin",
+                  "value": "*"
+                }
+              ],
+              "name": "success false",
+              "originalRequest": {
+                "body": {
+                  "mode": "raw",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  },
+                  "raw": "{\r\n    \"reason\": \"Receipt image is unclear\"\r\n}"
+                },
+                "header": [
+                  {
+                    "key": "Accept",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "method": "PUT",
+                "url": {
+                  "host": [
+                    "{{playvo}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "admin",
+                    "payment-receipts",
+                    "255",
+                    "reject"
+                  ],
+                  "raw": "{{playvo}}/api/v1/admin/payment-receipts/255/reject"
+                }
+              },
+              "status": "Not Found"
+            }
+          ]
         },
         {
-          "name": "assistant query (Arabic)",
+          "name": "dashbord",
           "request": {
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "",
-                  "type": "string"
-                }
-              ]
-            },
-            "method": "POST",
-            "header": [
-              {
-                "key": "Accept",
-                "value": "application/json"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"query_text\": \"بدي ملعب كرة قدم بكرا الساعة 6 مساءً بالجلاء\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            },
+            "header": [],
+            "method": "GET",
             "url": {
-              "raw": "{{playvo}}/api/v1/assistant/query",
-              "host": [
-                "{{playvo}}"
-              ],
-              "path": [
-                "api",
-                "v1",
-                "assistant",
-                "query"
-              ]
+              "raw": ""
             }
           },
           "response": []
         }
-      ]
+      ],
+      "name": "Admin"
     }
   ],
   "variable": [
