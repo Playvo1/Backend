@@ -14,6 +14,8 @@ use App\Http\Controllers\Api\OwnerBookingController;
 use App\Http\Controllers\Api\TimeSlotController;
 use App\Http\Controllers\Api\VenueController;
 use App\Http\Controllers\Api\VenueRatingController;
+use App\Http\Controllers\Api\OwnerAnalyticsController;
+
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -76,11 +78,10 @@ Route::prefix('v1')->group(function () {
 
             Route::post('owner/venues/{id}/images',  [VenueController::class, 'uploadImage']);
 
-            Route::post(
-                'owner/venues/{id}/time-slots',
-                [TimeSlotController::class, 'store']
-            );
+            Route::post(    'owner/venues/{id}/time-slots', [TimeSlotController::class, 'store']);
 
+            Route::get('/owner/time-slots', [TimeSlotController::class, 'ownerTimeSlots']);
+            Route::get('/owner/analytics',[OwnerAnalyticsController::class, 'index']);
             Route::put('owner/time-slots/{id}',   [TimeSlotController::class, 'update']);
 
             Route::get( 'owner/venues/{id}/ratings', [VenueController::class, 'ratings']);
