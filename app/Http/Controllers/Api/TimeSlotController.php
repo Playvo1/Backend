@@ -8,6 +8,7 @@ use App\Models\Venue;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
+
 class TimeSlotController extends Controller
 {
     public function store(Request $request, int $id): JsonResponse
@@ -142,4 +143,48 @@ class TimeSlotController extends Controller
             'errors' => null,
         ]);
     }
+    public function ownerTimeSlots(Request $request)
+{
+    $user = $request->user();
+
+    $venue = Venue::where('owner_id', $user->id)->first();
+
+    if (!$venue) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'You do not have a venue.',
+            'errors' => null,
+        ], 404);
+    }
+
+    $query = TimeSlot::where('venue_id', $venue->id);
+
+    if ($request->filled('date')) {
+        $request->validate([
+            'date' => ['date_format:Y-m-d'],
+        ]);
+
+        $query->where('slot_date', $request->date);
+    }
+
+    if ($request->filled('status')) {
+        $request->validate([
+            'status' => ['in:available,booked,blocked'],
+        ]);
+
+        $query->where('status', $request->status);
+    }
+        $timeSlots = $query
+            ->orderBy('slot_date')
+            ->orderBy('start_time')
+            ->paginate($request->integer('per_page', 15));
+
+        return response()->json([
+        'success' => true,
+        'data' => $timeSlots,
+        'message' => 'Owner time slots retrieved successfully.',
+        'errors' => null,
+    ]);
+}
 }
