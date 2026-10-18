@@ -45,47 +45,60 @@ class AdminDashboardController extends Controller
 
         $pendingReceipts = PaymentReceipt::where('status', 'pending')
             ->count();
-
-        $mostBookedVenues = Booking::query()
-            ->join(
-                'time_slots',
-                'bookings.time_slot_id',
-                '=',
-                'time_slots.id'
-            )
-            ->join(
-                'venues',
-                'time_slots.venue_id',
-                '=',
-                'venues.id'
-            )
-            ->whereIn(
-                'bookings.status',
-                self::ACTIVE_BOOKING_STATUSES
-            )
+        $mostBookedVenues = Venue::query()
+            ->leftJoin('cities', 'venues.city_id', '=', 'cities.id')
+            ->leftJoin('time_slots', 'venues.id', '=', 'time_slots.venue_id')
+            ->leftJoin('bookings', function ($join) {
+                $join->on('time_slots.id', '=', 'bookings.time_slot_id')
+                    ->whereIn('bookings.status', self::ACTIVE_BOOKING_STATUSES);
+            })
             ->select(
                 'venues.id as venue_id',
                 'venues.name_ar',
-                'venues.name_en'
+                'venues.name_en',
+                'cities.id as city_id',
+                'cities.name_ar as city_name_ar',
+                'cities.name_en as city_name_en'
             )
-            ->selectRaw(
-                'COUNT(bookings.id) as bookings_count'
+            ->selectRaw('COUNT(DISTINCT bookings.id) as bookings_count')
+            ->selectSub(
+                DB::table('images')
+                    ->select('image_url')
+                    ->whereColumn('images.imageable_id', 'venues.id')
+                    ->where('images.imageable_type', 'VENUE')
+                    ->orderBy('sort_order')
+                    ->orderBy('id')
+                    ->limit(1),
+                'image_url'
             )
             ->groupBy(
                 'venues.id',
                 'venues.name_ar',
-                'venues.name_en'
+                'venues.name_en',
+                'cities.id',
+                'cities.name_ar',
+                'cities.name_en'
             )
             ->orderByDesc('bookings_count')
             ->orderBy('venues.id')
             ->limit(self::TOP_LIMIT)
             ->get()
-            ->map(fn ($row) => [
+            ->map(fn($row) => [
                 'venue_id' => (int) $row->venue_id,
                 'name_ar' => $row->name_ar,
                 'name_en' => $row->name_en,
-                'bookings_count' => (int) $row->bookings_count,
-            ])
+                'city' => [
+                    'id' => $row->city_id !== null
+                        ? (int) $row->city_id
+                        : null,
+                    'name_ar' => $row->city_name_ar,
+                    'name_en' => $row->city_name_en,
+                ],
+            'image_url' => $row->image_url
+                ? url($row->image_url)
+                : null,
+            'bookings_count' => (int) $row->bookings_count,
+        ])
             ->all();
 
         $mostActiveCities = Booking::query()
@@ -128,7 +141,7 @@ class AdminDashboardController extends Controller
             ->orderBy('cities.id')
             ->limit(self::TOP_LIMIT)
             ->get()
-            ->map(fn ($row) => [
+            ->map(fn($row) => [
                 'city_id' => (int) $row->city_id,
                 'name_ar' => $row->name_ar,
                 'name_en' => $row->name_en,
