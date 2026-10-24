@@ -18,7 +18,13 @@ class OwnerAnalyticsController extends Controller
         $request->validate([
             'period' => [
                 'sometimes',
-                Rule::in(['day', 'week', 'month', 'last_month']),
+                Rule::in([
+                    'day',
+                    'week',
+                    'month',
+                    'last_month',
+                    'year',
+                ]),
             ],
         ]);
 
@@ -69,6 +75,13 @@ class OwnerAnalyticsController extends Controller
                 ->startOfMonth();
 
             $previousEnd = $previousStart->copy()->endOfMonth();
+
+        } elseif ($period === 'year') {
+            $start = $now->copy()->startOfYear();
+            $end = $now->copy()->endOfYear();
+
+            $previousStart = $start->copy()->subYear()->startOfYear();
+            $previousEnd = $start->copy()->subYear()->endOfYear();
 
         } else {
             $start = $now->copy()->startOfMonth();
@@ -147,7 +160,7 @@ class OwnerAnalyticsController extends Controller
             );
         };
 
-        // Bookings overview: bookings created each day, Saturday to Friday.
+        // Weekly bookings overview: Saturday through Friday.
         $weekStart = $now->copy()
             ->startOfWeek(Carbon::SATURDAY)
             ->startOfDay();

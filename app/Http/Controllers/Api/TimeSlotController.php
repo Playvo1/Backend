@@ -8,7 +8,6 @@ use App\Models\Venue;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
-
 class TimeSlotController extends Controller
 {
     public function store(Request $request, int $id): JsonResponse
@@ -51,6 +50,7 @@ class TimeSlotController extends Controller
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
             'hourly_price' => ['required', 'numeric', 'min:0'],
         ]);
+
         $sportBelongsToVenue = $venue->sports()
             ->where('sports.id', $validated['sport_id'])
             ->exists();
@@ -66,7 +66,8 @@ class TimeSlotController extends Controller
                     ],
                 ],
             ], 422);
-}
+        }
+
         $exists = $venue->timeSlots()
             ->where('sport_id', $validated['sport_id'])
             ->whereDate('slot_date', $validated['slot_date'])
@@ -124,7 +125,10 @@ class TimeSlotController extends Controller
             ], 401);
         }
 
-        if ((int) $timeSlot->venue->owner_id !== (int) $user->id) {
+        if (
+            !$timeSlot->venue ||
+            (int) $timeSlot->venue->owner_id !== (int) $user->id
+        ) {
             return response()->json([
                 'success' => false,
                 'data' => null,
@@ -150,6 +154,25 @@ class TimeSlotController extends Controller
             'hourly_price' => ['sometimes', 'numeric', 'min:0'],
         ]);
 
+        if (isset($validated['sport_id'])) {
+            $sportBelongsToVenue = $timeSlot->venue->sports()
+                ->where('sports.id', $validated['sport_id'])
+                ->exists();
+
+            if (!$sportBelongsToVenue) {
+                return response()->json([
+                    'success' => false,
+                    'data' => null,
+                    'message' => 'This sport is not associated with this venue.',
+                    'errors' => [
+                        'sport_id' => [
+                            'The selected sport is not associated with this venue.',
+                        ],
+                    ],
+                ], 422);
+            }
+        }
+
         $timeSlot->update($validated);
 
         return response()->json([
@@ -160,91 +183,117 @@ class TimeSlotController extends Controller
         ]);
     }
 
-public function destroy(Request $request, int $id): JsonResponse
-{
-    $timeSlot = TimeSlot::with('venue')->find($id);
+    public function destroy(Request $request, int $id): JsonResponse
+    {
+        $timeSlot = TimeSlot::with('venue')->find($id);
 
-    if (!$timeSlot) {
+        if (!$timeSlot) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'Time slot not found.',
+                'errors' => null,
+            ], 404);
+        }
+
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'Unauthenticated.',
+                'errors' => null,
+            ], 401);
+        }
+
+        if (
+            !$timeSlot->venue ||
+            (int) $timeSlot->venue->owner_id !== (int) $user->id
+        ) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'You are not authorized to delete this time slot.',
+                'errors' => null,
+            ], 403);
+        }
+
+        if ($timeSlot->booking()->exists()) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'Cannot delete a time slot that has booking history.',
+                'errors' => null,
+            ], 409);
+        }
+
+        $timeSlot->delete();
+
         return response()->json([
-            'success' => false,
+            'success' => true,
             'data' => null,
-            'message' => 'Time slot not found.',
+            'message' => 'Time slot deleted successfully.',
             'errors' => null,
-        ], 404);
+        ]);
     }
 
-    // التأكد أن الفترة تابعة لملعب صاحب الحساب الحالي
-    if ((int) $timeSlot->venue->owner_id !== (int) $request->user()->id) {
-        return response()->json([
-            'success' => false,
-            'data' => null,
-            'message' => 'You are not authorized to delete this time slot.',
-            'errors' => null,
-        ], 403);
-    }
+    public function ownerTimeSlots(Request $request): JsonResponse
+    {
+        $user = $request->user();
 
-    // الحفاظ على سجل الحجوزات وعدم حذف الفترة إذا كان لها أي حجز
-    if ($timeSlot->booking()->exists()) {
-        return response()->json([
-            'success' => false,
-            'data' => null,
-            'message' => 'Cannot delete a time slot that has booking history.',
-            'errors' => null,
-        ], 409);
-    }
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'Unauthenticated.',
+                'errors' => null,
+            ], 401);
+        }
 
-    $timeSlot->delete();
+        $venue = Venue::where('owner_id', $user->id)->first();
 
-    return response()->json([
-        'success' => true,
-        'data' => null,
-        'message' => 'Time slot deleted successfully.',
-        'errors' => null,
-    ]);
-}
+        if (!$venue) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'You do not have a venue.',
+                'errors' => null,
+            ], 404);
+        }
 
-    public function ownerTimeSlots(Request $request)
-{
-    $user = $request->user();
+        $query = TimeSlot::where('venue_id', $venue->id);
 
-    $venue = Venue::where('owner_id', $user->id)->first();
+        if ($request->filled('date')) {
+            $validated = $request->validate([
+                'date' => ['date_format:Y-m-d'],
+            ]);
 
-    if (!$venue) {
-        return response()->json([
-            'success' => false,
-            'data' => null,
-            'message' => 'You do not have a venue.',
-            'errors' => null,
-        ], 404);
-    }
+            $query->whereDate('slot_date', $validated['date']);
+        }
 
-    $query = TimeSlot::where('venue_id', $venue->id);
+        if ($request->filled('status')) {
+            $validated = $request->validate([
+                'status' => ['in:available,booked,blocked'],
+            ]);
 
-    if ($request->filled('date')) {
-        $request->validate([
-            'date' => ['date_format:Y-m-d'],
+            $query->where('status', $validated['status']);
+        }
+
+        $validated = $request->validate([
+            'per_page' => ['sometimes', 'integer', 'min:1', 'max:100'],
         ]);
 
-        $query->where('slot_date', $request->date);
-    }
-
-    if ($request->filled('status')) {
-        $request->validate([
-            'status' => ['in:available,booked,blocked'],
-        ]);
-
-        $query->where('status', $request->status);
-    }
         $timeSlots = $query
             ->orderBy('slot_date')
             ->orderBy('start_time')
-            ->paginate($request->integer('per_page', 15));
+            ->paginate($validated['per_page'] ?? 15);
 
         return response()->json([
-        'success' => true,
-        'data' => $timeSlots,
-        'message' => 'Owner time slots retrieved successfully.',
-        'errors' => null,
-    ]);
-}
+            'success' => true,
+            'data' => $timeSlots,
+            'message' => 'Owner time slots retrieved successfully.',
+            'errors' => null,
+        ]);
+    }
 }

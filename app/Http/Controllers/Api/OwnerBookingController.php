@@ -28,6 +28,7 @@ class OwnerBookingController extends Controller
             ], 401);
         }
 
+        // Get the venue belonging to the logged-in owner.
         $venue = Venue::where('owner_id', $user->id)->first();
 
         if (!$venue) {
@@ -70,11 +71,19 @@ class OwnerBookingController extends Controller
                 if (ctype_digit($search)) {
                     $q->where('id', (int) $search)
                         ->orWhereHas('captain', function ($playerQuery) use ($search) {
-                            $playerQuery->where('name', 'like', "%{$search}%");
+                            $playerQuery->where(
+                                'name',
+                                'like',
+                                "%{$search}%"
+                            );
                         });
                 } else {
                     $q->whereHas('captain', function ($playerQuery) use ($search) {
-                        $playerQuery->where('name', 'like', "%{$search}%");
+                        $playerQuery->where(
+                            'name',
+                            'like',
+                            "%{$search}%"
+                        );
                     });
                 }
             });
@@ -96,7 +105,7 @@ class OwnerBookingController extends Controller
             ->latest('id')
             ->paginate($validated['per_page'] ?? 10);
 
-        // Preserve the existing weekly statistics.
+        // Weekly booking statistics.
         $weekStart = now()->startOfWeek();
         $weekEnd = now()->endOfWeek();
 
@@ -118,7 +127,7 @@ class OwnerBookingController extends Controller
                 'bookings' => $bookings,
                 'weekly_stats' => [
                     'total_bookings' => $weeklyBookings,
-                    'income' => $weeklyIncome,
+                    'income' => (float) $weeklyIncome,
                 ],
             ],
             'message' => 'Owner bookings retrieved successfully.',
