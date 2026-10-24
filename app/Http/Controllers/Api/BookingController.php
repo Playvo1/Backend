@@ -12,6 +12,8 @@ use Illuminate\Support\Str;
 use App\Http\Requests\Api\PaymentReceiptUploadRequest;
 use App\Models\PaymentReceipt;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Notification;
+use App\Models\User;
 class BookingController extends Controller
 {
     public function store(BookingRequest $request): JsonResponse
@@ -140,6 +142,23 @@ if (PaymentReceipt::where('booking_id', $booking->id)->exists()) {
             'status' => 'pending',
             'uploaded_at' => now(),
         ]);
+
+        $playerName = $request->user()->name;
+
+        $admins = User::role('admin')->get();
+
+        foreach ($admins as $admin) {
+            Notification::create([
+                'user_id' => $admin->id,
+                'booking_id' => $booking->id,
+                'type' => 'payment_receipt_uploaded',
+                'title' => 'إيصال دفع جديد',
+                'body' => "قام اللاعب {$playerName} برفع إيصال دفع للحجز رقم {$booking->id}.",
+                'is_read' => false,
+                'sent_at' => now(),
+            ]);
+        }
+
 
         return response()->json([
             'success' => true,

@@ -25,6 +25,13 @@ class UpdateVenueRequest extends FormRequest
 
             'latitude' => ['required', 'numeric', 'between:-90,90'],
             'longitude' => ['required', 'numeric', 'between:-180,180'],
+            'sport_ids' => ['sometimes', 'array'],
+            'sport_ids.*' => [
+                'required',
+                'integer',
+                'distinct',
+                'exists:sports,id',
+            ],
         ];
     }
 }

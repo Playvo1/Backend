@@ -11,7 +11,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Spatie\Permission\Traits\HasRoles;
 use Laravel\Sanctum\HasApiTokens;
-
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -116,10 +116,10 @@ class User extends Authenticatable
     /**
      * The assistant queries submitted by this user.
      */
-    public function assistantQueries(): HasMany
-    {
-        return $this->hasMany(AssistantQuery::class, 'user_id');
-    }
+ public function assistantQueries(): HasMany
+{
+    return $this->hasMany(AssistantQuery::class, 'user_id');
+}
 
     /**
      * The audit log entries created by this user as an admin.
@@ -128,4 +128,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(AuditLog::class, 'admin_user_id');
     }
+public function images(): MorphMany
+{
+    return $this->morphMany(Image::class, 'imageable');
+}
 }

@@ -13,6 +13,8 @@ use App\Models\Image;
 use Illuminate\Support\Facades\Storage;
 use App\Models\User;
 use App\Models\VenueRating;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class VenueController extends Controller
 {
@@ -189,7 +191,17 @@ if ((int) $venue->owner_id !== (int) $user->id) {
     ], 403);
 }
 
-    $venue->update($request->validated());
+        $validated = $request->validated();
+
+        if (array_key_exists('sport_ids', $validated)) {
+            $sportIds = $validated['sport_ids'];
+            unset($validated['sport_ids']);
+
+            $venue->update($validated);
+            $venue->sports()->sync($sportIds);
+        } else {
+            $venue->update($validated);
+        }
 
     return response()->json([
         'success' => true,
@@ -270,9 +282,44 @@ public function ratings(Request $request, int $id): JsonResponse
         ], 404);
     }
 
-    $ratings = VenueRating::where('venue_id', $venue->id)
+    $ratingsQuery = VenueRating::where('venue_id', $venue->id);
+
+    $totalRatings = (clone $ratingsQuery)->count();
+
+    $averageRating = $totalRatings > 0
+        ? round((float) (clone $ratingsQuery)->avg('rating'), 2)
+        : 0;
+
+    $ratingCounts = (clone $ratingsQuery)
+        ->selectRaw('rating, COUNT(*) as total')
+        ->groupBy('rating')
+        ->pluck('total', 'rating');
+
+    $distribution = [];
+
+    for ($star = 1; $star <= 5; $star++) {
+        $count = (int) ($ratingCounts[$star] ?? 0);
+
+        $distribution[] = [
+            'stars' => $star,
+            'count' => $count,
+            'percentage' => $totalRatings > 0
+                ? round(($count / $totalRatings) * 100, 2)
+                : 0,
+        ];
+    }
+
+    $ratings = (clone $ratingsQuery)
+        ->with('booking.captain')
         ->latest()
         ->paginate(10);
+
+    $ratings->getCollection()->transform(function ($rating) {
+        $rating->player_name = $rating->booking?->captain?->name;
+        $rating->unsetRelation('booking');
+
+        return $rating;
+    });
 
     return response()->json([
         'success' => true,
@@ -280,21 +327,179 @@ public function ratings(Request $request, int $id): JsonResponse
             'venue' => [
                 'id' => $venue->id,
                 'name' => $venue->name_en,
-                'avg_rating' => $venue->avg_rating,
-                'ratings_count' => VenueRating::where(
-                    'venue_id',
-                    $venue->id
-                )->count(),
+                'avg_rating' => $averageRating,
+                'ratings_count' => $totalRatings,
             ],
+            'rating_distribution' => $distribution,
             'ratings' => $ratings,
         ],
         'message' => 'Venue ratings retrieved successfully.',
         'errors' => null,
     ]);
 }
-public function myVenues(Request $request)
+public function setCoverImage(Request $request, int $id, int $imageId): JsonResponse
 {
-    $venues = Venue::where('owner_id', $request->user()->id)
+    $venue = Venue::find($id);
+
+    if (!$venue) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'Venue not found.',
+            'errors' => null,
+        ], 404);
+    }
+
+    if ((int) $venue->owner_id !== (int) $request->user()->id) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'You are not authorized to manage this venue.',
+            'errors' => null,
+        ], 403);
+    }
+
+    $image = $venue->images()->whereKey($imageId)->first();
+
+    if (!$image) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'Image not found for this venue.',
+            'errors' => null,
+        ], 404);
+    }
+
+    DB::transaction(function () use ($venue, $image) {
+        $venue->images()->update(['is_cover' => false]);
+        $image->update(['is_cover' => true]);
+    });
+
+    return response()->json([
+        'success' => true,
+        'data' => $venue->images()->orderBy('sort_order')->get(),
+        'message' => 'Cover image updated successfully.',
+        'errors' => null,
+    ]);
+}
+public function deleteImage(Request $request, int $id, int $imageId): JsonResponse
+{
+    $venue = Venue::find($id);
+
+    if (!$venue) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'Venue not found.',
+            'errors' => null,
+        ], 404);
+    }
+
+    if ((int) $venue->owner_id !== (int) $request->user()->id) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'You are not authorized to manage this venue.',
+            'errors' => null,
+        ], 403);
+    }
+
+    $image = $venue->images()->whereKey($imageId)->first();
+
+    if (!$image) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'Image not found for this venue.',
+            'errors' => null,
+        ], 404);
+    }
+
+    $path = parse_url($image->image_url, PHP_URL_PATH);
+
+    if (is_string($path) && Str::startsWith($path, '/storage/')) {
+        $filePath = Str::after($path, '/storage/');
+        Storage::disk('public')->delete($filePath);
+    }
+
+    $image->delete();
+
+    return response()->json([
+        'success' => true,
+        'data' => null,
+        'message' => 'Venue image deleted successfully.',
+        'errors' => null,
+    ]);
+}
+public function reorderImages(Request $request, int $id): JsonResponse
+{
+    $venue = Venue::find($id);
+
+    if (!$venue) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'Venue not found.',
+            'errors' => null,
+        ], 404);
+    }
+
+    if ((int) $venue->owner_id !== (int) $request->user()->id) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'You are not authorized to manage this venue.',
+            'errors' => null,
+        ], 403);
+    }
+
+    $validated = $request->validate([
+        'image_ids' => ['required', 'array', 'min:1'],
+        'image_ids.*' => ['required', 'integer', 'distinct'],
+    ]);
+
+    $imageIds = array_map('intval', $validated['image_ids']);
+
+    $venueImageIds = $venue->images()
+        ->pluck('id')
+        ->map(fn ($imageId) => (int) $imageId)
+        ->all();
+
+    $sortedSubmittedIds = $imageIds;
+    $sortedVenueIds = $venueImageIds;
+
+    sort($sortedSubmittedIds);
+    sort($sortedVenueIds);
+
+    if ($sortedSubmittedIds !== $sortedVenueIds) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'Send all image IDs belonging to this venue exactly once.',
+            'errors' => null,
+        ], 422);
+    }
+
+    DB::transaction(function () use ($venue, $imageIds) {
+        foreach ($imageIds as $position => $imageId) {
+            $venue->images()
+                ->whereKey($imageId)
+                ->update(['sort_order' => $position]);
+        }
+    });
+
+    return response()->json([
+        'success' => true,
+        'data' => $venue->images()->orderBy('sort_order')->get(),
+        'message' => 'Venue images reordered successfully.',
+        'errors' => null,
+    ]);
+}
+public function myVenues(Request $request): JsonResponse
+{
+    $venues = Venue::query()
+        ->where('owner_id', $request->user()->id)
+        ->with(['city.country', 'sports', 'images'])
         ->latest()
         ->get();
 
