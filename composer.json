@@ -7,6 +7,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "cloudinary-labs/cloudinary-laravel": "*",
         "google/apiclient": "*",
         "kreait/laravel-firebase": "*",
         "laravel/framework": "^12.0",

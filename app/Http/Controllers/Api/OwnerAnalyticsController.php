@@ -18,7 +18,7 @@ class OwnerAnalyticsController extends Controller
         $request->validate([
             'period' => [
                 'sometimes',
-                Rule::in(['week', 'month', 'year']),
+                Rule::in(['day', 'week', 'month', 'last_month']),
             ],
         ]);
 
@@ -36,24 +36,49 @@ class OwnerAnalyticsController extends Controller
         }
 
         $period = $request->input('period', 'month');
-
         $now = Carbon::now();
 
-        if ($period === 'week') {
-            $start = $now->copy()->startOfWeek();
-            $end = $now->copy()->endOfWeek();
+        // Determine the selected period and its previous comparison period.
+        if ($period === 'day') {
+            $start = $now->copy()->startOfDay();
+            $end = $now->copy()->endOfDay();
+
+            $previousStart = $start->copy()->subDay();
+            $previousEnd = $end->copy()->subDay();
+
+        } elseif ($period === 'week') {
+            // Week runs from Saturday through Friday.
+            $start = $now->copy()
+                ->startOfWeek(Carbon::SATURDAY)
+                ->startOfDay();
+
+            $end = $start->copy()->addDays(6)->endOfDay();
+
             $previousStart = $start->copy()->subWeek();
             $previousEnd = $end->copy()->subWeek();
-        } elseif ($period === 'year') {
-            $start = $now->copy()->startOfYear();
-            $end = $now->copy()->endOfYear();
-            $previousStart = $start->copy()->subYear();
-            $previousEnd = $end->copy()->subYear();
+
+        } elseif ($period === 'last_month') {
+            $start = $now->copy()
+                ->subMonthNoOverflow()
+                ->startOfMonth();
+
+            $end = $start->copy()->endOfMonth();
+
+            $previousStart = $start->copy()
+                ->subMonthNoOverflow()
+                ->startOfMonth();
+
+            $previousEnd = $previousStart->copy()->endOfMonth();
+
         } else {
             $start = $now->copy()->startOfMonth();
             $end = $now->copy()->endOfMonth();
-            $previousStart = $start->copy()->subMonth();
-            $previousEnd = $end->copy()->subMonth();
+
+            $previousStart = $start->copy()
+                ->subMonthNoOverflow()
+                ->startOfMonth();
+
+            $previousEnd = $previousStart->copy()->endOfMonth();
         }
 
         $getStats = function ($from, $to) use ($venue) {
@@ -100,7 +125,10 @@ class OwnerAnalyticsController extends Controller
                 'bookable_slots' => $bookableSlots,
                 'occupied_slots' => $occupiedSlots,
                 'occupancy_rate' => $bookableSlots > 0
-                    ? round(($occupiedSlots / $bookableSlots) * 100, 2)
+                    ? round(
+                        ($occupiedSlots / $bookableSlots) * 100,
+                        2
+                    )
                     : 0,
             ];
         };
@@ -119,6 +147,117 @@ class OwnerAnalyticsController extends Controller
             );
         };
 
+        // Bookings overview: bookings created each day, Saturday to Friday.
+        $weekStart = $now->copy()
+            ->startOfWeek(Carbon::SATURDAY)
+            ->startOfDay();
+
+        $weekEnd = $weekStart->copy()
+            ->addDays(6)
+            ->endOfDay();
+
+        $weekBookings = Booking::whereIn(
+            'time_slot_id',
+            TimeSlot::where('venue_id', $venue->id)->select('id')
+        )
+            ->whereBetween('created_at', [$weekStart, $weekEnd])
+            ->get(['created_at']);
+
+        $bookingCountsByDate = $weekBookings
+            ->groupBy(
+                fn ($booking) => Carbon::parse(
+                    $booking->created_at
+                )->toDateString()
+            )
+            ->map(fn ($items) => $items->count());
+
+        $dayNames = [
+            'Saturday',
+            'Sunday',
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+        ];
+
+        $bookingsOverview = collect($dayNames)
+            ->map(function ($day, $index) use (
+                $weekStart,
+                $bookingCountsByDate
+            ) {
+                $date = $weekStart->copy()
+                    ->addDays($index)
+                    ->toDateString();
+
+                return [
+                    'day' => $day,
+                    'date' => $date,
+                    'bookings' => (int) $bookingCountsByDate->get(
+                        $date,
+                        0
+                    ),
+                ];
+            })
+            ->values()
+            ->all();
+
+        // Revenue chart: confirmed booking revenue for each month of this year.
+        $yearStart = $now->copy()->startOfYear();
+        $yearEnd = $now->copy()->endOfYear();
+
+        $yearBookings = Booking::whereIn(
+            'time_slot_id',
+            TimeSlot::where('venue_id', $venue->id)->select('id')
+        )
+            ->where('status', 'confirmed')
+            ->whereBetween('created_at', [
+                $yearStart->copy()->startOfDay(),
+                $yearEnd->copy()->endOfDay(),
+            ])
+            ->get(['created_at', 'total_price']);
+
+        $revenueByMonth = $yearBookings
+            ->groupBy(
+                fn ($booking) => Carbon::parse(
+                    $booking->created_at
+                )->month
+            )
+            ->map(
+                fn ($items) => (float) $items->sum('total_price')
+            );
+
+        $monthNames = [
+            1 => 'January',
+            2 => 'February',
+            3 => 'March',
+            4 => 'April',
+            5 => 'May',
+            6 => 'June',
+            7 => 'July',
+            8 => 'August',
+            9 => 'September',
+            10 => 'October',
+            11 => 'November',
+            12 => 'December',
+        ];
+
+        $revenueChart = collect($monthNames)
+            ->map(function ($monthName, $monthNumber) use (
+                $revenueByMonth
+            ) {
+                return [
+                    'month' => $monthNumber,
+                    'label' => $monthName,
+                    'revenue' => (float) $revenueByMonth->get(
+                        $monthNumber,
+                        0
+                    ),
+                ];
+            })
+            ->values()
+            ->all();
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -127,6 +266,7 @@ class OwnerAnalyticsController extends Controller
                     'from' => $start->toDateString(),
                     'to' => $end->toDateString(),
                 ],
+
                 'bookings' => [
                     'total' => $current['total_bookings'],
                     'confirmed' => $current['confirmed_bookings'],
@@ -137,6 +277,7 @@ class OwnerAnalyticsController extends Controller
                         $previous['total_bookings']
                     ),
                 ],
+
                 'revenue' => [
                     'total' => $current['revenue'],
                     'change_percent' => $change(
@@ -144,6 +285,7 @@ class OwnerAnalyticsController extends Controller
                         $previous['revenue']
                     ),
                 ],
+
                 'occupancy' => [
                     'rate' => $current['occupancy_rate'],
                     'bookable_slots' => $current['bookable_slots'],
@@ -153,6 +295,18 @@ class OwnerAnalyticsController extends Controller
                         - $previous['occupancy_rate'],
                         2
                     ),
+                ],
+
+                'bookings_overview' => [
+                    'from' => $weekStart->toDateString(),
+                    'to' => $weekEnd->toDateString(),
+                    'items' => $bookingsOverview,
+                ],
+
+                'revenue_chart' => [
+                    'year' => $now->year,
+                    'currency' => 'ILS',
+                    'items' => $revenueChart,
                 ],
             ],
             'message' => 'Owner analytics retrieved successfully.',

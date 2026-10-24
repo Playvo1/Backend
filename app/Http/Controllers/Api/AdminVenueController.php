@@ -10,6 +10,7 @@ use App\Models\Venue;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use App\Models\Sport;
 
 class AdminVenueController extends Controller
 {
@@ -38,6 +39,20 @@ class AdminVenueController extends Controller
 
             'status' => 'active',
         ]);
+        $sportIds = $request->input('sport_ids');
+
+        if (is_array($sportIds)) {
+            $venue->sports()->sync($sportIds);
+        } else {
+            // المشروع حاليًا مخصص لملاعب كرة القدم.
+            $football = Sport::where('name_en', 'Football')
+                ->orWhere('name_ar', 'كرة القدم')
+                ->first();
+
+            if ($football) {
+                $venue->sports()->sync([$football->id]);
+            }
+        }
 
         $owner = User::findOrFail($request->owner_id);
 

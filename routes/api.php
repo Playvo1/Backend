@@ -15,6 +15,8 @@ use App\Http\Controllers\Api\TimeSlotController;
 use App\Http\Controllers\Api\VenueController;
 use App\Http\Controllers\Api\VenueRatingController;
 use App\Http\Controllers\Api\OwnerAnalyticsController;
+use App\Http\Controllers\Api\AdminProfileController;
+use App\Http\Controllers\Api\OwnerProfileController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -72,20 +74,30 @@ Route::prefix('v1')->group(function () {
     Route::prefix('venue_owner')
         ->middleware(['auth:sanctum', 'role:venue_owner'])
         ->group(function () {
-            Route::get('/owner/myvenues',[VenueController::class, 'myVenues']);
+            Route::get('/owner/myvenues', [VenueController::class, 'myVenues']);
+            Route::get('owner/profile', [OwnerProfileController::class, 'show']);
+            Route::put('owner/profile', [OwnerProfileController::class, 'update']);
+            Route::post('owner/profile/photo', [OwnerProfileController::class, 'updatePhoto']);
 
             Route::put('owner/venues/{id}',  [VenueController::class, 'update']);
 
             Route::post('owner/venues/{id}/images',  [VenueController::class, 'uploadImage']);
+            Route::put('owner/venues/{id}/images/{imageId}/cover', [VenueController::class, 'setCoverImage']);
 
-            Route::post(    'owner/venues/{id}/time-slots', [TimeSlotController::class, 'store']);
+            Route::delete('owner/venues/{id}/images/{imageId}',  [VenueController::class, 'deleteImage']);
+
+            Route::put('owner/venues/{id}/images/order', [VenueController::class, 'reorderImages']);
+
+            Route::post('owner/venues/{id}/time-slots', [TimeSlotController::class, 'store']);
 
             Route::get('/owner/time-slots', [TimeSlotController::class, 'ownerTimeSlots']);
-            Route::get('/owner/analytics',[OwnerAnalyticsController::class, 'index']);
+            Route::get('/owner/analytics', [OwnerAnalyticsController::class, 'index']);
             Route::put('owner/time-slots/{id}',   [TimeSlotController::class, 'update']);
+            Route::delete('owner/time-slots/{id}', [TimeSlotController::class, 'destroy']);
 
-            Route::get( 'owner/venues/{id}/ratings', [VenueController::class, 'ratings']);
-            Route::get(  'owner/bookings',  [OwnerBookingController::class, 'index'] );
+            Route::get('owner/venues/{id}/ratings', [VenueController::class, 'ratings']);
+            Route::get('owner/bookings',  [OwnerBookingController::class, 'index']);
+            Route::get('owner/bookings/{id}', [OwnerBookingController::class, 'show']);
         });
 
 
@@ -106,6 +118,8 @@ Route::prefix('v1')->group(function () {
             Route::post('admins', [AdminAccountController::class, 'createAdmin']);
 
             Route::get('dashboard', [AdminDashboardController::class, 'index']);
+             Route::get('profile', [AdminProfileController::class, 'show']);
+             Route::post('profile/photo', [AdminProfileController::class, 'updatePhoto']);
 
             Route::post('admin/venues',  [AdminVenueController::class, 'store']);
 

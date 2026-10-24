@@ -51,6 +51,22 @@ class TimeSlotController extends Controller
             'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
             'hourly_price' => ['required', 'numeric', 'min:0'],
         ]);
+        $sportBelongsToVenue = $venue->sports()
+            ->where('sports.id', $validated['sport_id'])
+            ->exists();
+
+        if (!$sportBelongsToVenue) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'This sport is not associated with this venue.',
+                'errors' => [
+                    'sport_id' => [
+                        'The selected sport is not associated with this venue.',
+                    ],
+                ],
+            ], 422);
+}
         $exists = $venue->timeSlots()
             ->where('sport_id', $validated['sport_id'])
             ->whereDate('slot_date', $validated['slot_date'])
@@ -143,6 +159,50 @@ class TimeSlotController extends Controller
             'errors' => null,
         ]);
     }
+
+public function destroy(Request $request, int $id): JsonResponse
+{
+    $timeSlot = TimeSlot::with('venue')->find($id);
+
+    if (!$timeSlot) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'Time slot not found.',
+            'errors' => null,
+        ], 404);
+    }
+
+    // التأكد أن الفترة تابعة لملعب صاحب الحساب الحالي
+    if ((int) $timeSlot->venue->owner_id !== (int) $request->user()->id) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'You are not authorized to delete this time slot.',
+            'errors' => null,
+        ], 403);
+    }
+
+    // الحفاظ على سجل الحجوزات وعدم حذف الفترة إذا كان لها أي حجز
+    if ($timeSlot->booking()->exists()) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'Cannot delete a time slot that has booking history.',
+            'errors' => null,
+        ], 409);
+    }
+
+    $timeSlot->delete();
+
+    return response()->json([
+        'success' => true,
+        'data' => null,
+        'message' => 'Time slot deleted successfully.',
+        'errors' => null,
+    ]);
+}
+
     public function ownerTimeSlots(Request $request)
 {
     $user = $request->user();

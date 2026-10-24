@@ -81,41 +81,60 @@ public function verify(
             $booking->timeSlot->update([
                 'status' => 'booked',
             ]);
-          $player = $booking->captain;
 
-$title = 'Booking Confirmed';
-$body = 'Your booking has been confirmed successfully.';
+            $venue = $booking->timeSlot?->venue;
+            $owner = $venue?->owner;
 
-$notification = Notification::create([
-    'user_id' => $player->id,
-    'booking_id' => $booking->id,
-    'type' => 'booking_confirmed',
-    'title' => $title,
-    'body' => $body,
-    'sent_at' => now(),
-]);
+            if ($owner) {
+                Notification::create([
+                    'user_id' => $owner->id,
+                    'booking_id' => $booking->id,
+                    'type' => 'booking_confirmed_for_owner',
+                    'title' => 'تم تأكيد حجز على ملعبك',
+                    'body' => 'وافق الأدمن على إيصال الدفع وتم تأكيد الحجز رقم '
+                        . $booking->id
+                        . ' على ملعبك'
+                        . ($venue->name ? ': ' . $venue->name : '.'),
+                    'is_read' => false,
+                    'sent_at' => now(),
+                ]);
+            }
 
-$deviceTokens = $player->deviceTokens()->pluck('fcm_token');
+            $player = $booking->captain;
 
-foreach ($deviceTokens as $token) {
-    try {
-        $firebase->sendToToken(
-            $token,
-            $title,
-            $body,
-            [
-                'type' => 'booking_confirmed',
+            $title = 'تم تأكيد الحجز';
+            $body = 'تمت الموافقة على إيصال الدفع الخاص بك وتأكيد حجزك بنجاح.';
+
+            $notification = Notification::create([
+                'user_id' => $player->id,
                 'booking_id' => $booking->id,
-                'notification_id' => $notification->id,
-            ]
-        );
-    } catch (\Throwable $e) {
-        Log::error('FCM notification failed', [
-            'user_id' => $player->id,
-            'booking_id' => $booking->id,
-            'error' => $e->getMessage(),
-        ]);
-    }
+                'type' => 'booking_confirmed',
+                'title' => $title,
+                'body' => $body,
+                'sent_at' => now(),
+            ]);
+
+            $deviceTokens = $player->deviceTokens()->pluck('fcm_token');
+
+            foreach ($deviceTokens as $token) {
+                try {
+                    $firebase->sendToToken(
+                        $token,
+                        $title,
+                        $body,
+                        [
+                            'type' => 'booking_confirmed',
+                            'booking_id' => $booking->id,
+                            'notification_id' => $notification->id,
+                        ]
+                    );
+                } catch (\Throwable $e) {
+                    Log::error('FCM notification failed', [
+                        'user_id' => $player->id,
+                        'booking_id' => $booking->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
 }
             return ApiResponse::send(
                 true,
