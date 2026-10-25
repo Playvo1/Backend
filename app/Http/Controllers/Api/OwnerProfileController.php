@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Services\CloudinaryImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -138,79 +139,73 @@ class OwnerProfileController extends Controller
     /**
      * Update the owner's personal profile photo.
      */
-    public function updatePhoto(Request $request): JsonResponse
-    {
-        $request->validate([
-            'photo' => [
-                'required',
-                'image',
-                'mimes:jpg,jpeg,png,webp',
-                'max:2048',
-            ],
-        ]);
 
-        $user = $request->user();
+public function updatePhoto(Request $request): JsonResponse
+{
+    $request->validate([
+        'photo' => [
+            'required',
+            'image',
+            'mimes:jpg,jpeg,png,webp',
+            'max:2048',
+        ],
+    ]);
 
-        $path = $request->file('photo')->store(
-            'profile-images',
-            'public'
-        );
+    $user = $request->user();
 
-        try {
-            $oldPath = DB::transaction(function () use ($user, $path) {
-                $image = $user->images()
-                    ->lockForUpdate()
-                    ->latest('id')
-                    ->first();
+    $uploaded = CloudinaryImageService::upload(
+        $request->file('photo'),
+        'playvo/profile-images'
+    );
 
-                $oldPath = $image?->image_url;
+    try {
+        $oldImageUrl = DB::transaction(function () use ($user, $uploaded) {
+            $image = $user->images()
+                ->lockForUpdate()
+                ->latest('id')
+                ->first();
 
-                if ($image) {
-                    $image->update([
-                        'image_url' => $path,
-                    ]);
-                } else {
-                    $user->images()->create([
-                        'image_url' => $path,
-                        'sort_order' => 0,
-                        'is_cover' => true,
-                    ]);
-                }
+            $oldUrl = $image?->image_url;
 
-                return $oldPath;
-            });
-        } catch (\Throwable $e) {
-            Storage::disk('public')->delete($path);
-
-            throw $e;
-        }
-
-        // Delete the old file after the database transaction succeeds.
-        if (!empty($oldPath)) {
-            $oldPath = $this->storagePath($oldPath);
-
-            if ($oldPath && $oldPath !== $path) {
-                Storage::disk('public')->delete($oldPath);
+            if ($image) {
+                $image->update([
+                    'image_url' => $uploaded['url'],
+                ]);
+            } else {
+                $user->images()->create([
+                    'image_url' => $uploaded['url'],
+                    'sort_order' => 0,
+                    'is_cover' => true,
+                ]);
             }
-        }
 
-        $user->load('images');
-
-        $image = $user->images
-            ->sortByDesc('id')
-            ->first();
-
-        return ApiResponse::send(
-            true,
-            200,
-            'Profile photo updated successfully.',
-            [
-                'profile_image' => $image
-                    ? $this->imageUrl($image->image_url)
-                    : null,
-            ]
-        );
+            return $oldUrl;
+        });
+    } catch (\Throwable $e) {
+        CloudinaryImageService::delete($uploaded['url']);
+        throw $e;
     }
+
+    if ($oldImageUrl && $oldImageUrl !== $uploaded['url']) {
+        CloudinaryImageService::delete($oldImageUrl);
+    }
+
+    $image = $user->images()
+        ->latest('id')
+        ->first();
+
+    return ApiResponse::send(
+        true,
+        200,
+        'Profile photo updated successfully.',
+        [
+            'profile_image' => $image
+                ? $this->imageUrl($image->image_url)
+                : null,
+        ]
+    );
+}
+
 
     /**
      * Return a public URL for an image path.

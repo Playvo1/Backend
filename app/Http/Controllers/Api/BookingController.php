@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\BookingRequest;
+use App\Services\CloudinaryImageService;
 use App\Models\Booking;
 use App\Models\TimeSlot;
 use Illuminate\Http\JsonResponse;
@@ -160,18 +161,29 @@ if (PaymentReceipt::where('booking_id', $booking->id)->exists()) {
     return response()->json([
         'success' => false,
         'data' => null,
-        'message' => 'This receipt has already been used for another booking.',
-        'errors' => null,
-    ], 422);
-}
-        $path = $file->store('payment-receipts', 'public');
-        $receipt = PaymentReceipt::create([
-            'booking_id' => $booking->id,
-            'image_url' => asset('storage/' . $path),
-            'receipt_hash' => $hash,
-            'status' => 'pending',
-            'uploaded_at' => now(),
-        ]);
+                'message' => 'This receipt has already been used for another booking.',
+                'errors' => null,
+            ], 422);
+        }
+
+        $uploaded = CloudinaryImageService::upload(
+            $file,
+            'playvo/payment-receipts'
+        );
+
+        try {
+            $receipt = PaymentReceipt::create([
+                'booking_id' => $booking->id,
+                'image_url' => $uploaded['url'],
+                'receipt_hash' => $hash,
+                'status' => 'pending',
+                'uploaded_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            CloudinaryImageService::delete($uploaded['url']);
+            throw $e;
+        }
+
 
         $playerName = $request->user()->name;
 

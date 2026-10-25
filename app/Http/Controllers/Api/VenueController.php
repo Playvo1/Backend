@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use App\Http\Requests\Api\VenueFilterRequest;
+use App\Services\CloudinaryImageService;
 use App\Models\Venue;
 use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
@@ -500,16 +501,11 @@ public function deleteImage(Request $request, int $id, int $imageId): JsonRespon
         ], 404);
     }
 
-    $path = parse_url($image->image_url, PHP_URL_PATH);
+        CloudinaryImageService::delete($image->image_url);
+        $image->delete();
 
-    if (is_string($path) && Str::startsWith($path, '/storage/')) {
-        $filePath = Str::after($path, '/storage/');
-        Storage::disk('public')->delete($filePath);
-    }
 
-    $image->delete();
-
-    return response()->json([
+        return response()->json([
         'success' => true,
         'data' => null,
         'message' => 'Venue image deleted successfully.',
