@@ -8,12 +8,19 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class Image extends Model
 {
     protected $fillable = [
-    'image_url',
-    'sort_order',
-];
-    /**
-     * The model this image belongs to (imageable_type / imageable_id).
-     */
+        'image_url',
+        'sort_order',
+        'is_cover',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'sort_order' => 'integer',
+            'is_cover' => 'boolean',
+        ];
+    }
+
     public function imageable(): MorphTo
     {
         return $this->morphTo();

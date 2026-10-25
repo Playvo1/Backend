@@ -11,13 +11,22 @@ class NotificationController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $notifications = Notification::where('user_id', $request->user()->id)
+        $user = $request->user();
+
+        $notifications = Notification::where('user_id', $user->id)
             ->latest()
             ->paginate(20);
 
+        $unreadCount = Notification::where('user_id', $user->id)
+            ->where('is_read', false)
+            ->count();
+
         return response()->json([
             'success' => true,
-            'data' => $notifications,
+            'data' => [
+                'notifications' => $notifications,
+                'unread_count' => $unreadCount,
+            ],
             'message' => 'Notifications retrieved successfully.',
             'errors' => null,
         ]);
@@ -25,8 +34,10 @@ class NotificationController extends Controller
 
     public function markAsRead(Request $request, int $id): JsonResponse
     {
-        $notification = Notification::where('user_id', $request->user()->id)
-            ->findOrFail($id);
+        $notification = Notification::where(
+            'user_id',
+            $request->user()->id
+        )->findOrFail($id);
 
         $notification->update([
             'is_read' => true,
@@ -34,7 +45,7 @@ class NotificationController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $notification,
+            'data' => $notification->fresh(),
             'message' => 'Notification marked as read.',
             'errors' => null,
         ]);
