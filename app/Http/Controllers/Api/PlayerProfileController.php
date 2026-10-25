@@ -56,13 +56,6 @@ class PlayerProfileController extends Controller
                 'max:255',
             ],
 
-            'email' => [
-                'sometimes',
-                'required',
-                'email',
-                'max:255',
-                Rule::unique('users', 'email')->ignore($user->id),
-            ],
 
             'phone' => [
                 'sometimes',
@@ -82,7 +75,6 @@ class PlayerProfileController extends Controller
             [
                 'id' => $user->id,
                 'name' => $user->name,
-                'email' => $user->email,
                 'phone' => $user->phone,
             ]
         );
