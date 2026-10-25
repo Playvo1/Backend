@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use App\Http\Requests\Api\VenueFilterRequest;
 use App\Models\Venue;
 use Illuminate\Http\JsonResponse;
@@ -233,6 +234,7 @@ public function uploadImage(Request $request, int $id): JsonResponse
         ], 401);
     }
 
+    // Only the venue owner can upload images.
     if ((int) $venue->owner_id !== (int) $user->id) {
         return response()->json([
             'success' => false,
@@ -242,29 +244,112 @@ public function uploadImage(Request $request, int $id): JsonResponse
         ], 403);
     }
 
-    $request->validate([
-        'image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
-        'sort_order' => ['nullable', 'integer', 'min:0'],
+    $validated = $request->validate([
+        'image' => [
+            'required',
+            'image',
+            'mimes:jpg,jpeg,png,webp',
+            'max:5120',
+        ],
+        'sort_order' => [
+            'nullable',
+            'integer',
+            'min:0',
+        ],
     ]);
 
-    $path = $request->file('image')->store('venues', 'public');
+    try {
+        $file = $request->file('image');
 
-    $image = $venue->images()->create([
-        'image_url' => Storage::url($path),
-        'sort_order' => $request->input(
-            'sort_order',
-            $venue->images()->max('sort_order') + 1
-        ),
-    ]);
+        if (!$file || !$file->isValid()) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'The uploaded image is invalid.',
+                'errors' => null,
+            ], 422);
+        }
+
+        // Upload image to Cloudinary.
+        $result = Cloudinary::uploadApi()->upload(
+            $file->getRealPath(),
+            [
+                'folder' => 'playvo/venues',
+                'resource_type' => 'image',
+            ]
+        );
+
+        // Support array and SDK response objects.
+        if (is_array($result)) {
+            $uploadData = $result;
+        } elseif (is_object($result) && method_exists($result, 'getArrayCopy')) {
+            $uploadData = $result->getArrayCopy();
+        } elseif (is_object($result) && method_exists($result, 'jsonSerialize')) {
+            $uploadData = $result->jsonSerialize();
+        } else {
+            $uploadData = null;
+        }
+
+        if (!is_array($uploadData)) {
+            throw new \RuntimeException(
+                'Unexpected Cloudinary response type: ' . get_debug_type($result)
+            );
+        }
+
+        $imageUrl = $uploadData['secure_url'] ?? null;
+
+        if (!is_string($imageUrl) || $imageUrl === '') {
+            \Illuminate\Support\Facades\Log::error(
+                'Cloudinary response did not contain secure_url',
+                [
+                    'response_type' => get_debug_type($result),
+                    'response_keys' => array_keys($uploadData),
+                ]
+            );
+
+            throw new \RuntimeException(
+                'Cloudinary did not return a secure image URL.'
+            );
+        }
+
+        // Determine image order.
+        $sortOrder = $validated['sort_order']
+            ?? (($venue->images()->max('sort_order') ?? -1) + 1);
+
+        // Save the Cloudinary URL in the database.
+        $image = $venue->images()->create([
+            'image_url' => $imageUrl,
+            'sort_order' => $sortOrder,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $image,
+            'message' => 'Venue image uploaded successfully.',
+            'errors' => null,
+        ], 201);
+
+   } catch (\Throwable $e) {
+    \Illuminate\Support\Facades\Log::error(
+        'Venue image upload failed',
+        [
+            'venue_id' => $id,
+            'exception' => get_class($e),
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString(),
+        ]
+    );
 
     return response()->json([
-        'success' => true,
-        'data' => $image,
-        'message' => 'Venue image uploaded successfully.',
+        'success' => false,
+        'data' => null,
+        'message' => 'Failed to upload venue image.',
         'errors' => null,
-    ], 201);
+    ], 500);
 }
-
+}
 public function ratings(Request $request, int $id): JsonResponse
 {
     $user = $request->user();
