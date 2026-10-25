@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\OwnerProfileController;
 use App\Http\Controllers\Api\TimeSlotController;
 use App\Http\Controllers\Api\VenueController;
 use App\Http\Controllers\Api\VenueRatingController;
+use App\Http\Controllers\Api\PlayerProfileController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -50,6 +51,9 @@ Route::prefix('v1')->group(function () {
         Route::post('device-tokens', [DeviceTokenController::class, 'store']);
         Route::get('notifications', [NotificationController::class, 'index']);
         Route::put('notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+        Route::get('player/profile', [PlayerProfileController::class, 'show']);
+        Route::put('player/profile', [PlayerProfileController::class, 'update']);
+        Route::post('player/profile/photo', [PlayerProfileController::class, 'updatePhoto']);
     });
 
     Route::prefix('venue_owner')
