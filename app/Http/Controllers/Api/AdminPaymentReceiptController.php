@@ -101,7 +101,8 @@ class AdminPaymentReceiptController extends Controller
                 );
             }
 
-            if ($timeSlot->status !== 'available') {
+            // A slot with a booking awaiting payment is held as blocked until it is verified.
+            if ($timeSlot->status !== 'blocked') {
                 return ApiResponse::send(
                     false,
                     422,

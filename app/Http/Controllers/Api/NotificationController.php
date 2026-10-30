@@ -23,10 +23,10 @@ class NotificationController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => [
-                'notifications' => $notifications,
+            // The list stays where the mobile app reads it (data.data); the count sits beside it.
+            'data' => array_merge($notifications->toArray(), [
                 'unread_count' => $unreadCount,
-            ],
+            ]),
             'message' => 'Notifications retrieved successfully.',
             'errors' => null,
         ]);
