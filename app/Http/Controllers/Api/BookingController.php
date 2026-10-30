@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\BookingRequest;
+use App\Services\CloudinaryImageService;
 use App\Models\Booking;
 use App\Models\TimeSlot;
 use Illuminate\Http\JsonResponse;
@@ -12,79 +13,111 @@ use Illuminate\Support\Str;
 use App\Http\Requests\Api\PaymentReceiptUploadRequest;
 use App\Models\PaymentReceipt;
 use Illuminate\Support\Facades\Storage;
+use App\Models\Notification;
+use App\Models\User;
 class BookingController extends Controller
 {
-    public function store(BookingRequest $request): JsonResponse
-    {
-        $data = $request->validated();
 
-        $timeSlot = TimeSlot::find($data['time_slot_id']);
+public function store(BookingRequest $request): JsonResponse
+{
+    $user = $request->user();
 
-        if (!$timeSlot) {
-            return response()->json([
-                'success' => false,
-                'data' => null,
-                'message' => 'Time slot not found',
-                'errors' => null,
-            ], 404);
-        }
-
-        if ($timeSlot->status !== 'available') {
-            return response()->json([
-                'success' => false,
-                'data' => null,
-                'message' => 'This time slot is no longer available.',
-                'errors' => null,
-            ], 409);
-        }
-
-        $result = DB::transaction(function () use ($data, $request) {
-            $timeSlot = TimeSlot::where('id', $data['time_slot_id'])
-                ->lockForUpdate()
-                ->first();
-
-            if (!$timeSlot || $timeSlot->status !== 'available') {
-                return null;
-            }
-
-            $booking = Booking::create([
-                'time_slot_id' => $timeSlot->id,
-                'captain_user_id' => $request->user()->id,
-                'captain_name' => $data['captain_name'],
-                'captain_role' => $data['captain_role'],
-                'captain_phone' => $data['captain_phone'],
-                'total_price' => $timeSlot->hourly_price,
-                'status' => 'pending_payment',
-                'share_token' => Str::random(40),
-                'hold_expires_at' => now()->addMinutes(10),
-            ]);
-
-            $timeSlot->update([
-                'status' => 'blocked',
-            ]);
-
-            return $booking;
-        });
-
-        if (!$result) {
-            return response()->json([
-                'success' => false,
-                'data' => null,
-                'message' => 'This time slot is no longer available.',
-                'errors' => null,
-            ], 409);
-        }
+    // Only players can create bookings.
+    if (!$user || !$user->hasRole('player')) {
         return response()->json([
-            'success' => true,
-            'data' => [
-                'booking_id' => $result->id,
-                'total_price' => $result->total_price,
-                'status' => $result->status,
-            ],
-            'message' => 'Booking created successfully',
+            'success' => false,
+            'data' => null,
+            'message' => 'Only players can create bookings.',
             'errors' => null,
-        ], 201);
+        ], 403);
     }
+
+    $data = $request->validated();
+
+    $timeSlot = TimeSlot::with('venue')->find($data['time_slot_id']);
+
+    if (!$timeSlot) {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'Time slot not found.',
+            'errors' => null,
+        ], 404);
+    }
+
+    if ($timeSlot->status !== 'available') {
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'This time slot is no longer available.',
+            'errors' => null,
+        ], 409);
+    }
+
+    $result = DB::transaction(function () use ($data, $user) {
+        $timeSlot = TimeSlot::with('venue')
+            ->where('id', $data['time_slot_id'])
+            ->lockForUpdate()
+            ->first();
+
+        if (!$timeSlot || $timeSlot->status !== 'available') {
+            return ['error' => 'unavailable'];
+        }
+
+        // Prevent booking a venue owned by the current user.
+        if (
+            $timeSlot->venue &&
+            (int) $timeSlot->venue->owner_id === (int) $user->id
+        ) {
+            return ['error' => 'own_venue'];
+        }
+
+        $booking = Booking::create([
+            'time_slot_id' => $timeSlot->id,
+            'captain_user_id' => $user->id,
+            'captain_name' => $data['captain_name'],
+            'captain_role' => $data['captain_role'],
+            'captain_phone' => $data['captain_phone'],
+            'total_price' => $timeSlot->hourly_price,
+            'status' => 'pending_payment',
+            'share_token' => Str::random(40),
+            'hold_expires_at' => now()->addMinutes(10),
+        ]);
+
+        $timeSlot->update([
+            'status' => 'blocked',
+        ]);
+
+        return ['booking' => $booking];
+    });
+
+    if (isset($result['error'])) {
+        $isOwnVenue = $result['error'] === 'own_venue';
+
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => $isOwnVenue
+                ? 'You cannot book your own venue.'
+                : 'This time slot is no longer available.',
+            'errors' => null,
+        ], $isOwnVenue ? 403 : 409);
+    }
+
+    $booking = $result['booking'];
+
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'booking_id' => $booking->id,
+            'total_price' => $booking->total_price,
+            'status' => $booking->status,
+        ],
+        'message' => 'Booking created successfully.',
+        'errors' => null,
+    ], 201);
+}
+
     public function uploadPaymentReceipt(PaymentReceiptUploadRequest $request,   $id): JsonResponse
     {
         $booking = Booking::find($id);
@@ -128,18 +161,46 @@ if (PaymentReceipt::where('booking_id', $booking->id)->exists()) {
     return response()->json([
         'success' => false,
         'data' => null,
-        'message' => 'This receipt has already been used for another booking.',
-        'errors' => null,
-    ], 422);
-}
-        $path = $file->store('payment-receipts', 'public');
-        $receipt = PaymentReceipt::create([
-            'booking_id' => $booking->id,
-            'image_url' => asset('storage/' . $path),
-            'receipt_hash' => $hash,
-            'status' => 'pending',
-            'uploaded_at' => now(),
-        ]);
+                'message' => 'This receipt has already been used for another booking.',
+                'errors' => null,
+            ], 422);
+        }
+
+        $uploaded = CloudinaryImageService::upload(
+            $file,
+            'playvo/payment-receipts'
+        );
+
+        try {
+            $receipt = PaymentReceipt::create([
+                'booking_id' => $booking->id,
+                'image_url' => $uploaded['url'],
+                'receipt_hash' => $hash,
+                'status' => 'pending',
+                'uploaded_at' => now(),
+            ]);
+        } catch (\Throwable $e) {
+            CloudinaryImageService::delete($uploaded['url']);
+            throw $e;
+        }
+
+
+        $playerName = $request->user()->name;
+
+        $admins = User::role('admin')->get();
+
+        foreach ($admins as $admin) {
+            Notification::create([
+                'user_id' => $admin->id,
+                'booking_id' => $booking->id,
+                'type' => 'payment_receipt_uploaded',
+                'title' => 'إيصال دفع جديد',
+                'body' => "قام اللاعب {$playerName} برفع إيصال دفع للحجز رقم {$booking->id}.",
+                'is_read' => false,
+                'sent_at' => now(),
+            ]);
+        }
+
 
         return response()->json([
             'success' => true,

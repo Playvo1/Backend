@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\Api;
 
-use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AdminVenueRequest extends FormRequest
@@ -20,6 +19,7 @@ class AdminVenueRequest extends FormRequest
                 'integer',
                 'exists:users,id',
             ],
+
             'name_ar' => ['required', 'string', 'max:255'],
             'name_en' => ['required', 'string', 'max:255'],
 
@@ -38,6 +38,15 @@ class AdminVenueRequest extends FormRequest
             'width_m' => ['nullable', 'numeric', 'min:0'],
 
             'min_hourly_price' => ['nullable', 'numeric', 'min:0'],
+
+            'sport_ids' => ['sometimes', 'array'],
+            'sport_ids.*' => [
+                'required',
+                'integer',
+                'distinct',
+                'exists:sports,id',
+            ],
         ];
     }
 }
+
