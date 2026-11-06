@@ -47,9 +47,13 @@ class TimeSlotController extends Controller
             'sport_id' => ['required', 'integer', 'exists:sports,id'],
             'slot_date' => ['required', 'date'],
             'start_time' => ['required', 'date_format:H:i'],
-            'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
-            'hourly_price' => ['required', 'numeric', 'min:0'],
+            'end_time' => ['required', 'date_format:H:i'],
+            'hourly_price' => ['required', 'numeric', 'min:0', 'max:10000', 'decimal:0,2'],
         ]);
+
+        if ($error = $this->invalidRangeResponse($validated['start_time'], $validated['end_time'])) {
+            return $error;
+        }
 
         $sportBelongsToVenue = $venue->sports()
             ->where('sports.id', $validated['sport_id'])
@@ -151,8 +155,21 @@ class TimeSlotController extends Controller
             'slot_date' => ['sometimes', 'date'],
             'start_time' => ['sometimes', 'date_format:H:i'],
             'end_time' => ['sometimes', 'date_format:H:i'],
-            'hourly_price' => ['sometimes', 'numeric', 'min:0'],
+            'hourly_price' => ['sometimes', 'numeric', 'min:0', 'max:10000', 'decimal:0,2'],
         ]);
+
+        // Only when a time is sent, checked against the resulting times so changing one side
+        // is covered too; existing slots of another length can still get price/sport updates.
+        if (array_key_exists('start_time', $validated) || array_key_exists('end_time', $validated)) {
+            $error = $this->invalidRangeResponse(
+                $validated['start_time'] ?? (string) $timeSlot->start_time,
+                $validated['end_time'] ?? (string) $timeSlot->end_time
+            );
+
+            if ($error) {
+                return $error;
+            }
+        }
 
         if (isset($validated['sport_id'])) {
             $sportBelongsToVenue = $timeSlot->venue->sports()
@@ -295,5 +312,29 @@ class TimeSlotController extends Controller
             'message' => 'Owner time slots retrieved successfully.',
             'errors' => null,
         ]);
+    }
+
+    /**
+     * A 422 response unless the slot lasts exactly TimeSlot::DURATION_MINUTES
+     * (00:00 as an end is midnight, so 23:00–00:00 is valid); null when the range is valid.
+     */
+    private function invalidRangeResponse(string $startTime, string $endTime): ?JsonResponse
+    {
+        $slot = new TimeSlot(['start_time' => $startTime, 'end_time' => $endTime]);
+
+        if ($slot->durationInMinutes() === TimeSlot::DURATION_MINUTES) {
+            return null;
+        }
+
+        return response()->json([
+            'success' => false,
+            'data' => null,
+            'message' => 'A time slot must last exactly one hour.',
+            'errors' => [
+                'end_time' => [
+                    'A time slot must last exactly one hour.',
+                ],
+            ],
+        ], 422);
     }
 }

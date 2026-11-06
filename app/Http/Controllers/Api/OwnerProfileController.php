@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Helpers\ApiResponse;
+use App\Helpers\ImageUrl;
 use App\Http\Controllers\Controller;
 use App\Services\CloudinaryImageService;
 use Illuminate\Http\JsonResponse;
@@ -47,8 +48,24 @@ class OwnerProfileController extends Controller
                     'id' => $venue->id,
                     'name_ar' => $venue->name_ar,
                     'name_en' => $venue->name_en,
-                    'address' => $venue->address,
-                    'area' => $venue->area,
+                    'address' => $venue->address_ar ?: $venue->address_en,
+                    'area' => $venue->area_ar ?: $venue->area_en,
+                    'address_ar' => $venue->address_ar,
+                    'address_en' => $venue->address_en,
+                    'area_ar' => $venue->area_ar,
+                    'area_en' => $venue->area_en,
+                    'description_ar' => $venue->description_ar,
+                    'description_en' => $venue->description_en,
+                    'surface_ar' => $venue->surface_ar,
+                    'surface_en' => $venue->surface_en,
+                    'team_format_ar' => $venue->team_format_ar,
+                    'team_format_en' => $venue->team_format_en,
+                    'capacity_ar' => $venue->capacity_ar,
+                    'capacity_en' => $venue->capacity_en,
+                    'length_m' => $venue->length_m,
+                    'width_m' => $venue->width_m,
+                    'morning_hourly_price' => $venue->morning_hourly_price,
+                    'evening_hourly_price' => $venue->evening_hourly_price,
 
                     'city' => $venue->city ? [
                         'id' => $venue->city->id,
@@ -212,19 +229,7 @@ public function updatePhoto(Request $request): JsonResponse
      */
     private function imageUrl(?string $imagePath): ?string
     {
-        if (!$imagePath) {
-            return null;
-        }
-
-        if (filter_var($imagePath, FILTER_VALIDATE_URL)) {
-            return $imagePath;
-        }
-
-        if (str_starts_with($imagePath, '/storage/')) {
-            return url($imagePath);
-        }
-
-        return asset('storage/' . ltrim($imagePath, '/'));
+        return ImageUrl::resolve($imagePath);
     }
 
     /**

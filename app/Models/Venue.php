@@ -20,6 +20,8 @@ class Venue extends Model
         'length_m' => 'float',
         'width_m' => 'float',
         'min_hourly_price' => 'float',
+        'morning_hourly_price' => 'float',
+        'evening_hourly_price' => 'float',
     ];
 
     /**
