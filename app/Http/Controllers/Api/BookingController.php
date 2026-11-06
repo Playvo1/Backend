@@ -225,10 +225,7 @@ if (PaymentReceipt::where('booking_id', $booking->id)->exists()) {
         ])
         ->where('captain_user_id', $request->user()->id)
         ->whereHas('timeSlot', function ($query) {
-            $query->whereRaw(
-                "TIMESTAMP(slot_date, end_time) < ?",
-                [now()]
-            );
+            $query->endedBefore(now());
         });
 
     if ($request->filled('sport_id')) {

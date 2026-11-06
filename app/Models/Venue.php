@@ -20,7 +20,23 @@ class Venue extends Model
         'length_m' => 'float',
         'width_m' => 'float',
         'min_hourly_price' => 'float',
+        'morning_hourly_price' => 'float',
+        'evening_hourly_price' => 'float',
     ];
+
+    // Slots starting at or after this time (H:i) default to the evening price; earlier ones to the morning price.
+    public const EVENING_STARTS_AT = '16:00';
+
+    /**
+     * The venue's default hourly price for a slot starting at the given time (H:i or H:i:s).
+     * Returns null when the matching morning/evening price is not set.
+     */
+    public function defaultHourlyPriceFor(string $startTime): ?float
+    {
+        return substr($startTime, 0, 5) < self::EVENING_STARTS_AT
+            ? $this->morning_hourly_price
+            : $this->evening_hourly_price;
+    }
 
     /**
      * The user who owns this venue.

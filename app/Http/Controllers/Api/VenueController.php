@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\ImageUrl;
 use App\Http\Controllers\Controller;
 use CloudinaryLabs\CloudinaryLaravel\Facades\Cloudinary;
 use App\Http\Requests\Api\VenueFilterRequest;
 use App\Services\CloudinaryImageService;
+use App\Models\TimeSlot;
 use App\Models\Venue;
 use Illuminate\Http\JsonResponse;
 use Carbon\Carbon;
@@ -44,7 +46,8 @@ class VenueController extends Controller
                         $hour = Carbon::parse($request->hour)->format('H:i:s');
 
                         $q->where('start_time', '<=', $hour)
-                            ->where('end_time', '>', $hour);
+                            ->where(fn ($end) => $end->where('end_time', '>', $hour)
+                                ->orWhereIn('end_time', TimeSlot::MIDNIGHT_END_TIMES));
                     }
                 },
             ]);
@@ -87,7 +90,8 @@ class VenueController extends Controller
                     $hour = Carbon::parse($request->hour)->format('H:i:s');
 
                     $q->where('start_time', '<=', $hour)
-                        ->where('end_time', '>', $hour);
+                        ->where(fn ($end) => $end->where('end_time', '>', $hour)
+                            ->orWhereIn('end_time', TimeSlot::MIDNIGHT_END_TIMES));
                 }
             });
         }
@@ -170,6 +174,7 @@ public function update(UpdateVenueRequest $request,  $id): JsonResponse
             'success' => false,
             'data' => null,
             'message' => 'Venue not found.',
+            'errors' => null,
         ], 404);
     }
 
@@ -193,22 +198,30 @@ if ((int) $venue->owner_id !== (int) $user->id) {
     ], 403);
 }
 
+        // Only validated keys are applied; status and ownership fields are ignored.
         $validated = $request->validated();
 
-        if (array_key_exists('sport_ids', $validated)) {
-            $sportIds = $validated['sport_ids'];
-            unset($validated['sport_ids']);
+        DB::transaction(function () use ($venue, $validated) {
+            if (array_key_exists('sport_ids', $validated)) {
+                $sportIds = $validated['sport_ids'];
+                unset($validated['sport_ids']);
 
-            $venue->update($validated);
-            $venue->sports()->sync($sportIds);
-        } else {
-            $venue->update($validated);
-        }
+                $venue->update($validated);
+                $venue->sports()->sync($sportIds);
+            } else {
+                $venue->update($validated);
+            }
+        });
+
+    $venue = Venue::query()
+        ->with($this->ownerVenueRelations())
+        ->findOrFail($venue->id);
 
     return response()->json([
         'success' => true,
-        'data' => $venue->fresh(),
+        'data' => $this->presentOwnerVenue($venue, $user->name),
         'message' => 'Venue updated successfully.',
+        'errors' => null,
     ]);
 }
 public function uploadImage(Request $request, int $id): JsonResponse
@@ -578,11 +591,14 @@ public function reorderImages(Request $request, int $id): JsonResponse
 }
 public function myVenues(Request $request): JsonResponse
 {
+    $user = $request->user();
+
     $venues = Venue::query()
-        ->where('owner_id', $request->user()->id)
-        ->with(['city.country', 'sports', 'images'])
+        ->where('owner_id', $user->id)
+        ->with($this->ownerVenueRelations())
         ->latest()
-        ->get();
+        ->get()
+        ->map(fn (Venue $venue) => $this->presentOwnerVenue($venue, $user->name));
 
     return response()->json([
         'success' => true,
@@ -590,5 +606,36 @@ public function myVenues(Request $request): JsonResponse
         'message' => 'Owner venues retrieved successfully',
         'errors' => null,
     ]);
+}
+
+/**
+ * Relations loaded for a venue shown on the owner's dashboard.
+ */
+private function ownerVenueRelations(): array
+{
+    return [
+        'city.country',
+        'sports',
+        'images' => fn ($q) => $q->orderBy('sort_order')->orderBy('id'),
+    ];
+}
+
+/**
+ * Add the owner dashboard fields to a venue and make its image URLs absolute.
+ * The model is only serialised, never saved after this.
+ */
+private function presentOwnerVenue(Venue $venue, ?string $ownerName): Venue
+{
+    foreach ($venue->images as $image) {
+        $image->image_url = ImageUrl::resolve($image->image_url);
+    }
+
+    $cover = $venue->images->firstWhere('is_cover', true) ?? $venue->images->first();
+
+    $venue->setAttribute('owner_name', $ownerName);
+    $venue->setAttribute('cover_image_url', $cover?->image_url);
+    $venue->setAttribute('images_count', $venue->images->count());
+
+    return $venue;
 }
 }
