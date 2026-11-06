@@ -48,11 +48,28 @@ class TimeSlotController extends Controller
             'slot_date' => ['required', 'date'],
             'start_time' => ['required', 'date_format:H:i'],
             'end_time' => ['required', 'date_format:H:i'],
-            'hourly_price' => ['required', 'numeric', 'min:0', 'max:10000', 'decimal:0,2'],
+            'hourly_price' => ['sometimes', 'nullable', 'numeric', 'min:0', 'max:10000', 'decimal:0,2'],
         ]);
 
         if ($error = $this->invalidRangeResponse($validated['start_time'], $validated['end_time'])) {
             return $error;
+        }
+
+        // Without an explicit price the slot takes the venue's morning/evening price.
+        $hourlyPrice = $validated['hourly_price']
+            ?? $venue->defaultHourlyPriceFor($validated['start_time']);
+
+        if ($hourlyPrice === null) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'The hourly price is required.',
+                'errors' => [
+                    'hourly_price' => [
+                        'The hourly price is required because the venue has no morning/evening price set for this time.',
+                    ],
+                ],
+            ], 422);
         }
 
         $sportBelongsToVenue = $venue->sports()
@@ -93,7 +110,7 @@ class TimeSlotController extends Controller
             'slot_date' => $validated['slot_date'],
             'start_time' => $validated['start_time'],
             'end_time' => $validated['end_time'],
-            'hourly_price' => $validated['hourly_price'],
+            'hourly_price' => $hourlyPrice,
             'status' => 'available',
         ]);
 
@@ -169,6 +186,20 @@ class TimeSlotController extends Controller
             if ($error) {
                 return $error;
             }
+        }
+
+        // The price is locked once the slot is held (blocked) or booked.
+        if (
+            array_key_exists('hourly_price', $validated)
+            && $timeSlot->status !== 'available'
+            && (float) $validated['hourly_price'] !== (float) $timeSlot->hourly_price
+        ) {
+            return response()->json([
+                'success' => false,
+                'data' => null,
+                'message' => 'The price can only be changed while the slot is available.',
+                'errors' => null,
+            ], 409);
         }
 
         if (isset($validated['sport_id'])) {
