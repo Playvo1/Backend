@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Helpers\ApiResponse;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\ChangePasswordRequest;
 use App\Http\Requests\Api\googleAuthRequest;
 use App\Http\Requests\Api\LoginRequest;
 use App\Http\Requests\Api\RegisterRequest;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Laravel\Sanctum\PersonalAccessToken;
 
 
 class AuthController extends Controller
@@ -345,6 +347,65 @@ public function googleAuth(googleAuthRequest $request)
             ]
         );
 
+    }
+
+    /**
+     * Change the signed-in user's password. Other tokens are revoked, the current one is kept.
+     * The account lock fields used by login are left untouched.
+     */
+    public function changePassword(ChangePasswordRequest $request)
+    {
+        $user = $request->user();
+
+        // Google sign-up accounts have no password; they must set one through "forgot password".
+        if (blank($user->password)) {
+            return $this->apiResponse(
+                false,
+                422,
+                'This account has no password. Use "forgot password" to set one.',
+                null,
+                ['current_password' => ['This account has no password. Use "forgot password" to set one.']]
+            );
+        }
+
+        if (! Hash::check($request->current_password, $user->password)) {
+            return $this->apiResponse(
+                false,
+                422,
+                'The current password is incorrect.',
+                null,
+                ['current_password' => ['The current password is incorrect.']]
+            );
+        }
+
+        if (Hash::check($request->password, $user->password)) {
+            return $this->apiResponse(
+                false,
+                422,
+                'The new password must be different from the current password.',
+                null,
+                ['password' => ['The new password must be different from the current password.']]
+            );
+        }
+
+        // The "hashed" cast on User hashes the plain value once.
+        $user->password = $request->password;
+        $user->save();
+
+        $current = $user->currentAccessToken();
+
+        $user->tokens()
+            ->when(
+                $current instanceof PersonalAccessToken,
+                fn ($query) => $query->whereKeyNot($current->getKey())
+            )
+            ->delete();
+
+        return $this->apiResponse(
+            true,
+            200,
+            'Password changed successfully.'
+        );
     }
 
     public function logout(Request $request)

@@ -66,5 +66,16 @@ class AppServiceProvider extends ServiceProvider
                     "You've reached the limit of {$limit} ratings per hour. Please try again later.",
                 )->withHeaders($headers));
         });
+
+        // Limits guessing the current password: 5 change-password attempts per minute per user.
+        RateLimiter::for('change-password', function (Request $request) {
+            return Limit::perMinute(5)
+                ->by('change-password:'.($request->user()?->id ?? $request->ip()))
+                ->response(fn (Request $request, array $headers) => ApiResponse::send(
+                    false,
+                    429,
+                    'Too many attempts. Please try again in a minute.',
+                )->withHeaders($headers));
+        });
     }
 }
