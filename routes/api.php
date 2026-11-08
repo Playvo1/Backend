@@ -42,6 +42,10 @@ Route::prefix('v1')->group(function () {
     Route::get('bookings/share/{share_token}', [BookingController::class, 'share']);
 
     Route::middleware('auth:sanctum')->group(function () {
+        // Any signed-in role (player, venue_owner, admin).
+        Route::put('auth/password', [AuthController::class, 'changePassword'])
+            ->middleware('throttle:change-password');
+
         Route::get('bookings', [BookingController::class, 'history']);
         Route::post('bookings', [BookingController::class, 'store']);
         Route::post('bookings/{id}/payment-receipt', [BookingController::class, 'uploadPaymentReceipt']);
