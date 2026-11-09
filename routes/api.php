@@ -18,6 +18,7 @@ use App\Http\Controllers\Api\TimeSlotController;
 use App\Http\Controllers\Api\VenueController;
 use App\Http\Controllers\Api\VenueRatingController;
 use App\Http\Controllers\Api\PlayerProfileController;
+use App\Http\Controllers\Api\ReferenceDataController;
 
 use Illuminate\Support\Facades\Route;
 
@@ -40,6 +41,10 @@ Route::prefix('v1')->group(function () {
     Route::get('venues/{id}/time-slots', [VenueController::class, 'timeSlots']);
 
     Route::get('bookings/share/{share_token}', [BookingController::class, 'share']);
+
+    Route::get('countries', [ReferenceDataController::class, 'countries']);
+    Route::get('cities', [ReferenceDataController::class, 'cities']);
+    Route::get('sports', [ReferenceDataController::class, 'sports']);
 
     Route::middleware('auth:sanctum')->group(function () {
         // Any signed-in role (player, venue_owner, admin).
@@ -101,8 +106,16 @@ Route::prefix('v1')->group(function () {
 
             Route::get('dashboard', [AdminDashboardController::class, 'index']);
             Route::get('profile', [AdminProfileController::class, 'show']);
+            Route::put('profile', [AdminProfileController::class, 'update']);
             Route::post('profile/photo', [AdminProfileController::class, 'updatePhoto']);
 
+            Route::get('venues', [AdminVenueController::class, 'index']);
+            Route::post('venues', [AdminVenueController::class, 'store']);
+            Route::get('venues/{id}', [AdminVenueController::class, 'show'])->whereNumber('id');
+            Route::post('venues/{id}/images', [AdminVenueController::class, 'addImages'])->whereNumber('id');
+            Route::put('venues/{id}/status', [AdminVenueController::class, 'updateStatus'])->whereNumber('id');
+
+            // Original paths, kept for existing clients.
             Route::post('admin/venues', [AdminVenueController::class, 'store']);
             Route::put('admin/venues/{id}/status', [AdminVenueController::class, 'updateStatus']);
 

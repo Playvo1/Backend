@@ -7,12 +7,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\CreateAdminRequest;
 use App\Http\Requests\Api\CreateVenueOwnerRequest;
 use App\Mail\TemporaryPasswordMail;
-use App\Models\AuditLog;
-use App\Models\User;
+use App\Services\AccountProvisioner;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
@@ -54,40 +53,33 @@ class AdminAccountController extends Controller
         $temporaryPassword = Str::password(12);
         $adminUserId = $request->user()->id;
 
-        $user = DB::transaction(function () use ($request, $role, $auditAction, $temporaryPassword, $adminUserId) {
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'phone' => $request->phone,
-                'password' => Hash::make($temporaryPassword),
-                'status' => 'active',
-                'email_verified_at' => now(),
+        $user = DB::transaction(fn () => app(AccountProvisioner::class)->create(
+            $request->name,
+            $request->email,
+            $request->phone,
+            $temporaryPassword,
+            $role,
+            $auditAction,
+            $adminUserId,
+        ));
+
+        // The account is committed; a mail failure is logged rather than reported as a failed create.
+        try {
+            Mail::to($user->email)->send(new TemporaryPasswordMail($user->name, $temporaryPassword));
+        } catch (\Throwable $e) {
+            Log::error('Credentials email failed', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
             ]);
 
-            $user->assignRole($role);
-
-            $this->logAdminAction($adminUserId, $auditAction, $user->id);
-
-            return $user;
-        });
-
-        Mail::to($user->email)->send(new TemporaryPasswordMail($user->name, $temporaryPassword));
+            $successMessage = 'Account created, but the credentials email could not be sent';
+        }
 
         return ApiResponse::send(true, 201, $successMessage, [
             'user_id' => $user->id,
             'name' => $user->name,
             'email' => $user->email,
             'roles' => $user->getRoleNames(),
-        ]);
-    }
-
-    private function logAdminAction(int $adminUserId, string $action, int $targetUserId): void
-    {
-        AuditLog::create([
-            'admin_user_id' => $adminUserId,
-            'action' => $action,
-            'target_type' => 'USER',
-            'target_id' => $targetUserId,
         ]);
     }
 }
