@@ -91,6 +91,7 @@ class AdminVenuesEdgeCasesTest extends TestCase
             'sport_id' => $this->football->id,
             'owner_name' => 'Owner One',
             'owner_email' => 'owner.one@example.com',
+            'owner_phone' => '0599000000',
             'owner_password' => 'Temp-pass-123',
         ], $overrides);
     }
@@ -214,7 +215,7 @@ class AdminVenuesEdgeCasesTest extends TestCase
     {
         $this->post('/api/v1/admin/venues', $this->payload([
             'owner_id' => '',
-            'owner_phone' => '',
+            'owner_phone' => '0599000000',
             'name_en' => '',
             'length_m' => '40',
             'width_m' => '20',

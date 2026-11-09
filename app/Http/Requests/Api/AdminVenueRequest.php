@@ -64,7 +64,7 @@ class AdminVenueRequest extends FormRequest
             'owner_name' => ['nullable', 'required_without:owner_id', 'string', 'max:255'],
             'owner_email' => ['nullable', 'required_without:owner_id', 'email', 'max:255', 'unique:users,email'],
             'owner_password' => ['nullable', 'string', 'min:8', 'max:255'],
-            'owner_phone' => ['nullable', 'string', 'max:20'],
+            'owner_phone' => ['nullable', 'required_without:owner_id', 'string', 'max:20'],
 
             'name_ar' => ['required', 'string', 'max:255'],
             'name_en' => ['nullable', 'string', 'max:255'],

@@ -110,6 +110,7 @@ class AdminVenuesTest extends TestCase
             'sport_id' => $this->football->id,
             'owner_name' => 'Owner One',
             'owner_email' => 'owner.one@example.com',
+            'owner_phone' => '0599000000',
             'owner_password' => 'Temp-pass-123',
         ], $overrides);
     }
@@ -405,6 +406,15 @@ class AdminVenuesTest extends TestCase
             ->assertJsonValidationErrors(['owner_id', 'owner_name', 'owner_email']);
 
         $this->assertNothingCreated(0, $users);
+    }
+
+    public function test_new_owner_needs_a_phone(): void
+    {
+        $this->postJson('/api/v1/admin/venues', $this->newOwnerPayload(['owner_phone' => '']))
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['owner_phone']);
+
+        $this->assertNothingCreated();
     }
 
     public function test_new_owner_fields_are_validated(): void
