@@ -9,6 +9,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class AdminProfileController extends Controller
 {
@@ -34,9 +35,47 @@ class AdminProfileController extends Controller
                 'name' => $user->name,
                 'email' => $user->email,
                 'phone' => $user->phone,
+                'status' => $user->status,
+                'roles' => $user->getRoleNames()->values(),
+                'created_at' => $user->created_at,
                 'profile_image' => $image
                     ? $this->imageUrl($image->image_url)
                     : null,
+            ]
+        );
+    }
+
+    /**
+     * Update the admin's account details (same rules as the owner profile).
+     */
+    public function update(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'name' => ['sometimes', 'required', 'string', 'max:255'],
+            'email' => [
+                'sometimes',
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users', 'email')->ignore($user->id),
+            ],
+            'phone' => ['sometimes', 'nullable', 'string', 'max:30'],
+        ]);
+
+        $user->fill($validated);
+        $user->save();
+
+        return ApiResponse::send(
+            true,
+            200,
+            'Admin profile updated successfully.',
+            [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => $user->phone,
             ]
         );
     }
