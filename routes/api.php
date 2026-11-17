@@ -59,7 +59,9 @@ Route::prefix('v1')->group(function () {
         Route::get('favorites', [FavoriteController::class, 'index']);
         Route::post('device-tokens', [DeviceTokenController::class, 'store']);
         Route::get('notifications', [NotificationController::class, 'index']);
-        Route::put('notifications/{id}/read', [NotificationController::class, 'markAsRead']);
+        // Registered before notifications/{id}/read so "read-all" is never taken as an id.
+        Route::put('notifications/read-all', [NotificationController::class, 'markAllAsRead']);
+        Route::put('notifications/{id}/read', [NotificationController::class, 'markAsRead'])->whereNumber('id');
         Route::get('player/profile', [PlayerProfileController::class, 'show']);
         Route::put('player/profile', [PlayerProfileController::class, 'update']);
         Route::post('player/profile/photo', [PlayerProfileController::class, 'updatePhoto']);

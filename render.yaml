@@ -90,3 +90,15 @@ services:
         sync: false
       - key: GEMINI_MODEL
         value: gemini-3.5-flash-lite
+
+      # Real-time notifications (Pusher Channels). BROADCAST_CONNECTION=pusher turns it on.
+      - key: BROADCAST_CONNECTION
+        sync: false
+      - key: PUSHER_APP_ID
+        sync: false
+      - key: PUSHER_APP_KEY
+        sync: false
+      - key: PUSHER_APP_SECRET
+        sync: false
+      - key: PUSHER_APP_CLUSTER
+        sync: false
