@@ -21,9 +21,18 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
+    // Private channel auth for token clients: POST /api/broadcasting/auth with a Bearer token.
+    ->withBroadcasting(
+        __DIR__.'/../routes/channels.php',
+        ['prefix' => 'api', 'middleware' => ['auth:sanctum']],
+    )
     ->withMiddleware(function (Middleware $middleware): void {
         // Behind Render's load balancer, so generated URLs (e.g. receipt image_url) use https.
         $middleware->trustProxies(at: '*');
+
+        // There is no web login page: an unauthenticated API request (e.g. pusher-js, which sends
+        // no Accept header) gets the JSON 401 below instead of a redirect to a missing "login" route.
+        $middleware->redirectGuestsTo(fn (Request $request) => $request->is('api/*') ? null : '/');
 
         $middleware->alias([
             'role' => RoleMiddleware::class,

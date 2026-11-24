@@ -279,6 +279,7 @@ class AdminPaymentReceiptController extends Controller
                 $notification = Notification::create([
                     'user_id' => $player->id,
                     'booking_id' => $booking->id,
+                    'payment_receipt_id' => $receipt->id,
                     'type' => 'payment_receipt_rejected',
                     'title' => $title,
                     'body' => $body,

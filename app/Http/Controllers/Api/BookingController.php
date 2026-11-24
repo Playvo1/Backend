@@ -193,6 +193,7 @@ if (PaymentReceipt::where('booking_id', $booking->id)->exists()) {
             Notification::create([
                 'user_id' => $admin->id,
                 'booking_id' => $booking->id,
+                'payment_receipt_id' => $receipt->id,
                 'type' => 'payment_receipt_uploaded',
                 'title' => 'إيصال دفع جديد',
                 'body' => "قام اللاعب {$playerName} برفع إيصال دفع للحجز رقم {$booking->id}.",
