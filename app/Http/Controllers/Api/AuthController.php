@@ -15,6 +15,7 @@ use App\Models\VerificationCode;
 use Google\Client as GoogleClient;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -64,16 +65,49 @@ class AuthController extends Controller
         // إعطاء المستخدم Role
         $user->assignRole($role);
 
+        // The verification code is emailed on registration (US-1.1). If the mail fails, the account
+        // is still created and the player can ask for a new code with send-otp.
+        $otpSent = $this->sendRegistrationCode($user);
+
         return $this->apiResponse(
             true,
             200,
-            'Account created, call send-otp to receive a verification code',
+            $otpSent
+                ? 'Account created, a verification code was sent to your email'
+                : 'Account created, call send-otp to receive a verification code',
             [
                 'user_id' => $user->id,
                 'email' => $user->email,
+                'otp_sent' => $otpSent,
             ]
         );
 
+    }
+
+    /**
+     * Creates a 10-minute registration code and emails it; false when the mail could not be sent.
+     */
+    private function sendRegistrationCode(User $user): bool
+    {
+        $otp = random_int(100000, 999999);
+
+        VerificationCode::create([
+            'user_id' => $user->id,
+            'code' => $otp,
+            'type' => 'registration',
+            'expires_at' => now()->addMinutes(10),
+            'used_at' => null,
+        ]);
+
+        try {
+            Mail::to($user->email)->send(new OtpMail($otp));
+        } catch (\Throwable $e) {
+            Log::warning('Registration code email failed', ['user_id' => $user->id, 'error' => $e->getMessage()]);
+
+            return false;
+        }
+
+        return true;
     }
 
 public function googleAuth(googleAuthRequest $request)
